@@ -57,7 +57,15 @@
 
         <div class="dash__content">
             <ApiStatusBanner />
-            @Body
+
+            @* هر خطایِ سرور (۴۰۹ «این محصول سفارش دارد»، «این تنها مدیر است»…)
+               به‌جایِ صفحهٔ سفید، کارتِ دوستانه با پیامِ فارسیِ خودِ سرور نشان می‌دهد. *@
+            <ErrorBoundary @ref="boundary">
+                <ChildContent>@Body</ChildContent>
+                <ErrorContent Context="ex">
+                    <DataErrorState Title="این کار انجام نشد" Message="@ErrorMessage(ex)" OnRetry="RetrySection" />
+                </ErrorContent>
+            </ErrorBoundary>
         </div>
     </div>
 </div>
@@ -72,14 +80,34 @@
     private bool menuOpen;
     private bool menu;
     private string search = "";
+    private ErrorBoundary? boundary;
+
+    private static string ErrorMessage(Exception ex) => ex switch
+    {
+        Services.V1.V1ApiException v => v.Message,
+        InvalidOperationException i => i.Message,
+        _ => "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید."
+    };
+
+    private void RetrySection() => boundary?.Recover();
 
     protected override void OnInitialized() => Auth.OnChange += StateHasChanged;
 
     protected override void OnParametersSet()
     {
         // اگر کاربر وارد نشده باشد، به صفحهٔ ورود هدایت می‌شود
-        if (Auth.IsReady && !Auth.IsAuthenticated) Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString(Nav.Uri));
+        if (Auth.IsReady && !Auth.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString(Nav.Uri));
+            return;
+        }
+
+        // صفحه‌هایِ مدیریتی فقط برایِ نقشِ Admin؛ بقیه به داشبوردِ خودشان برمی‌گردند.
+        if (Auth.IsReady && Auth.IsAuthenticated && !Auth.IsAdmin && IsAdminArea)
+            Nav.NavigateTo("/dashboard");
     }
+
+    private bool IsAdminArea => Nav.Uri.Contains("/dashboard/admin", StringComparison.OrdinalIgnoreCase);
 
     private void OnSearch(KeyboardEventArgs e)
     {

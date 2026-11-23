@@ -94,4 +94,12 @@ public sealed class UpdateCustomerInput
 {
     public Role Role { get; set; } = Role.Customer;
     public bool Locked { get; set; }
+
+    /// <summary>نامِ کامل؛ خالی یعنی «تغییر نده».</summary>
+    [MaxLength(120)]
+    public string? FullName { get; set; }
+
+    /// <summary>نامِ شرکت؛ خالی یعنی «تغییر نده».</summary>
+    [MaxLength(160)]
+    public string? Company { get; set; }
 }

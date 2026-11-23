@@ -278,6 +278,9 @@ public sealed class AccountService : IAccountService
                 throw new ConflictException("این تنها مدیرِ فعالِ سامانه است و نقشش تغییر نمی‌کند.", "last_admin");
         }
 
+        if (!string.IsNullOrWhiteSpace(input.FullName)) user.FullName = input.FullName.Trim();
+        if (input.Company is not null) user.Company = string.IsNullOrWhiteSpace(input.Company) ? null : input.Company.Trim();
+
         user.Role = input.Role;
         user.Locked = input.Locked;
 

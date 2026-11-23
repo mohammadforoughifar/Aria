@@ -108,7 +108,7 @@
     private async Task Load()
     {
         ReviewStatus? status = filter == "all" ? null : Enum.Parse<ReviewStatus>(filter);
-        paged = await Api.GetReviewsAsync(current, 10, null, status);
+        paged = await Api.GetAdminReviewsAsync(current, 10, status);
     }
 
     private Task Go(int p) { current = p; return Load(); }

@@ -86,7 +86,7 @@
     protected override async Task OnInitializedAsync() => await Reload();
 
     private async Task Reload() =>
-        paged = await Api.GetTicketsAsync(page, 12, status?.ToString(), string.IsNullOrWhiteSpace(search) ? null : search.Trim());
+        paged = await Api.GetAdminTicketsAsync(page, 12, status?.ToString(), string.IsNullOrWhiteSpace(search) ? null : search.Trim());
 
     private async Task OnSearch()
     {
@@ -103,7 +103,8 @@
 
     private async Task Resolve(TicketDto t)
     {
-        await Api.AddTicketMessageAsync(t.Id, "درخواست شما بررسی و حل‌شده اعلام شد. در صورت نیاز می‌توانید دوباره آن را باز کنید.", TicketStatus.Resolved);
+        await Api.UpdateAdminTicketStatusAsync(t.Id, TicketStatus.Resolved,
+            "درخواست شما بررسی و حل‌شده اعلام شد. در صورت نیاز می‌توانید دوباره آن را باز کنید.");
         Toast.Push("حل‌شده اعلام شد", t.Reference, ToastTone.Ok);
         await Reload();
     }

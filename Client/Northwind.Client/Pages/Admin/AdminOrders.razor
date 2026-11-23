@@ -163,7 +163,7 @@
 
     private async Task Load()
     {
-        paged = await Api.GetOrdersAsync(current, 12, status == "all" ? null : status,
+        paged = await Api.GetAdminOrdersAsync(current, 12, status == "all" ? null : status,
             string.IsNullOrWhiteSpace(search) ? null : search.Trim());
     }
 

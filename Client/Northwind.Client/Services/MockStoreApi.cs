@@ -195,6 +195,21 @@ public sealed class MockStoreApi : IStoreApi
 
     /* ------------------------------ Orders ------------------------------- */
 
+    public Task<Paged<OrderDto>> GetAdminOrdersAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null)
+        => GetOrdersAsync(page, pageSize, status, search);
+
+    public Task<Paged<LicenseDto>> GetAdminLicensesAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null)
+        => GetLicensesAsync(page, pageSize, status, search);
+
+    public Task<Paged<TicketDto>> GetAdminTicketsAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null)
+        => GetTicketsAsync(page, pageSize, status, search);
+
+    public Task<TicketDetailDto> UpdateAdminTicketStatusAsync(string id, TicketStatus status, string? reply = null)
+        => AddTicketMessageAsync(id, string.IsNullOrWhiteSpace(reply) ? "وضعیت به‌روزرسانی شد." : reply, status);
+
+    public Task<Paged<ReviewDto>> GetAdminReviewsAsync(int page = 1, int pageSize = 10, ReviewStatus? status = null)
+        => GetReviewsAsync(page, pageSize, null, status);
+
     public Task<Paged<OrderDto>> GetOrdersAsync(int page = 1, int pageSize = 10, string? status = null, string? search = null)
     {
         IEnumerable<OrderDto> items = IsAdmin

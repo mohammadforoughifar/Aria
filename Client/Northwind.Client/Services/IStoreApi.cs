@@ -102,6 +102,13 @@ public interface IStoreApi
     Task<AdminOverviewDto> GetAdminOverviewAsync();
     Task<CustomerOverviewDto> GetCustomerOverviewAsync();
 
+    /* -------------------- Admin: فهرست‌هایِ سراسری (موج ۳) ---------------- */
+    Task<Paged<OrderDto>> GetAdminOrdersAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null);
+    Task<Paged<LicenseDto>> GetAdminLicensesAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null);
+    Task<Paged<TicketDto>> GetAdminTicketsAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null);
+    Task<TicketDetailDto> UpdateAdminTicketStatusAsync(string id, TicketStatus status, string? reply = null);
+    Task<Paged<ReviewDto>> GetAdminReviewsAsync(int page = 1, int pageSize = 10, ReviewStatus? status = null);
+
     /* -------------------------- Admin: customers ------------------------- */
     Task<Paged<CustomerDto>> GetCustomersAsync(int page = 1, int pageSize = 10, string? search = null);
     Task<CustomerDto> UpdateCustomerAsync(string id, string fullName, string? company, Role role, bool locked);

@@ -263,6 +263,28 @@ public sealed class HttpStoreApi : IStoreApi
 
     /* ------------------------------- سفارش‌ها ------------------------------ */
 
+    /* --- متدهایِ مدیریتی: در پشتهٔ قدیمی همان مسیرِ عمومی، نقش‌محور است --- */
+
+    public Task<Paged<OrderDto>> GetAdminOrdersAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null)
+        => GetOrdersAsync(page, pageSize, status, search);
+
+    public Task<Paged<LicenseDto>> GetAdminLicensesAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null)
+        => GetLicensesAsync(page, pageSize, status, search);
+
+    public Task<Paged<TicketDto>> GetAdminTicketsAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null)
+        => GetTicketsAsync(page, pageSize, status, search);
+
+    public async Task<TicketDetailDto> UpdateAdminTicketStatusAsync(string id, TicketStatus status, string? reply = null)
+    {
+        if (!string.IsNullOrWhiteSpace(reply))
+            return await AddTicketMessageAsync(id, reply, status);
+
+        return await AddTicketMessageAsync(id, "وضعیت به‌روزرسانی شد.", status);
+    }
+
+    public Task<Paged<ReviewDto>> GetAdminReviewsAsync(int page = 1, int pageSize = 10, ReviewStatus? status = null)
+        => GetReviewsAsync(page, pageSize, null, status);
+
     public async Task<Paged<OrderDto>> GetOrdersAsync(int page = 1, int pageSize = 10, string? status = null, string? search = null)
         => await Get<Paged<OrderDto>>($"api/orders{Q(("page", page), ("pageSize", pageSize), ("status", status), ("search", search))}")
            ?? Paged<OrderDto>.Empty(pageSize);

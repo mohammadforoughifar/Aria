@@ -163,6 +163,41 @@ public sealed record V1Notification(
 
 /* ------------------------------ خطایِ اعتبارسنجی ------------------------------ */
 
+/* ============================== موج ۳: مدیر ============================== */
+
+/// <summary>یک ردیف از «۱۰ محصولِ پرفروش» در نمایِ کلیِ مدیر.</summary>
+public sealed record V1TopProduct(
+    Guid ProductId, string Name, string Slug, int UnitsSold, decimal RevenueToman, string AccentColor);
+
+/// <summary>نمایِ کلیِ پنلِ مدیریت — <c>GET /api/v1/admin/overview</c>.</summary>
+public sealed record V1AdminOverview(
+    int TotalProducts, int TotalCustomers, int OpenTickets, int PendingReviews,
+    int ActiveLicenses, int ExpiringLicenses,
+    decimal RevenueThisMonthToman, decimal RevenueLastMonthToman,
+    IReadOnlyList<V1RevenuePoint> RevenueSeries,
+    IReadOnlyList<V1TopProduct> TopProducts,
+    IReadOnlyList<V1Order> RecentOrders,
+    IReadOnlyList<V1Ticket> RecentTickets);
+
+/// <summary>کاربر در فهرستِ مدیران — <c>GET /api/v1/admin/customers</c>.</summary>
+public sealed record V1Customer(
+    Guid Id, string Email, string FullName, Role Role, string? Company, string? Country,
+    DateTime CreatedAt, int OrderCount, decimal TotalSpentToman, int LicenseCount);
+
+/// <summary>کدِ تخفیف — <c>/api/v1/admin/discounts</c>.</summary>
+public sealed record V1Discount(
+    Guid Id, string Code, string? Description, int PercentOff, int MaxRedemptions,
+    int TimesRedeemed, DateTime? ExpiresAt, bool IsActive, DateTime CreatedAt);
+
+/// <summary>درخواستِ دمو — <c>GET /api/v1/admin/demo-requests</c>.</summary>
+public sealed record V1DemoRequest(
+    Guid Id, string Name, string Email, string? Company, DemoRequestStatus Status, DateTime CreatedAt);
+
+/// <summary>پیامِ فرمِ تماس — <c>GET /api/v1/admin/contact-messages</c>.</summary>
+public sealed record V1ContactMessage(
+    Guid Id, string Name, string Email, string? Company, string Topic, string Message,
+    bool IsRead, DateTime CreatedAt);
+
 /// <summary>بدنهٔ ۴۰۰ اعتبارسنجی: فیلد‌به‌فیلد.</summary>
 public sealed record V1ValidationProblem(
     string? Code, string? Message, int Status, IDictionary<string, string[]>? Errors);

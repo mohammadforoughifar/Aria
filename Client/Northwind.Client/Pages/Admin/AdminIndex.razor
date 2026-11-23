@@ -15,7 +15,11 @@
     </div>
 </div>
 
-@if (data is null)
+@if (data is null && !string.IsNullOrEmpty(error))
+{
+    <DataErrorState Title="نمایِ کلی بارگیری نشد" Message="@error" OnRetry="Reload" />
+}
+else if (data is null)
 {
     <div class="stack-5">
         <div class="stat-grid">@for (var i = 0; i < 4; i++) { <Skeleton Kind="stat" /> }</div>
@@ -134,7 +138,20 @@ else
 @code {
     private AdminOverviewDto? data;
 
-    protected override async Task OnInitializedAsync() => data = await Api.GetAdminOverviewAsync();
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        data = await Api.GetAdminOverviewAsync();
+        if (!string.IsNullOrEmpty(Api.LastError)) error = Api.LastError;
+    }
+
+    private async Task Reload()
+    {
+        error = null;
+        data = null;
+        await OnInitializedAsync();
+    }
 
     private decimal RevenueDelta => data is null || data.RevenueLastMonthToman == 0
         ? 0

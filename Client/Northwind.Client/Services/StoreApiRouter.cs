@@ -37,15 +37,26 @@ public sealed class StoreApiRouter : IStoreApi
     {
         var s = await _v1.GetAsync<V1Settings>("api/v1/settings");
         if (s is null) return await _legacy.GetSettingsAsync();
-        return new SiteSettingsDto(
-            s.SiteName, s.SupportEmail, s.SalesEmail, s.SupportPhone,
-            s.HeroHeadline, s.HeroSubheading, s.TaxRateBps, s.TrialDays,
-            s.MaintenanceMode, s.Announcement);
+        return ToSettings(s);
     }
 
-    // نوشتنِ تنظیمات هنوز در پنلِ مدیریت رویِ پشتهٔ قدیمی است.
-    public Task<SiteSettingsDto> UpdateSettingsAsync(SiteSettingsDto settings)
-        => _legacy.UpdateSettingsAsync(settings);
+    public async Task<SiteSettingsDto> UpdateSettingsAsync(SiteSettingsDto settings)
+    {
+        var saved = await _v1.SendAsync<V1Settings>("PUT", "api/v1/admin/settings", new
+        {
+            siteName = settings.SiteName,
+            supportEmail = settings.SupportEmail,
+            salesEmail = settings.SalesEmail,
+            supportPhone = settings.SupportPhone,
+            heroHeadline = settings.HeroHeadline,
+            heroSubheading = settings.HeroSubheading,
+            taxRateBps = settings.TaxRateBps,
+            trialDays = settings.TrialDays,
+            maintenanceMode = settings.MaintenanceMode,
+            announcement = settings.Announcement
+        });
+        return ToSettings(saved);
+    }
 
     /* =============================== کاتالوگ ============================== */
 
@@ -120,10 +131,19 @@ public sealed class StoreApiRouter : IStoreApi
             c.Id.ToString(), c.Name, c.Slug, c.Description, c.Icon, c.ProductCount)).ToList();
     }
 
-    public Task<CategoryDto> UpsertCategoryAsync(CategoryDto category)
-        => _legacy.UpsertCategoryAsync(category);
+    public async Task<CategoryDto> UpsertCategoryAsync(CategoryDto category)
+    {
+        var input = new { name = category.Name, slug = category.Slug, description = category.Description, icon = category.Icon };
 
-    public Task DeleteCategoryAsync(string id) => _legacy.DeleteCategoryAsync(id);
+        var saved = Guid.TryParse(category.Id, out var gid) && gid != Guid.Empty
+            ? await _v1.SendAsync<V1Category>("PUT", $"api/v1/categories/{gid}", input)
+            : await _v1.SendAsync<V1Category>("POST", "api/v1/categories", input);
+
+        return ToCategory(saved);
+    }
+
+    public Task DeleteCategoryAsync(string id)
+        => _v1.SendAsync("DELETE", $"api/v1/categories/{RequireGuid(id, "دسته")}");
 
     public async Task<IReadOnlyList<TestimonialDto>> GetTestimonialsAsync()
     {
@@ -258,8 +278,30 @@ public sealed class StoreApiRouter : IStoreApi
         return order is null ? null : ToOrder(order);
     }
 
-    public Task<OrderDto> UpdateOrderStatusAsync(string id, OrderStatus status)
-        => _legacy.UpdateOrderStatusAsync(id, status);
+    /// <summary>سفارش‌هایِ همهٔ کاربران — فقط مدیر.</summary>
+    public async Task<Paged<OrderDto>> GetAdminOrdersAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null)
+    {
+        var url = "api/v1/admin/orders" + V1Query.Of(
+            ("page", page), ("pageSize", pageSize), ("status", StatusFilter(status)), ("search", search));
+
+        var result = await _v1.GetAsync<V1Paged<V1Order>>(url);
+        if (result is null)
+        {
+            MarkUnauthorized("سفارش‌ها");
+            return Paged<OrderDto>.Empty(pageSize);
+        }
+
+        return new Paged<OrderDto>(result.Items.Select(ToOrder).ToList(), Meta(result.Meta));
+    }
+
+    public async Task<OrderDto> UpdateOrderStatusAsync(string id, OrderStatus status)
+    {
+        var order = await _v1.SendAsync<V1Order>("PATCH",
+            $"api/v1/admin/orders/{RequireGuid(id, "سفارش")}/status",
+            new { status = status.ToString() });
+
+        return ToOrder(order);
+    }
 
     /* ============================== فاکتورها ============================= */
 
@@ -324,8 +366,41 @@ public sealed class StoreApiRouter : IStoreApi
         return ToLicense(license);
     }
 
-    public Task<LicenseDto> GenerateLicenseAsync(string userId, string productId, string? planId, int seats, int? validDays)
-        => _legacy.GenerateLicenseAsync(userId, productId, planId, seats, validDays);
+    /// <summary>لایسنس‌هایِ همهٔ کاربران — فقط مدیر.</summary>
+    public async Task<Paged<LicenseDto>> GetAdminLicensesAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null)
+    {
+        var url = "api/v1/admin/licenses" + V1Query.Of(
+            ("page", page), ("pageSize", pageSize), ("status", StatusFilter(status)), ("search", search));
+
+        var result = await _v1.GetAsync<V1Paged<V1License>>(url);
+        if (result is null)
+        {
+            MarkUnauthorized("لایسنس‌ها");
+            return Paged<LicenseDto>.Empty(pageSize);
+        }
+
+        return new Paged<LicenseDto>(result.Items.Select(ToLicense).ToList(), Meta(result.Meta));
+    }
+
+    /// <summary>
+    /// صدورِ لایسنس از سویِ پشتیبانی. رابط با «روز» کار می‌کند و نسخهٔ ۱ با
+    /// «ماه»؛ تقسیم به بالا انجام می‌شود تا ۳۶۵ روز به ۱۳ ماه تبدیل نشود.
+    /// </summary>
+    public async Task<LicenseDto> GenerateLicenseAsync(string userId, string productId, string? planId, int seats, int? validDays)
+    {
+        var months = validDays is > 0 ? Math.Max(1, (int)Math.Ceiling(validDays.Value / 30d)) : 12;
+
+        var license = await _v1.SendAsync<V1License>("POST", "api/v1/admin/licenses", new
+        {
+            userId = RequireGuid(userId, "کاربر"),
+            productId = RequireGuid(productId, "محصول"),
+            planId = Guid.TryParse(planId, out var pl) ? pl : (Guid?)null,
+            seats = Math.Max(1, seats),
+            months
+        });
+
+        return ToLicense(license);
+    }
 
     /* ============================== دانلودها ============================= */
 
@@ -390,8 +465,34 @@ public sealed class StoreApiRouter : IStoreApi
     }
 
     public Task<ReviewDto> CreateReviewAsync(NewReviewInput input) => _legacy.CreateReviewAsync(input);
-    public Task<ReviewDto> ModerateReviewAsync(string id, ReviewStatus status) => _legacy.ModerateReviewAsync(id, status);
-    public Task DeleteReviewAsync(string id) => _legacy.DeleteReviewAsync(id);
+
+    public async Task<ReviewDto> ModerateReviewAsync(string id, ReviewStatus status)
+    {
+        var review = await _v1.SendAsync<V1Review>("PATCH",
+            $"api/v1/admin/reviews/{RequireGuid(id, "دیدگاه")}/status",
+            new { status = status.ToString() });
+
+        return ToReview(review);
+    }
+
+    public Task DeleteReviewAsync(string id)
+        => _v1.SendAsync("DELETE", $"api/v1/admin/reviews/{RequireGuid(id, "دیدگاه")}");
+
+    /// <summary>فهرستِ مدیریتیِ دیدگاه‌ها — همهٔ کاربران، همهٔ وضعیت‌ها.</summary>
+    public async Task<Paged<ReviewDto>> GetAdminReviewsAsync(int page = 1, int pageSize = 10, ReviewStatus? status = null)
+    {
+        var url = "api/v1/admin/reviews" + V1Query.Of(
+            ("page", page), ("pageSize", pageSize), ("status", status?.ToString()));
+
+        var result = await _v1.GetAsync<V1Paged<V1Review>>(url);
+        if (result is null)
+        {
+            MarkUnauthorized("دیدگاه‌ها");
+            return Paged<ReviewDto>.Empty(pageSize);
+        }
+
+        return new Paged<ReviewDto>(result.Items.Select(ToReview).ToList(), Meta(result.Meta));
+    }
 
     /* =============================== تیکت‌ها ============================= */
 
@@ -430,6 +531,34 @@ public sealed class StoreApiRouter : IStoreApi
             message = input.Message
         });
         return ToTicketSummary(detail);
+    }
+
+    /// <summary>تیکت‌هایِ همهٔ کاربران — فقط مدیر.</summary>
+    public async Task<Paged<TicketDto>> GetAdminTicketsAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null)
+    {
+        var url = "api/v1/admin/tickets" + V1Query.Of(
+            ("page", page), ("pageSize", pageSize), ("status", status), ("search", search));
+
+        var result = await _v1.GetAsync<V1Paged<V1Ticket>>(url);
+        if (result is null)
+        {
+            MarkUnauthorized("تیکت‌ها");
+            return Paged<TicketDto>.Empty(pageSize);
+        }
+
+        return new Paged<TicketDto>(result.Items.Select(ToTicket).ToList(), Meta(result.Meta));
+    }
+
+    /// <summary>
+    /// تغییرِ وضعیتِ تیکت از سویِ پشتیبانی، با پاسخِ اختیاری در همان درخواست.
+    /// </summary>
+    public async Task<TicketDetailDto> UpdateAdminTicketStatusAsync(string id, TicketStatus status, string? reply = null)
+    {
+        var detail = await _v1.SendAsync<V1TicketDetail>("PATCH",
+            $"api/v1/admin/tickets/{RequireGuid(id, "تیکت")}/status",
+            new { status = status.ToString(), reply });
+
+        return ToTicketDetail(detail);
     }
 
     public async Task<TicketDetailDto> AddTicketMessageAsync(string id, string body, TicketStatus? status = null)
@@ -500,11 +629,39 @@ public sealed class StoreApiRouter : IStoreApi
 
     /* ============================== داشبورد ============================== */
 
-    public Task<AdminOverviewDto> GetAdminOverviewAsync() => _legacy.GetAdminOverviewAsync();
+    public async Task<AdminOverviewDto> GetAdminOverviewAsync()
+    {
+        var o = await _v1.GetAsync<V1AdminOverview>("api/v1/admin/overview");
+        if (o is null)
+        {
+            MarkUnauthorized("نمایِ کلیِ مدیریت");
+            return new AdminOverviewDto(
+                0, 0, 0, 0, 0, 0, 0, 0,
+                Array.Empty<RevenuePointDto>(), Array.Empty<TopProductDto>(),
+                Array.Empty<OrderDto>(), Array.Empty<TicketDto>());
+        }
+
+        return new AdminOverviewDto(
+            o.TotalProducts, o.TotalCustomers, o.OpenTickets, o.PendingReviews,
+            o.ActiveLicenses, o.ExpiringLicenses,
+            o.RevenueThisMonthToman, o.RevenueLastMonthToman,
+            o.RevenueSeries.Select(r => new RevenuePointDto(r.Label, r.TotalToman)).ToList(),
+            o.TopProducts.Select(t => new TopProductDto(
+                t.ProductId.ToString(), t.Name, t.Slug, t.UnitsSold, t.RevenueToman, t.AccentColor)).ToList(),
+            o.RecentOrders.Select(ToOrder).ToList(),
+            o.RecentTickets.Select(ToTicket).ToList());
+    }
     public async Task<CustomerOverviewDto> GetCustomerOverviewAsync()
     {
         var o = await _v1.GetAsync<V1CustomerOverview>("api/v1/account/overview");
-        if (o is null) return await _legacy.GetCustomerOverviewAsync();
+        if (o is null)
+        {
+            if (CanFallBack) return await _legacy.GetCustomerOverviewAsync();
+            MarkUnauthorized("نمایِ کلیِ حساب");
+            return new CustomerOverviewDto(
+                0, 0, 0, 0, 0, 0, 0,
+                Array.Empty<OrderDto>(), Array.Empty<LicenseDto>(), Array.Empty<RevenuePointDto>());
+        }
 
         return new CustomerOverviewDto(
             o.OrderCount, o.ActiveLicenses, o.ExpiringLicenses, o.OpenTickets,
@@ -514,22 +671,103 @@ public sealed class StoreApiRouter : IStoreApi
             o.SpendSeries.Select(p => new RevenuePointDto(p.Label, p.TotalToman)).ToList());
     }
 
-    public Task<Paged<CustomerDto>> GetCustomersAsync(int page = 1, int pageSize = 10, string? search = null)
-        => _legacy.GetCustomersAsync(page, pageSize, search);
+    public async Task<Paged<CustomerDto>> GetCustomersAsync(int page = 1, int pageSize = 10, string? search = null)
+    {
+        var url = "api/v1/admin/customers" + V1Query.Of(
+            ("page", page), ("pageSize", pageSize), ("search", search));
 
-    public Task<CustomerDto> UpdateCustomerAsync(string id, string fullName, string? company, Role role, bool locked)
-        => _legacy.UpdateCustomerAsync(id, fullName, company, role, locked);
+        var result = await _v1.GetAsync<V1Paged<V1Customer>>(url);
+        if (result is null)
+        {
+            MarkUnauthorized("کاربران");
+            return Paged<CustomerDto>.Empty(pageSize);
+        }
+
+        return new Paged<CustomerDto>(result.Items.Select(ToCustomer).ToList(), Meta(result.Meta));
+    }
+
+    public async Task<CustomerDto> UpdateCustomerAsync(string id, string fullName, string? company, Role role, bool locked)
+    {
+        var user = await _v1.SendAsync<V1Customer>("PUT",
+            $"api/v1/admin/customers/{RequireGuid(id, "کاربر")}",
+            new { role = role.ToString(), locked, fullName, company });
+
+        return ToCustomer(user);
+    }
 
     /* ============================== تخفیف‌ها ============================= */
 
-    public Task<IReadOnlyList<DiscountCodeDto>> GetDiscountCodesAsync() => _legacy.GetDiscountCodesAsync();
-    public Task<DiscountCodeDto> UpsertDiscountAsync(DiscountCodeDto code) => _legacy.UpsertDiscountAsync(code);
-    public Task DeleteDiscountAsync(string id) => _legacy.DeleteDiscountAsync(id);
+    /// <summary>نسخهٔ ۱ فهرست را صفحه‌بندی می‌کند؛ پنل همه را یک‌جا می‌خواهد.</summary>
+    public async Task<IReadOnlyList<DiscountCodeDto>> GetDiscountCodesAsync()
+    {
+        var result = await _v1.GetAsync<V1Paged<V1Discount>>("api/v1/admin/discounts?pageSize=100");
+        if (result is null)
+        {
+            MarkUnauthorized("کدهایِ تخفیف");
+            return Array.Empty<DiscountCodeDto>();
+        }
+
+        return result.Items.Select(ToDiscount).ToList();
+    }
+
+    public async Task<DiscountCodeDto> UpsertDiscountAsync(DiscountCodeDto code)
+    {
+        var input = new
+        {
+            code = code.Code,
+            description = code.Description,
+            percentOff = code.PercentOff,
+            maxRedemptions = code.MaxRedemptions,
+            expiresAt = code.ExpiresAt,
+            isActive = code.IsActive
+        };
+
+        var saved = Guid.TryParse(code.Id, out var gid) && gid != Guid.Empty
+            ? await _v1.SendAsync<V1Discount>("PUT", $"api/v1/admin/discounts/{gid}", input)
+            : await _v1.SendAsync<V1Discount>("POST", "api/v1/admin/discounts", input);
+
+        return ToDiscount(saved);
+    }
+
+    public Task DeleteDiscountAsync(string id)
+        => _v1.SendAsync("DELETE", $"api/v1/admin/discounts/{RequireGuid(id, "کدِ تخفیف")}");
 
     /* =========================== کاتالوگ (مدیر) ========================= */
 
-    public Task<ProductDetailDto> UpsertProductAsync(ProductDetailDto product) => _legacy.UpsertProductAsync(product);
-    public Task DeleteProductAsync(string id) => _legacy.DeleteProductAsync(id);
+    public async Task<ProductDetailDto> UpsertProductAsync(ProductDetailDto product)
+    {
+        var input = new
+        {
+            name = product.Name,
+            slug = product.Slug,
+            tagline = product.Tagline,
+            description = product.Description,
+            type = product.Type.ToString(),
+            platform = product.Platform,
+            version = product.Version,
+            basePriceToman = product.BasePriceToman,
+            accentColor = product.AccentColor,
+            heroImage = product.HeroImage,
+            isFeatured = product.IsFeatured,
+            isActive = product.IsActive,
+            trialDays = product.TrialDays,
+            popularity = product.Popularity,
+            features = product.Features,
+            systemRequirements = product.SystemRequirements,
+            gallery = product.Gallery,
+            demoVideoUrl = product.DemoVideoUrl,
+            categoryId = RequireGuid(product.CategoryId, "دسته")
+        };
+
+        var saved = Guid.TryParse(product.Id, out var gid) && gid != Guid.Empty
+            ? await _v1.SendAsync<V1ProductDetail>("PUT", $"api/v1/products/{gid}", input)
+            : await _v1.SendAsync<V1ProductDetail>("POST", "api/v1/products", input);
+
+        return ToDetail(saved);
+    }
+
+    public Task DeleteProductAsync(string id)
+        => _v1.SendAsync("DELETE", $"api/v1/products/{RequireGuid(id, "محصول")}");
 
     /* ============================== اعلان‌ها ============================= */
 
@@ -562,7 +800,9 @@ public sealed class StoreApiRouter : IStoreApi
 
     public async Task<Paged<ArticleDto>> GetArticlesAsync(int page = 1, int pageSize = 9, bool publishedOnly = true)
     {
-        var url = "api/v1/articles" + V1Query.Of(("page", page), ("pageSize", pageSize));
+        // پنلِ مدیریت پیش‌نویس‌ها را هم می‌خواهد؛ مسیرِ مدیریتی جداگانه است.
+        var url = (publishedOnly ? "api/v1/articles" : "api/v1/admin/articles")
+                + V1Query.Of(("page", page), ("pageSize", pageSize));
         var result = await _v1.GetAsync<V1Paged<V1Article>>(url);
         if (result is null)
         {
@@ -582,14 +822,47 @@ public sealed class StoreApiRouter : IStoreApi
         return a is null ? null : ToArticle(a);
     }
 
-    public Task<ArticleDto> UpsertArticleAsync(ArticleInput input) => _legacy.UpsertArticleAsync(input);
-    public Task DeleteArticleAsync(string id) => _legacy.DeleteArticleAsync(id);
+    public async Task<ArticleDto> UpsertArticleAsync(ArticleInput input)
+    {
+        var body = new
+        {
+            title = input.Title,
+            slug = input.Slug,
+            excerpt = input.Excerpt,
+            body = input.Body,
+            category = input.Category,
+            isPublished = input.IsPublished,
+            readMinutes = input.ReadMinutes
+        };
 
-    public Task<IReadOnlyList<DemoRequestDto>> GetDemoRequestsAsync(string? status = null)
-        => _legacy.GetDemoRequestsAsync(status);
+        var saved = Guid.TryParse(input.Id, out var gid) && gid != Guid.Empty
+            ? await _v1.SendAsync<V1Article>("PUT", $"api/v1/admin/articles/{gid}", body)
+            : await _v1.SendAsync<V1Article>("POST", "api/v1/admin/articles", body);
+
+        return ToArticle(saved);
+    }
+
+    public Task DeleteArticleAsync(string id)
+        => _v1.SendAsync("DELETE", $"api/v1/admin/articles/{RequireGuid(id, "مقاله")}");
+
+    public async Task<IReadOnlyList<DemoRequestDto>> GetDemoRequestsAsync(string? status = null)
+    {
+        var url = "api/v1/admin/demo-requests" + V1Query.Of(("pageSize", 100), ("status", StatusFilter(status)));
+        var result = await _v1.GetAsync<V1Paged<V1DemoRequest>>(url);
+        if (result is null)
+        {
+            MarkUnauthorized("درخواست‌هایِ دمو");
+            return Array.Empty<DemoRequestDto>();
+        }
+
+        return result.Items.Select(d => new DemoRequestDto(
+            d.Id.ToString(), null, null, d.Name, d.Email, d.Company,
+            null, null, null, d.Status, d.CreatedAt)).ToList();
+    }
 
     public Task UpdateDemoRequestStatusAsync(string id, DemoRequestStatus status)
-        => _legacy.UpdateDemoRequestStatusAsync(id, status);
+        => _v1.SendAsync("PATCH", $"api/v1/admin/demo-requests/{RequireGuid(id, "درخواستِ دمو")}/status",
+            new { status = status.ToString() });
 
     /* ============================ فرم‌هایِ عمومی ========================== */
 
@@ -604,6 +877,29 @@ public sealed class StoreApiRouter : IStoreApi
         });
 
     /* ============================== نگاشت‌ها ============================== */
+
+    /// <summary>شناسهٔ متنیِ رابط را به Guid تبدیل می‌کند؛ پیامِ فارسی می‌دهد.</summary>
+    private static Guid RequireGuid(string? id, string what)
+        => Guid.TryParse(id, out var g) && g != Guid.Empty
+            ? g
+            : throw new InvalidOperationException($"شناسهٔ {what} معتبر نیست.");
+
+    private static SiteSettingsDto ToSettings(V1Settings s) => new(
+        s.SiteName, s.SupportEmail, s.SalesEmail, s.SupportPhone,
+        s.HeroHeadline, s.HeroSubheading, s.TaxRateBps, s.TrialDays,
+        s.MaintenanceMode, s.Announcement);
+
+    private static CategoryDto ToCategory(V1Category c) => new(
+        c.Id.ToString(), c.Name, c.Slug, c.Description, c.Icon, c.ProductCount);
+
+    private static CustomerDto ToCustomer(V1Customer c) => new(
+        c.Id.ToString(), c.Email, c.FullName, c.Role, c.Company,
+        null, c.Country, c.CreatedAt, null,
+        c.OrderCount, c.TotalSpentToman, c.LicenseCount);
+
+    private static DiscountCodeDto ToDiscount(V1Discount d) => new(
+        d.Id.ToString(), d.Code, d.Description, d.PercentOff, d.MaxRedemptions,
+        d.TimesRedeemed, d.ExpiresAt, d.IsActive, d.CreatedAt);
 
     private static string? SortKey(string? clientSort) => clientSort switch
     {
