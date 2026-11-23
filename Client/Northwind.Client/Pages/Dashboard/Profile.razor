@@ -140,10 +140,17 @@
         }
 
         busy = true;
-        var updated = await Api.UpdateProfileAsync(fullName.Trim(), company, phone, country);
-        await Auth.UpdateAsync(updated);
-        busy = false;
-        Toast.Push("تغییرات ذخیره شد", null, ToastTone.Ok);
+        try
+        {
+            var updated = await Api.UpdateProfileAsync(fullName.Trim(), company, phone, country);
+            await Auth.UpdateAsync(updated);
+            Toast.Push("تغییرات ذخیره شد", null, ToastTone.Ok);
+        }
+        catch (Services.V1.V1ApiException ex)
+        {
+            Toast.Push("ذخیره نشد", ex.Message, ToastTone.Bad);
+        }
+        finally { busy = false; }
     }
 
     private async Task ChangePassword()
@@ -163,9 +170,10 @@
         var ok = await Api.ChangePasswordAsync(current, next);
         busy = false;
 
+        var message = ok ? "رمز عبور تغییر کرد" : (Api.LastError ?? "رمزِ فعلی نادرست است");
         current = next = confirm = "";
-        Toast.Push(ok ? "رمز عبور تغییر کرد" : "رمز عبورِ فعلی نادرست است", null,
-            ok ? ToastTone.Ok : ToastTone.Bad);
+        Toast.Push(ok ? "رمز عبور تغییر کرد" : "رمز تغییر نکرد",
+            ok ? null : message, ok ? ToastTone.Ok : ToastTone.Bad);
     }
 
     private async Task Logout()

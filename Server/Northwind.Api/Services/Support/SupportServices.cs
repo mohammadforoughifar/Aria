@@ -12,7 +12,7 @@ namespace Northwind.Api.Services.Support;
 public interface ITicketService
 {
     Task<TicketDetailViewModel> CreateAsync(NewTicketInput input, Guid userId, string authorName, CancellationToken ct = default);
-    Task<PagedViewModel<TicketViewModel>> ListMineAsync(Guid userId, ListQuery query, CancellationToken ct = default);
+    Task<PagedViewModel<TicketViewModel>> ListMineAsync(Guid userId, ListQuery query, TicketStatus? status = null, CancellationToken ct = default);
     Task<TicketDetailViewModel> GetAsync(Guid id, Guid userId, bool isAdmin, CancellationToken ct = default);
     Task<TicketDetailViewModel> AddMessageAsync(Guid id, AddTicketMessageInput input, Guid userId, string authorName, bool isAdmin, CancellationToken ct = default);
     Task<PagedViewModel<TicketViewModel>> AdminListAsync(ListQuery query, TicketStatus? status, CancellationToken ct = default);
@@ -60,14 +60,24 @@ public sealed class TicketService : ITicketService
         return await GetAsync(ticket.Id, userId, true, ct);
     }
 
-    public async Task<PagedViewModel<TicketViewModel>> ListMineAsync(Guid userId, ListQuery query, CancellationToken ct = default)
+    public async Task<PagedViewModel<TicketViewModel>> ListMineAsync(Guid userId, ListQuery query,
+        TicketStatus? status = null, CancellationToken ct = default)
     {
         var q = _db.Tickets.AsNoTracking()
             .Include(t => t.User).Include(t => t.Product).Include(t => t.Messages)
-            .Where(t => t.UserId == userId)
-            .OrderByDescending(t => t.LastActivityAt);
+            .Where(t => t.UserId == userId);
 
-        return await q.ToPagedAsync(query, t => t.ToViewModel(), ct);
+        if (status is not null) q = q.Where(t => t.Status == status);
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var s = query.Search.Trim();
+            q = q.Where(t => EF.Functions.Like(t.Subject, $"%{s}%")
+                          || EF.Functions.Like(t.Reference, $"%{s}%"));
+        }
+
+        return await q.OrderByDescending(t => t.LastActivityAt)
+                      .ToPagedAsync(query, t => t.ToViewModel(), ct);
     }
 
     public async Task<TicketDetailViewModel> GetAsync(Guid id, Guid userId, bool isAdmin, CancellationToken ct = default)

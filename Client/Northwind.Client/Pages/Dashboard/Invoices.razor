@@ -18,6 +18,10 @@
             @for (var i = 0; i < 5; i++) { <Skeleton Kind="row" /> }
         </div>
     }
+    else if (error is not null)
+    {
+        <DataErrorState Title="فاکتورها بارگیری نشد" Message="@error" OnRetry="Load" />
+    }
     else if (paged.Items.Count == 0)
     {
         <EmptyState Icon="file" Title="فاکتوری صادر نشده" Text="پس از نخستین خرید، فاکتورِ رسمی اینجا قرار می‌گیرد." />
@@ -121,12 +125,18 @@
     private Paged<InvoiceDto>? paged;
     private InvoiceDto? selected;
     private int current = 1;
+    private string? error;
 
     [Inject] public Services.ToastService Toast { get; set; } = default!;
 
     protected override async Task OnInitializedAsync() => await Load();
 
-    private async Task Load() => paged = await Api.GetInvoicesAsync(current, 12);
+    private async Task Load()
+    {
+        error = null;
+        paged = await Api.GetInvoicesAsync(current, 12);
+        if (paged.Items.Count == 0 && !string.IsNullOrEmpty(Api.LastError)) error = Api.LastError;
+    }
     private async Task Go(int p) { current = p; await Load(); }
 
     private void Open(InvoiceDto inv) => selected = inv;

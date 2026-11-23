@@ -105,3 +105,64 @@ public sealed record V1Article(
 
 /// <summary>بدنهٔ خطایِ استانداردِ نسخهٔ ۱: <c>{ code, message, status, traceId }</c>.</summary>
 public sealed record V1Error(string? Code, string? Message, int Status, string? TraceId);
+
+/* ------------------------------ حساب کاربری ----------------------------- */
+
+public sealed record V1User(
+    Guid Id, string Email, string FullName, Role Role,
+    string? Company, string? Phone, string? Country,
+    DateTime CreatedAt, DateTime? LastLoginAt);
+
+/// <summary>پاسخِ ورود/ثبت‌نام: کاربر و توکنِ دسترسی.</summary>
+public sealed record V1AuthResult(V1User User, string Token, DateTime ExpiresAt);
+
+public sealed record V1License(
+    Guid Id, string LicenseKey, Guid UserId, string? UserName, string? UserEmail,
+    Guid ProductId, string ProductName, string ProductSlug, string? PlanName,
+    int Seats, int ActivationsUsed, LicenseStatus Status, DateTime IssuedAt, DateTime? ExpiresAt);
+
+public sealed record V1AvailableVersion(
+    Guid Id, string Version, DateTime ReleasedAt, string Platform, int SizeMb,
+    string FileName, string? InstallerUrl, string Notes);
+
+public sealed record V1AvailableDownload(
+    Guid ProductId, string ProductName, string ProductSlug, string AccentColor,
+    bool Licensed, IReadOnlyList<V1AvailableVersion> Versions);
+
+public sealed record V1Download(
+    Guid Id, Guid ProductId, string ProductName, string ProductSlug, Guid? VersionId,
+    string Version, string Kind, string FileName, int SizeMb, DateTime DownloadedAt,
+    bool RequiresLicense);
+
+public sealed record V1TicketMessage(
+    Guid Id, Guid TicketId, string AuthorName, bool IsStaff, string Body, DateTime CreatedAt);
+
+public sealed record V1Ticket(
+    Guid Id, string Reference, Guid UserId, string? UserName, string? ProductName,
+    string Subject, string Category, TicketPriority Priority, TicketStatus Status,
+    string? Environment, DateTime CreatedAt, DateTime UpdatedAt, int MessageCount);
+
+public sealed record V1TicketDetail(
+    Guid Id, string Reference, Guid UserId, string? UserName, Guid? ProductId, string? ProductName,
+    string Subject, string Category, TicketPriority Priority, TicketStatus Status,
+    string? Environment, DateTime CreatedAt, DateTime UpdatedAt,
+    IReadOnlyList<V1TicketMessage> Messages);
+
+public sealed record V1RevenuePoint(string Label, decimal TotalToman);
+
+public sealed record V1CustomerOverview(
+    int OrderCount, int ActiveLicenses, int ExpiringLicenses, int OpenTickets,
+    decimal TotalSpentToman, int AvailableDownloads, decimal OutstandingInvoicesToman,
+    IReadOnlyList<V1Order> RecentOrders,
+    IReadOnlyList<V1License> ExpiringLicensesList,
+    IReadOnlyList<V1RevenuePoint> SpendSeries);
+
+public sealed record V1Notification(
+    Guid Id, Guid UserId, string Title, string? Body, string Kind, bool IsRead,
+    DateTime CreatedAt, string? Link);
+
+/* ------------------------------ خطایِ اعتبارسنجی ------------------------------ */
+
+/// <summary>بدنهٔ ۴۰۰ اعتبارسنجی: فیلد‌به‌فیلد.</summary>
+public sealed record V1ValidationProblem(
+    string? Code, string? Message, int Status, IDictionary<string, string[]>? Errors);

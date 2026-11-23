@@ -52,7 +52,7 @@
             <label class="field">
                 <span class="field__label">رمز عبور <span class="field__req">*</span></span>
                 <input class="input input--ltr" style="text-align:left" type="password" @bind="password" />
-                <span class="field__hint">حداقل ۸ کاراکتر — ترکیبِ حرف و عدد توصیه می‌شود.</span>
+                <span class="field__hint">حداقل ۶ نویسه — ترکیبِ حرف و عدد توصیه می‌شود.</span>
             </label>
 
             <label class="field">
@@ -102,12 +102,11 @@
 
         if (fullName.Trim().Length < 2) { error = "نام کامل را وارد کنید."; return; }
         if (!email.Contains('@')) { error = "ایمیل معتبر نیست."; return; }
-        if (password.Length < 8) { error = "رمز عبور باید حداقل ۸ کاراکتر باشد."; return; }
+        if (password.Length < 6) { error = "رمز عبور باید حداقل ۶ نویسه باشد."; return; }
         if (password != confirm) { error = "تکرارِ رمز عبور مطابقت ندارد."; return; }
         if (!accept) { error = "پذیرشِ شرایط استفاده الزامی است."; return; }
 
         busy = true;
-        await Task.Delay(400);
 
         var registered = await Auth.RegisterAsync(fullName.Trim(), email.Trim(), password,
             string.IsNullOrWhiteSpace(company) ? null : company,
@@ -117,7 +116,7 @@
 
         if (!registered)
         {
-            error = "حسابی با این ایمیل از قبل وجود دارد.";
+            error = Auth.LastError ?? "ثبت‌نام انجام نشد.";
             return;
         }
 

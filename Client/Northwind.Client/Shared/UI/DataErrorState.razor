@@ -1,0 +1,25 @@
+@* وضعیتِ «سرور جواب نداد» برایِ فهرست‌هایِ داشبورد.
+   تفاوتِ مهم با EmptyState: «داده‌ای نیست» با «داده را نگرفتم» قاطی نمی‌شود؛
+   کاربر هرگز فکر نمی‌کند حسابش خالی است در حالی که فقط ارتباط قطع بوده. *@
+
+<div class="card" style="padding:var(--sp-6);text-align:center">
+    <div class="empty__icon" style="margin:0 auto var(--sp-3);background:var(--warn-soft,#fff4e5);color:var(--warn,#b26a00)">
+        <Icon Name="alert" Size="24" />
+    </div>
+    <div class="empty__title">@Title</div>
+    <p class="empty__text">@(Message ?? "ارتباط با سرور برقرار نشد. اینترنت یا سرورِ API را بررسی کنید.")</p>
+    <div style="margin-top:var(--sp-4);display:flex;gap:var(--sp-2);justify-content:center">
+        <button class="btn btn--primary btn--sm" @onclick="Retry">
+            <Icon Name="refresh" Size="15" /> تلاشِ دوباره
+        </button>
+        <a class="btn btn--ghost btn--sm" href="/contact">تماس با پشتیبانی</a>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string Title { get; set; } = "اطلاعات بارگیری نشد";
+    [Parameter] public EventCallback OnRetry { get; set; }
+
+    private Task Retry() => OnRetry.HasDelegate ? OnRetry.InvokeAsync() : Task.CompletedTask;
+}

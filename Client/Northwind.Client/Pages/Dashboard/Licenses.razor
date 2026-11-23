@@ -19,6 +19,10 @@
         @for (var i = 0; i < 4; i++) { <Skeleton Kind="card" /> }
     </div>
 }
+else if (error is not null)
+{
+    <DataErrorState Title="لایسنس‌ها بارگیری نشد" Message="@error" OnRetry="Load" />
+}
 else if (paged.Items.Count == 0)
 {
     <div class="card">
@@ -102,6 +106,7 @@ else
     private Paged<LicenseDto>? paged;
     private string status = "all";
     private int current = 1;
+    private string? error;
 
     private IReadOnlyList<SegItem<string>> tabs => new[]
     {
@@ -113,7 +118,12 @@ else
 
     protected override async Task OnInitializedAsync() => await Load();
 
-    private async Task Load() => paged = await Api.GetLicensesAsync(current, 8, status);
+    private async Task Load()
+    {
+        error = null;
+        paged = await Api.GetLicensesAsync(current, 8, status);
+        if (paged.Items.Count == 0 && !string.IsNullOrEmpty(Api.LastError)) error = Api.LastError;
+    }
     private async Task Go(int p) { current = p; await Load(); }
     private async Task OnTab(string? v) { status = v ?? "all"; current = 1; await Load(); }
 

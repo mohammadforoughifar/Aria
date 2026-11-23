@@ -99,25 +99,24 @@
     private async Task Submit()
     {
         error = null;
-        if (!email.Contains('@') || password.Length < 8)
+        if (!email.Contains('@') || password.Length < 6)
         {
-            error = "ایمیل معتبر و رمز عبور با حداقل ۸ کاراکتر وارد کنید.";
+            error = "ایمیل معتبر و رمز عبور با حداقل ۶ نویسه وارد کنید.";
             return;
         }
 
         busy = true;
-        await Task.Delay(350);
-
         var ok = await Auth.LoginAsync(email, password);
         busy = false;
 
         if (!ok)
         {
-            // اگر سرور پاسخ نمی‌دهد، نباید گفته شود رمز اشتباه است
-            error = Health.Reachable
-                ? "ایمیل یا رمز عبور نادرست است."
-                : "ارتباط با سرور برقرار نیست، بنابراین ورود بررسی نشد. "
-                  + "پروژهٔ Northwind.Server را اجرا کنید و دوباره تلاش کنید.";
+            // پیام را خودِ سرور می‌دهد و همان یک پیام برایِ «رمزِ اشتباه» و
+            // «ایمیلِ ناشناس» است تا معلوم نشود کدام ایمیل ثبت شده است.
+            error = Auth.LastError
+                ?? (Health.Reachable
+                    ? "ورود انجام نشد."
+                    : "ارتباط با سرور برقرار نیست، بنابراین ورود بررسی نشد.");
             return;
         }
 

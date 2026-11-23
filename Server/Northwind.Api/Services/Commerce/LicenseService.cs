@@ -11,7 +11,7 @@ namespace Northwind.Api.Services.Commerce;
 
 public interface ILicenseService
 {
-    Task<PagedViewModel<LicenseViewModel>> ListMineAsync(Guid userId, ListQuery query, CancellationToken ct = default);
+    Task<PagedViewModel<LicenseViewModel>> ListMineAsync(Guid userId, ListQuery query, LicenseStatus? status = null, CancellationToken ct = default);
     Task<PagedViewModel<LicenseViewModel>> AdminListAsync(ListQuery query, LicenseStatus? status, CancellationToken ct = default);
     Task<LicenseViewModel> GetAsync(Guid id, Guid userId, bool isAdmin, CancellationToken ct = default);
     Task<LicenseViewModel> IssueAsync(IssueLicenseInput input, CancellationToken ct = default);
@@ -25,14 +25,24 @@ public sealed class LicenseService : ILicenseService
 
     public LicenseService(NorthwindDbContext db) => _db = db;
 
-    public async Task<PagedViewModel<LicenseViewModel>> ListMineAsync(Guid userId, ListQuery query, CancellationToken ct = default)
+    public async Task<PagedViewModel<LicenseViewModel>> ListMineAsync(Guid userId, ListQuery query,
+        LicenseStatus? status = null, CancellationToken ct = default)
     {
         var q = _db.Licenses.AsNoTracking()
             .Include(l => l.Product).Include(l => l.Plan).Include(l => l.User)
-            .Where(l => l.UserId == userId)
-            .OrderByDescending(l => l.IssuedAt);
+            .Where(l => l.UserId == userId);
 
-        return await q.ToPagedAsync(query, l => l.ToViewModel(), ct);
+        if (status is not null) q = q.Where(l => l.Status == status);
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var s = query.Search.Trim();
+            q = q.Where(l => EF.Functions.Like(l.LicenseKey, $"%{s}%")
+                          || EF.Functions.Like(l.Product!.Name, $"%{s}%"));
+        }
+
+        return await q.OrderByDescending(l => l.IssuedAt)
+                      .ToPagedAsync(query, l => l.ToViewModel(), ct);
     }
 
     public async Task<PagedViewModel<LicenseViewModel>> AdminListAsync(ListQuery query, LicenseStatus? status, CancellationToken ct = default)

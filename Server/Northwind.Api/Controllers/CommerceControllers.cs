@@ -104,8 +104,9 @@ public sealed class OrdersController : ControllerBase
     }
 
     [HttpGet("orders")]
-    public Task<PagedViewModel<OrderViewModel>> Mine([FromQuery] ListQuery query, CancellationToken ct)
-        => _orders.ListMineAsync(_current.RequireId(), query, ct);
+    public Task<PagedViewModel<OrderViewModel>> Mine(
+        [FromQuery] ListQuery query, [FromQuery] OrderStatus? status, CancellationToken ct)
+        => _orders.ListMineAsync(_current.RequireId(), query, status, ct);
 
     [HttpGet("orders/{id:guid}")]
     [ProducesResponseType<OrderViewModel>(StatusCodes.Status200OK)]
@@ -154,8 +155,9 @@ public sealed class LicensesController : ControllerBase
     }
 
     [HttpGet]
-    public Task<PagedViewModel<LicenseViewModel>> Mine([FromQuery] ListQuery query, CancellationToken ct)
-        => _licenses.ListMineAsync(_current.RequireId(), query, ct);
+    public Task<PagedViewModel<LicenseViewModel>> Mine(
+        [FromQuery] ListQuery query, [FromQuery] LicenseStatus? status, CancellationToken ct)
+        => _licenses.ListMineAsync(_current.RequireId(), query, status, ct);
 
     [HttpGet("{id:guid}")]
     public Task<LicenseViewModel> Get(Guid id, CancellationToken ct)

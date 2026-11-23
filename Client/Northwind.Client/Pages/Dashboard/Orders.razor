@@ -31,6 +31,10 @@
             @for (var i = 0; i < 5; i++) { <Skeleton Kind="row" /> }
         </div>
     }
+    else if (error is not null)
+    {
+        <DataErrorState Title="سفارش‌ها بارگیری نشد" Message="@error" OnRetry="Load" />
+    }
     else if (paged.Items.Count == 0)
     {
         <EmptyState Icon="file" Title="سفارشی با این فیلتر نیست" Text="فیلتر را تغییر دهید یا یک خریدِ جدید انجام دهید." />
@@ -181,9 +185,13 @@
         await Load();
     }
 
+    private string? error;
+
     private async Task Load()
     {
+        error = null;
         paged = await Api.GetOrdersAsync(current, 10, status, string.IsNullOrWhiteSpace(search) ? null : search);
+        if (paged.Items.Count == 0 && !string.IsNullOrEmpty(Api.LastError)) error = Api.LastError;
     }
 
     private async Task Go(int p) { current = p; await Load(); }

@@ -12,6 +12,8 @@ namespace Northwind.Client.Services;
 
 public sealed class HttpStoreApi : IStoreApi
 {
+    public string? LastError => null;
+
     private readonly HttpClient _http;
     private readonly AuthState _auth;
     private readonly ApiHealth _health;

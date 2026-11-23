@@ -235,43 +235,137 @@ public sealed class StoreApiRouter : IStoreApi
         return ToOrder(result.Order);
     }
 
-    // بقیهٔ سفارش‌ها هنوز رویِ پشتهٔ قدیمی است.
-    public Task<Paged<OrderDto>> GetOrdersAsync(int page = 1, int pageSize = 10, string? status = null, string? search = null)
-        => _legacy.GetOrdersAsync(page, pageSize, status, search);
+    public async Task<Paged<OrderDto>> GetOrdersAsync(int page = 1, int pageSize = 10, string? status = null, string? search = null)
+    {
+        var url = "api/v1/orders" + V1Query.Of(
+            ("page", page), ("pageSize", pageSize), ("search", search), ("status", StatusFilter(status)));
 
-    public Task<OrderDto?> GetOrderAsync(string id) => _legacy.GetOrderAsync(id);
+        var result = await _v1.GetAsync<V1Paged<V1Order>>(url);
+        if (result is null)
+        {
+            if (CanFallBack) return await _legacy.GetOrdersAsync(page, pageSize, status, search);
+            MarkUnauthorized("سفارش‌ها");
+            return Paged<OrderDto>.Empty(pageSize);
+        }
+
+        return new Paged<OrderDto>(result.Items.Select(ToOrder).ToList(), Meta(result.Meta));
+    }
+
+    public async Task<OrderDto?> GetOrderAsync(string id)
+    {
+        if (!Guid.TryParse(id, out var guid)) return await _legacy.GetOrderAsync(id);
+        var order = await _v1.GetAsync<V1Order>($"api/v1/orders/{guid}");
+        return order is null ? null : ToOrder(order);
+    }
 
     public Task<OrderDto> UpdateOrderStatusAsync(string id, OrderStatus status)
         => _legacy.UpdateOrderStatusAsync(id, status);
 
     /* ============================== فاکتورها ============================= */
 
-    public Task<Paged<InvoiceDto>> GetInvoicesAsync(int page = 1, int pageSize = 10)
-        => _legacy.GetInvoicesAsync(page, pageSize);
+    public async Task<Paged<InvoiceDto>> GetInvoicesAsync(int page = 1, int pageSize = 10)
+    {
+        var url = "api/v1/invoices" + V1Query.Of(("page", page), ("pageSize", pageSize));
+        var result = await _v1.GetAsync<V1Paged<V1Invoice>>(url);
+        if (result is null)
+        {
+            if (CanFallBack) return await _legacy.GetInvoicesAsync(page, pageSize);
+            MarkUnauthorized("فاکتورها");
+            return Paged<InvoiceDto>.Empty(pageSize);
+        }
 
-    public Task<InvoiceDto?> GetInvoiceAsync(string id) => _legacy.GetInvoiceAsync(id);
+        return new Paged<InvoiceDto>(result.Items.Select(ToInvoice).ToList(), Meta(result.Meta));
+    }
+
+    public async Task<InvoiceDto?> GetInvoiceAsync(string id)
+    {
+        if (!Guid.TryParse(id, out var guid)) return await _legacy.GetInvoiceAsync(id);
+        var invoice = await _v1.GetAsync<V1Invoice>($"api/v1/invoices/{guid}");
+        return invoice is null ? null : ToInvoice(invoice);
+    }
 
     /* =============================== لایسنس ============================== */
 
-    public Task<Paged<LicenseDto>> GetLicensesAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null)
-        => _legacy.GetLicensesAsync(page, pageSize, status, search);
+    public async Task<Paged<LicenseDto>> GetLicensesAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null)
+    {
+        var url = "api/v1/licenses" + V1Query.Of(
+            ("page", page), ("pageSize", pageSize), ("status", StatusFilter(status)), ("search", search));
 
-    public Task<LicenseDto> LicenseActionAsync(string id, string action, int? days = null, string? machineName = null)
-        => _legacy.LicenseActionAsync(id, action, days, machineName);
+        var result = await _v1.GetAsync<V1Paged<V1License>>(url);
+        if (result is null)
+        {
+            if (CanFallBack) return await _legacy.GetLicensesAsync(page, pageSize, status, search);
+            MarkUnauthorized("لایسنس‌ها");
+            return Paged<LicenseDto>.Empty(pageSize);
+        }
+
+        return new Paged<LicenseDto>(result.Items.Select(ToLicense).ToList(), Meta(result.Meta));
+    }
+
+    /// <summary>
+    /// عملیاتِ لایسنس: <c>activate</c> / <c>renew</c> / <c>revoke</c>.
+    /// صفحه با نام‌هایِ قدیمی صدا می‌زند (<c>extend</c>)، نسخهٔ ۱ با
+    /// <c>renew</c> کار می‌کند؛ ترجمه همین‌جا انجام می‌شود.
+    /// </summary>
+    public async Task<LicenseDto> LicenseActionAsync(string id, string action, int? days = null, string? machineName = null)
+    {
+        if (!Guid.TryParse(id, out var guid))
+            return await _legacy.LicenseActionAsync(id, action, days, machineName);
+
+        var mapped = action switch
+        {
+            "extend" => "renew",
+            "activate" => "activate",
+            _ => "revoke",
+        };
+
+        var license = await _v1.SendAsync<V1License>("POST", $"api/v1/licenses/{guid}/action",
+            new { action = mapped, days, machineName });
+        return ToLicense(license);
+    }
 
     public Task<LicenseDto> GenerateLicenseAsync(string userId, string productId, string? planId, int seats, int? validDays)
         => _legacy.GenerateLicenseAsync(userId, productId, planId, seats, validDays);
 
     /* ============================== دانلودها ============================= */
 
-    public Task<IReadOnlyList<AvailableDownloadDto>> GetAvailableDownloadsAsync()
-        => _legacy.GetAvailableDownloadsAsync();
+    public async Task<IReadOnlyList<AvailableDownloadDto>> GetAvailableDownloadsAsync()
+    {
+        var list = await _v1.GetAsync<List<V1AvailableDownload>>("api/v1/downloads/available");
+        if (list is null) return await _legacy.GetAvailableDownloadsAsync();
 
-    public Task<IReadOnlyList<DownloadDto>> GetDownloadHistoryAsync()
-        => _legacy.GetDownloadHistoryAsync();
+        return list.Select(d => new AvailableDownloadDto(
+            d.ProductId.ToString(), d.ProductName, d.ProductSlug, d.AccentColor, d.Licensed,
+            d.Versions.Select(v => new AvailableVersionDto(
+                v.Id.ToString(), v.Version, v.ReleasedAt, v.Platform, v.SizeMb,
+                v.FileName, v.InstallerUrl, v.Notes)).ToList())).ToList();
+    }
 
-    public Task<DownloadDto> RecordDownloadAsync(string productId, string? versionId, string kind, string fileName, int sizeMb)
-        => _legacy.RecordDownloadAsync(productId, versionId, kind, fileName, sizeMb);
+    public async Task<IReadOnlyList<DownloadDto>> GetDownloadHistoryAsync()
+    {
+        var result = await _v1.GetAsync<V1Paged<V1Download>>("api/v1/downloads?pageSize=50");
+        if (result is null)
+        {
+            if (CanFallBack) return await _legacy.GetDownloadHistoryAsync();
+            MarkUnauthorized("تاریخچهٔ دانلودها");
+            return Array.Empty<DownloadDto>();
+        }
+        return result.Items.Select(ToDownload).ToList();
+    }
+
+    public async Task<DownloadDto> RecordDownloadAsync(string productId, string? versionId, string kind, string fileName, int sizeMb)
+    {
+        if (!Guid.TryParse(productId, out var pid))
+            return await _legacy.RecordDownloadAsync(productId, versionId, kind, fileName, sizeMb);
+
+        var download = await _v1.SendAsync<V1Download>("POST", "api/v1/downloads", new
+        {
+            productId = pid,
+            versionId = Guid.TryParse(versionId, out var vid) ? vid : (Guid?)null,
+            kind, fileName, sizeMb
+        });
+        return ToDownload(download);
+    }
 
     /* =============================== نظرات ============================== */
 
@@ -301,33 +395,124 @@ public sealed class StoreApiRouter : IStoreApi
 
     /* =============================== تیکت‌ها ============================= */
 
-    public Task<Paged<TicketDto>> GetTicketsAsync(int page = 1, int pageSize = 10, string? status = null, string? search = null)
-        => _legacy.GetTicketsAsync(page, pageSize, status, search);
+    public async Task<Paged<TicketDto>> GetTicketsAsync(int page = 1, int pageSize = 10, string? status = null, string? search = null)
+    {
+        var url = "api/v1/tickets" + V1Query.Of(
+            ("page", page), ("pageSize", pageSize), ("status", StatusFilter(status)), ("search", search));
 
-    public Task<TicketDetailDto?> GetTicketAsync(string id) => _legacy.GetTicketAsync(id);
+        var result = await _v1.GetAsync<V1Paged<V1Ticket>>(url);
+        if (result is null)
+        {
+            if (CanFallBack) return await _legacy.GetTicketsAsync(page, pageSize, status, search);
+            MarkUnauthorized("تیکت‌ها");
+            return Paged<TicketDto>.Empty(pageSize);
+        }
 
-    public Task<TicketDto> CreateTicketAsync(NewTicketInput input) => _legacy.CreateTicketAsync(input);
+        return new Paged<TicketDto>(result.Items.Select(ToTicket).ToList(), Meta(result.Meta));
+    }
 
-    public Task<TicketDetailDto> AddTicketMessageAsync(string id, string body, TicketStatus? status = null)
-        => _legacy.AddTicketMessageAsync(id, body, status);
+    public async Task<TicketDetailDto?> GetTicketAsync(string id)
+    {
+        if (!Guid.TryParse(id, out var guid)) return await _legacy.GetTicketAsync(id);
+        var ticket = await _v1.GetAsync<V1TicketDetail>($"api/v1/tickets/{guid}");
+        return ticket is null ? null : ToTicketDetail(ticket);
+    }
+
+    public async Task<TicketDto> CreateTicketAsync(NewTicketInput input)
+    {
+        var detail = await _v1.SendAsync<V1TicketDetail>("POST", "api/v1/tickets", new
+        {
+            productId = Guid.TryParse(input.ProductId, out var pid) ? pid : (Guid?)null,
+            subject = input.Subject,
+            category = input.Category,
+            priority = input.Priority.ToString(),
+            environment = input.Environment,
+            message = input.Message
+        });
+        return ToTicketSummary(detail);
+    }
+
+    public async Task<TicketDetailDto> AddTicketMessageAsync(string id, string body, TicketStatus? status = null)
+    {
+        if (!Guid.TryParse(id, out var guid))
+            return await _legacy.AddTicketMessageAsync(id, body, status);
+
+        var detail = await _v1.SendAsync<V1TicketDetail>("POST", $"api/v1/tickets/{guid}/messages",
+            new { body });
+        return ToTicketDetail(detail);
+    }
 
     /* ================================ احراز ============================== */
 
-    // احرازِ هویت در موجِ ۲ به توکنِ JWT منتقل می‌شود؛ تا آن‌موقع پشتهٔ قدیمی.
+    // ورود و ثبت‌نام از این موج به بعد در AuthState و رویِ نسخهٔ ۱ انجام می‌شود؛
+    // این دو متد فقط برایِ سازگاری مانده‌اند.
     public Task<UserDto?> LoginAsync(string email, string password) => _legacy.LoginAsync(email, password);
 
     public Task<UserDto?> RegisterAsync(string fullName, string email, string password, string? company, string? country)
         => _legacy.RegisterAsync(fullName, email, password, company, country);
 
-    public Task<UserDto> UpdateProfileAsync(string fullName, string? company, string? phone, string? country)
-        => _legacy.UpdateProfileAsync(fullName, company, phone, country);
+    public async Task<UserDto> UpdateProfileAsync(string fullName, string? company, string? phone, string? country)
+    {
+        var user = await _v1.SendAsync<V1User>("PUT", "api/v1/account/me",
+            new { fullName, company, phone, country });
+        return ToUser(user);
+    }
 
-    public Task<bool> ChangePasswordAsync(string current, string next) => _legacy.ChangePasswordAsync(current, next);
+    /// <summary>تغییرِ رمز؛ اگر رمزِ فعلی غلط باشد پیامِ سرور برمی‌گردد.</summary>
+    public async Task<bool> ChangePasswordAsync(string current, string next)
+    {
+        try
+        {
+            await _v1.SendAsync("POST", "api/v1/account/password",
+                new { currentPassword = current, newPassword = next });
+            return true;
+        }
+        catch (V1ApiException ex)
+        {
+            LastError = ex.Message;
+            return false;
+        }
+    }
+
+    private void ClearError() => LastError = null;
+
+    /// <summary>
+    /// آیا اجازه داریم بعد از شکستِ نسخهٔ ۱ سراغِ API قدیمی برویم؟
+    /// فقط وقتی نشستی وجود ندارد. با توکن، بازگشت به قدیمی یعنی نشان‌دادنِ دادهٔ
+    /// کاربرِ دیگر با ۲۰۰ — که یک نشتیِ واقعی بود؛ دیگر هرگز.
+    /// </summary>
+    private bool CanFallBack => string.IsNullOrWhiteSpace(_v1.AccessToken);
+
+    /// <summary>
+    /// زبانهٔ «همه» در رابط یعنی «بی‌فیلتر». نسخهٔ ۱ مقدار را به enum تبدیل می‌کند و
+    /// «all» را نمی‌شناسد (۴۰۰ می‌داد)؛ پس همان‌جا به null تبدیل می‌شود.
+    /// </summary>
+    private static string? StatusFilter(string? status)
+        => string.IsNullOrWhiteSpace(status) || status.Equals("all", StringComparison.OrdinalIgnoreCase)
+            ? null
+            : status;
+
+    /// <summary>خطایِ مشترکِ «نشست داریم ولی نسخهٔ ۱ جواب نداد».</summary>
+    private void MarkUnauthorized(string what)
+        => LastError = _v1.LastStatus is 401 or 403
+            ? "نشستِ شما معتبر نیست؛ لطفاً دوباره وارد شوید."
+            : $"دریافتِ {what} از سرور ممکن نشد.";
 
     /* ============================== داشبورد ============================== */
 
     public Task<AdminOverviewDto> GetAdminOverviewAsync() => _legacy.GetAdminOverviewAsync();
-    public Task<CustomerOverviewDto> GetCustomerOverviewAsync() => _legacy.GetCustomerOverviewAsync();
+    public async Task<CustomerOverviewDto> GetCustomerOverviewAsync()
+    {
+        var o = await _v1.GetAsync<V1CustomerOverview>("api/v1/account/overview");
+        if (o is null) return await _legacy.GetCustomerOverviewAsync();
+
+        return new CustomerOverviewDto(
+            o.OrderCount, o.ActiveLicenses, o.ExpiringLicenses, o.OpenTickets,
+            o.TotalSpentToman, o.AvailableDownloads, o.OutstandingInvoicesToman,
+            o.RecentOrders.Select(ToOrder).ToList(),
+            o.ExpiringLicensesList.Select(ToLicense).ToList(),
+            o.SpendSeries.Select(p => new RevenuePointDto(p.Label, p.TotalToman)).ToList());
+    }
 
     public Task<Paged<CustomerDto>> GetCustomersAsync(int page = 1, int pageSize = 10, string? search = null)
         => _legacy.GetCustomersAsync(page, pageSize, search);
@@ -348,8 +533,30 @@ public sealed class StoreApiRouter : IStoreApi
 
     /* ============================== اعلان‌ها ============================= */
 
-    public Task<IReadOnlyList<NotificationDto>> GetNotificationsAsync() => _legacy.GetNotificationsAsync();
-    public Task MarkNotificationReadAsync(string id) => _legacy.MarkNotificationReadAsync(id);
+    public async Task<IReadOnlyList<NotificationDto>> GetNotificationsAsync()
+    {
+        var result = await _v1.GetAsync<V1Paged<V1Notification>>("api/v1/notifications?pageSize=50");
+        if (result is null)
+        {
+            if (CanFallBack) return await _legacy.GetNotificationsAsync();
+            MarkUnauthorized("اعلان‌ها");
+            return Array.Empty<NotificationDto>();
+        }
+
+        return result.Items.Select(n => new NotificationDto(
+            n.Id.ToString(), n.UserId.ToString(), n.Title, n.Body,
+            n.Kind, n.IsRead, n.CreatedAt, n.Link)).ToList();
+    }
+
+    public async Task MarkNotificationReadAsync(string id)
+    {
+        if (!Guid.TryParse(id, out var guid))
+        {
+            await _legacy.MarkNotificationReadAsync(id);
+            return;
+        }
+        await _v1.SendAsync("POST", $"api/v1/notifications/{guid}/read");
+    }
 
     /* =============================== محتوا ============================== */
 
@@ -357,7 +564,12 @@ public sealed class StoreApiRouter : IStoreApi
     {
         var url = "api/v1/articles" + V1Query.Of(("page", page), ("pageSize", pageSize));
         var result = await _v1.GetAsync<V1Paged<V1Article>>(url);
-        if (result is null) return await _legacy.GetArticlesAsync(page, pageSize, publishedOnly);
+        if (result is null)
+        {
+            if (CanFallBack) return await _legacy.GetArticlesAsync(page, pageSize, publishedOnly);
+            MarkUnauthorized("مقاله‌ها");
+            return Paged<ArticleDto>.Empty(pageSize);
+        }
 
         return new Paged<ArticleDto>(
             result.Items.Select(ToArticle).ToList(),
@@ -441,6 +653,52 @@ public sealed class StoreApiRouter : IStoreApi
             i.AccentColor, i.UnitPriceToman, i.LineTotalToman)).ToList(),
         c.ItemCount, c.SubtotalToman, c.DiscountToman, c.TaxToman, c.TotalToman,
         c.DiscountCode, c.Currency);
+
+    /// <summary>خطایِ آخرین عملیات (مثلاً رمزِ فعلیِ نادرست).</summary>
+    public string? LastError { get; private set; }
+
+
+    private static PagedMeta Meta(V1PageMeta m) =>
+        new(m.Page, m.PageSize, m.TotalCount, m.TotalPages);
+
+    private static UserDto ToUser(V1User u) => new(
+        u.Id.ToString(), u.Email, u.FullName, u.Role,
+        u.Company, u.Phone, u.Country, u.CreatedAt, u.LastLoginAt);
+
+    private static LicenseDto ToLicense(V1License l) => new(
+        l.Id.ToString(), l.LicenseKey, l.UserId.ToString(), l.UserName, l.UserEmail,
+        l.ProductId.ToString(), l.ProductName, l.ProductSlug, l.PlanName,
+        l.Seats, l.ActivationsUsed, l.Status, l.IssuedAt, l.ExpiresAt);
+
+    private static InvoiceDto ToInvoice(V1Invoice i) => new(
+        i.Id.ToString(), i.InvoiceNumber, i.OrderId.ToString(), i.Status,
+        i.IssuedAt, i.DueAt, i.TotalToman, i.TaxToman, null);
+
+    private static DownloadDto ToDownload(V1Download d) => new(
+        d.Id.ToString(), d.ProductId.ToString(), d.ProductName, d.ProductSlug,
+        d.VersionId?.ToString(), d.Version, d.Kind, d.FileName, d.SizeMb,
+        d.DownloadedAt, d.RequiresLicense);
+
+    private static TicketDto ToTicket(V1Ticket t) => ToTicketSummary(t);
+
+    private static TicketDto ToTicketSummary(V1TicketDetail t) => new(
+        t.Id.ToString(), t.Reference, t.UserId.ToString(), t.UserName, t.ProductName,
+        t.Subject, t.Category, t.Priority, t.Status, t.Environment,
+        t.CreatedAt, t.UpdatedAt, t.Messages.Count);
+
+    private static TicketDto ToTicketSummary(V1Ticket t) => new(
+        t.Id.ToString(), t.Reference, t.UserId.ToString(), t.UserName, t.ProductName,
+        t.Subject, t.Category, t.Priority, t.Status, t.Environment,
+        t.CreatedAt, t.UpdatedAt, t.MessageCount);
+
+    private static TicketDetailDto ToTicketDetail(V1TicketDetail t) => new(
+        t.Id.ToString(), t.Reference, t.UserId.ToString(), t.UserName,
+        t.ProductId?.ToString(), t.ProductName,
+        t.Subject, t.Category, t.Priority, t.Status, t.Environment,
+        t.CreatedAt, t.UpdatedAt,
+        t.Messages.Select(m => new TicketMessageDto(
+            m.Id.ToString(), m.TicketId.ToString(), m.AuthorName, m.IsStaff,
+            m.Body, m.CreatedAt)).ToList());
 
     private static OrderDto ToOrder(V1Order o) => new(
         o.Id.ToString(), o.OrderNumber, o.UserId.ToString(), o.CustomerName, o.CustomerEmail,

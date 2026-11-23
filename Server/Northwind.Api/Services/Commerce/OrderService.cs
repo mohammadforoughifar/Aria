@@ -21,7 +21,7 @@ public interface IOrderService
     /// </summary>
     Task<CheckoutResultViewModel> CheckoutAsync(CheckoutInput input, Guid? userId, CancellationToken ct = default);
 
-    Task<PagedViewModel<OrderViewModel>> ListMineAsync(Guid userId, ListQuery query, CancellationToken ct = default);
+    Task<PagedViewModel<OrderViewModel>> ListMineAsync(Guid userId, ListQuery query, OrderStatus? status = null, CancellationToken ct = default);
     Task<OrderViewModel> GetAsync(Guid id, Guid userId, bool isAdmin, CancellationToken ct = default);
 
     Task<PagedViewModel<OrderViewModel>> AdminListAsync(ListQuery query, OrderStatus? status, CancellationToken ct = default);
@@ -247,16 +247,26 @@ public sealed class OrderService : IOrderService
         }
     }
 
-    public async Task<PagedViewModel<OrderViewModel>> ListMineAsync(Guid userId, ListQuery query, CancellationToken ct = default)
+    public async Task<PagedViewModel<OrderViewModel>> ListMineAsync(Guid userId, ListQuery query,
+        OrderStatus? status = null, CancellationToken ct = default)
     {
         var q = _db.Orders.AsNoTracking()
             .Include(o => o.Items)
             .Include(o => o.Payment)
             .Include(o => o.Invoice)
-            .Where(o => o.UserId == userId)
-            .OrderByDescending(o => o.PlacedAt);
+            .Where(o => o.UserId == userId);
 
-        return await q.ToPagedAsync(query, o => o.ToViewModel(), ct);
+        if (status is not null) q = q.Where(o => o.Status == status);
+
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var s = query.Search.Trim();
+            q = q.Where(o => EF.Functions.Like(o.OrderNumber, $"%{s}%")
+                          || EF.Functions.Like(o.BillingName ?? "", $"%{s}%"));
+        }
+
+        return await q.OrderByDescending(o => o.PlacedAt)
+                      .ToPagedAsync(query, o => o.ToViewModel(), ct);
     }
 
     public async Task<OrderViewModel> GetAsync(Guid id, Guid userId, bool isAdmin, CancellationToken ct = default)

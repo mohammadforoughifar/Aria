@@ -10,6 +10,8 @@ namespace Northwind.Client.Services;
 
 public sealed class MockStoreApi : IStoreApi
 {
+    public string? LastError => null;
+
     private readonly StoreState _s;
 
     public MockStoreApi(StoreState state) => _s = state;

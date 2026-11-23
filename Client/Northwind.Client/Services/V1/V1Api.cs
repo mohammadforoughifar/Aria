@@ -44,8 +44,20 @@ public interface IV1Api
     /// <summary>کلیدِ سبد برایِ کاربرِ مهمان؛ با احرازِ هویت لازم نیست.</summary>
     string SessionKey { get; set; }
 
-    /// <summary>توکنِ دسترسی (نشستِ نسخهٔ ۱). تا موجِ بعدی خالی است.</summary>
+    /// <summary>توکنِ دسترسی (نشستِ نسخهٔ ۱).</summary>
     string? AccessToken { get; set; }
+
+    /// <summary>
+    /// کدِ وضعیتِ آخرین پاسخِ HTTP (۰ = ارتباط برقرار نشد). صفحه‌ها و روترِ API
+    /// با این مقدار «۴۰۱» را از «سرور خواب است» تفکیک می‌کنند.
+    /// </summary>
+    int LastStatus { get; }
+
+    /// <summary>
+    /// اعلامِ اینکه بازیابیِ نشست تمام شد. تا این لحظه هیچ درخواستی بیرون نمی‌رود،
+    /// چون ممکن است توکن هنوز از localStorage خوانده نشده باشد.
+    /// </summary>
+    void MarkSessionResolved();
 }
 
 public sealed class V1Api : IV1Api
@@ -63,6 +75,32 @@ public sealed class V1Api : IV1Api
 
     public string SessionKey { get; set; } = "demo";
     public string? AccessToken { get; set; }
+
+    public int LastStatus { get; private set; }
+
+    // ── دروازهٔ نشست ────────────────────────────────────────────────────────
+    // مشکلِ واقعی: با بارگذاریِ کاملِ صفحه، مؤلفه‌ها زودتر از خواندنِ توکن از
+    // localStorage درخواست می‌فرستادند → ۴۰۱ → و روتر به API قدیمی می‌افتاد که
+    // دادهٔ کاربرانِ دیگر را برمی‌گرداند. این دروازه همهٔ درخواست‌هایِ نسخهٔ ۱ را
+    // تا پایانِ بازیابیِ نشست نگه می‌دارد؛ یک‌جا، برایِ همهٔ صفحه‌ها.
+    private readonly TaskCompletionSource _sessionReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private volatile bool _sessionResolved;
+
+    public void MarkSessionResolved()
+    {
+        _sessionResolved = true;
+        _sessionReady.TrySetResult();
+    }
+
+    private async Task WaitForSessionAsync(CancellationToken ct)
+    {
+        if (_sessionResolved) return;
+
+        using var gate = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        gate.CancelAfter(TimeSpan.FromSeconds(8)); // اگر بازیابی گیر کرد، صفحه قفل نشود
+        try { await _sessionReady.Task.WaitAsync(gate.Token); }
+        catch (OperationCanceledException) { /* با انقضا رد می‌شویم؛ سرور خودش ۴۰۱ می‌دهد */ }
+    }
 
     /* ------------------------------ خواندن ------------------------------ */
 
@@ -158,6 +196,8 @@ public sealed class V1Api : IV1Api
 
     private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage req, CancellationToken ct)
     {
+        await WaitForSessionAsync(ct);
+
         if (!string.IsNullOrWhiteSpace(AccessToken))
             req.Headers.TryAddWithoutValidation("Authorization", "Bearer " + AccessToken);
 
@@ -165,7 +205,17 @@ public sealed class V1Api : IV1Api
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         cts.CancelAfter(Timeout);
-        return await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+        try
+        {
+            var res = await _http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+            LastStatus = (int)res.StatusCode;
+            return res;
+        }
+        catch
+        {
+            LastStatus = 0; // نه پاسخِ HTTP — یعنی ارتباط برقرار نشد
+            throw;
+        }
     }
 }
 

@@ -37,8 +37,9 @@ public sealed class TicketsController : ControllerBase
     }
 
     [HttpGet]
-    public Task<PagedViewModel<TicketViewModel>> Mine([FromQuery] ListQuery query, CancellationToken ct)
-        => _tickets.ListMineAsync(_current.RequireId(), query, ct);
+    public Task<PagedViewModel<TicketViewModel>> Mine(
+        [FromQuery] ListQuery query, [FromQuery] TicketStatus? status, CancellationToken ct)
+        => _tickets.ListMineAsync(_current.RequireId(), query, status, ct);
 
     [HttpGet("{id:guid}")]
     public Task<TicketDetailViewModel> Get(Guid id, CancellationToken ct)

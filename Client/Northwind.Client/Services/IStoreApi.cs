@@ -32,6 +32,12 @@ public sealed record CheckoutInput(
 
 public interface IStoreApi
 {
+    /// <summary>
+    /// پیامِ فارسیِ آخرین خطایِ عملیات (از خودِ سرور). صفحه‌ها همین را نشان
+    /// می‌دهند تا «رمز اشتباه است» و «سرور در دسترس نیست» قاطی نشوند.
+    /// </summary>
+    string? LastError { get; }
+
     /* ------------------------------ Settings ----------------------------- */
     Task<SiteSettingsDto> GetSettingsAsync();
     Task<SiteSettingsDto> UpdateSettingsAsync(SiteSettingsDto settings);

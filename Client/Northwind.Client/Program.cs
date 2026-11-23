@@ -33,7 +33,6 @@ builder.Services.AddScoped(sp =>
    برای بازگشت به دادهٔ ساختگیِ درون‌حافظه‌ای (بدون نیاز به سرور):
        builder.Services.AddSingleton(_ => MockData.Build());
        builder.Services.AddScoped<IStoreApi, MockStoreApi>();                    */
-builder.Services.AddScoped<IAuthApi, AuthApi>();
 builder.Services.AddSingleton<ApiHealth>();
 // داده‌هایِ کم‌تغییر (تنظیمات، دسته‌بندی، نظرات، پرسش‌ها) یک‌بار گرفته می‌شوند
 builder.Services.AddSingleton<ApiCache>();
