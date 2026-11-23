@@ -37,7 +37,7 @@ public sealed record CategoryDto(string Id, string Name, string Slug, string? De
 
 public sealed record PlanDto(
     string Id, string Name, PlanTier Tier, BillingType BillingType,
-    int PriceToman, int Seats, string? Description, bool IsPopular,
+    decimal PriceToman, int Seats, string? Description, bool IsPopular,
     int LicenseMonths = 12);
 
 public sealed record ProductVersionDto(
@@ -50,13 +50,13 @@ public sealed record ReviewDto(
 
 public sealed record ProductListItemDto(
     string Id, string Slug, string Name, string Tagline, ProductType Type,
-    string Platform, string Version, int BasePriceToman, decimal RatingAvg, int RatingCount,
+    string Platform, string Version, decimal BasePriceToman, decimal RatingAvg, int RatingCount,
     int Popularity, string? HeroImage, string AccentColor, bool IsFeatured, bool IsActive,
     DateTime CreatedAt, string? CategoryName, string? CategorySlug, int PlanCount);
 
 public sealed record ProductDetailDto(
     string Id, string Slug, string Name, string Tagline, string Description,
-    ProductType Type, string Platform, string Version, int BasePriceToman,
+    ProductType Type, string Platform, string Version, decimal BasePriceToman,
     decimal RatingAvg, int RatingCount, int Popularity, string AccentColor,
     string? HeroImage, bool IsActive,
     bool IsFeatured, int TrialDays, DateTime CreatedAt,
@@ -71,31 +71,31 @@ public sealed record ProductDetailDto(
 public sealed record CartItemDto(
     string Id, string PlanId, int Quantity, string ProductId, string ProductName,
     string ProductSlug, string PlanName, PlanTier Tier, BillingType BillingType,
-    string AccentColor, int UnitPriceToman, int LineTotalToman);
+    string AccentColor, decimal UnitPriceToman, decimal LineTotalToman);
 
 public sealed record CartDto(
     string Id, IReadOnlyList<CartItemDto> Items, int ItemCount,
-    int SubtotalToman, int DiscountToman, int TaxToman, int TotalToman,
+    decimal SubtotalToman, decimal DiscountToman, decimal TaxToman, decimal TotalToman,
     string? DiscountCode, string Currency);
 
 public sealed record OrderItemDto(
     string Id, string ProductId, string PlanId, string ProductName, string PlanName,
-    BillingType BillingType, int UnitPriceToman, int Quantity, int LineTotalToman);
+    BillingType BillingType, decimal UnitPriceToman, int Quantity, decimal LineTotalToman);
 
 public sealed record OrderDto(
     string Id, string OrderNumber, string UserId, string? CustomerName, string? CustomerEmail,
-    string? CustomerCompany, OrderStatus Status, int SubtotalToman, int DiscountToman,
-    int TaxToman, int TotalToman, string Currency, string? DiscountCode, DateTime PlacedAt,
+    string? CustomerCompany, OrderStatus Status, decimal SubtotalToman, decimal DiscountToman,
+    decimal TaxToman, decimal TotalToman, string Currency, string? DiscountCode, DateTime PlacedAt,
     string? BillingName, string? BillingCompany, string? BillingEmail, string? BillingCountry,
     string? Notes, IReadOnlyList<OrderItemDto> Items, PaymentDto? Payment, InvoiceDto? Invoice);
 
 public sealed record PaymentDto(
-    string Id, string OrderId, string Provider, string Method, int AmountToman,
+    string Id, string OrderId, string Provider, string Method, decimal AmountToman,
     PaymentStatus Status, string? TransactionRef, DateTime? PaidAt);
 
 public sealed record InvoiceDto(
     string Id, string InvoiceNumber, string OrderId, InvoiceStatus Status,
-    DateTime IssuedAt, DateTime? DueAt, int TotalToman, int TaxToman, OrderDto? Order);
+    DateTime IssuedAt, DateTime? DueAt, decimal TotalToman, decimal TaxToman, OrderDto? Order);
 
 public sealed record LicenseDto(
     string Id, string LicenseKey, string UserId, string? UserName, string? UserEmail,
@@ -140,7 +140,7 @@ public sealed record TicketDetailDto(
 public sealed record CustomerDto(
     string Id, string Email, string FullName, Role Role, string? Company, string? Phone,
     string? Country, DateTime CreatedAt, DateTime? LastLoginAt,
-    int OrderCount, int TotalSpentToman, int LicenseCount);
+    int OrderCount, decimal TotalSpentToman, int LicenseCount);
 
 public sealed record SiteSettingsDto(
     string SiteName, string SupportEmail, string SalesEmail, string SupportPhone,
@@ -150,13 +150,13 @@ public sealed record SiteSettingsDto(
 public sealed record TestimonialDto(string Id, string AuthorName, string AuthorRole, string Company, string Quote, int Rating);
 public sealed record FaqDto(string Id, string Question, string Answer);
 
-public sealed record RevenuePointDto(string Label, int TotalToman);
-public sealed record TopProductDto(string ProductId, string Name, string Slug, int UnitsSold, int RevenueToman, string AccentColor);
+public sealed record RevenuePointDto(string Label, decimal TotalToman);
+public sealed record TopProductDto(string ProductId, string Name, string Slug, int UnitsSold, decimal RevenueToman, string AccentColor);
 
 public sealed record AdminOverviewDto(
     int TotalProducts, int TotalCustomers, int OpenTickets, int PendingReviews,
     int ActiveLicenses, int ExpiringLicenses,
-    int RevenueThisMonthToman, int RevenueLastMonthToman,
+    decimal RevenueThisMonthToman, decimal RevenueLastMonthToman,
     IReadOnlyList<RevenuePointDto> RevenueSeries,
     IReadOnlyList<TopProductDto> TopProducts,
     IReadOnlyList<OrderDto> RecentOrders,
@@ -164,7 +164,7 @@ public sealed record AdminOverviewDto(
 
 public sealed record CustomerOverviewDto(
     int OrderCount, int ActiveLicenses, int ExpiringLicenses, int OpenTickets,
-    int TotalSpentToman, int AvailableDownloads, int OutstandingInvoicesToman,
+    decimal TotalSpentToman, int AvailableDownloads, decimal OutstandingInvoicesToman,
     IReadOnlyList<OrderDto> RecentOrders,
     IReadOnlyList<LicenseDto> ExpiringLicensesList,
     IReadOnlyList<RevenuePointDto> SpendSeries);
@@ -201,7 +201,7 @@ public sealed record ContactMessageDto(
 /// <summary>طرحِ قیمت با جزئیاتِ کامل برای صفحهٔ مقایسه.</summary>
 public sealed record PlanDetailDto(
     string Id, string ProductId, string Name, PlanTier Tier, BillingType BillingType,
-    int PriceToman, int Seats, string? Description, bool IsPopular,
+    decimal PriceToman, int Seats, string? Description, bool IsPopular,
     int LicenseMonths, IReadOnlyList<string> Features);
 
 /// <summary>ورودیِ تسویه‌حساب با فیلدهای فاکتورِ رسمی.</summary>

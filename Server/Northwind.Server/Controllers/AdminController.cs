@@ -280,7 +280,7 @@ public class AdminController : ControllerBase
             {
                 Id = dto.Id, Slug = dto.Slug, Name = dto.Name, Tagline = dto.Tagline,
                 Description = dto.Description, Type = dto.Type, Platform = dto.Platform,
-                Version = dto.Version, BasePriceToman = dto.BasePriceToman,
+                Version = dto.Version, BasePriceToman = LegacyMoney.ToLegacy(dto.BasePriceToman),
                 AccentColor = dto.AccentColor, HeroImage = dto.HeroImage,
                 IsFeatured = dto.IsFeatured, IsActive = dto.IsActive, TrialDays = dto.TrialDays,
                 CategoryId = dto.CategoryId, CreatedAt = DateTime.UtcNow,
@@ -290,7 +290,7 @@ public class AdminController : ControllerBase
                 Plans = dto.Plans.Select(p => new Plan
                 {
                     Id = p.Id, Name = p.Name, Tier = p.Tier, BillingType = p.BillingType,
-                    PriceToman = p.PriceToman, Seats = p.Seats, Description = p.Description,
+                    PriceToman = LegacyMoney.ToLegacy(p.PriceToman), Seats = p.Seats, Description = p.Description,
                     IsPopular = p.IsPopular,
                 }).ToList(),
             });
@@ -299,7 +299,7 @@ public class AdminController : ControllerBase
         {
             existing.Slug = dto.Slug; existing.Name = dto.Name; existing.Tagline = dto.Tagline;
             existing.Description = dto.Description; existing.Type = dto.Type; existing.Platform = dto.Platform;
-            existing.Version = dto.Version; existing.BasePriceToman = dto.BasePriceToman;
+            existing.Version = dto.Version; existing.BasePriceToman = LegacyMoney.ToLegacy(dto.BasePriceToman);
             existing.AccentColor = dto.AccentColor; existing.HeroImage = dto.HeroImage;
             existing.IsFeatured = dto.IsFeatured; existing.IsActive = dto.IsActive;
             existing.TrialDays = dto.TrialDays; existing.CategoryId = dto.CategoryId;
@@ -316,14 +316,14 @@ public class AdminController : ControllerBase
                     existing.Plans.Add(new Plan
                     {
                         Id = plan.Id, Name = plan.Name, Tier = plan.Tier, BillingType = plan.BillingType,
-                        PriceToman = plan.PriceToman, Seats = plan.Seats, Description = plan.Description,
+                        PriceToman = LegacyMoney.ToLegacy(plan.PriceToman), Seats = plan.Seats, Description = plan.Description,
                         IsPopular = plan.IsPopular,
                     });
                 }
                 else
                 {
                     target.Name = plan.Name; target.Tier = plan.Tier; target.BillingType = plan.BillingType;
-                    target.PriceToman = plan.PriceToman; target.Seats = plan.Seats;
+                    target.PriceToman = LegacyMoney.ToLegacy(plan.PriceToman); target.Seats = plan.Seats;
                     target.Description = plan.Description; target.IsPopular = plan.IsPopular;
                 }
             }

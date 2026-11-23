@@ -150,7 +150,7 @@ public sealed class MockStoreApi : IStoreApi
                 (d.ExpiresAt is null || d.ExpiresAt > DateTime.UtcNow));
             if (code is not null)
             {
-                discount = subtotal * code.PercentOff / 100;
+                discount = (int)(subtotal * code.PercentOff / 100);
                 applied = code.Code;
             }
         }

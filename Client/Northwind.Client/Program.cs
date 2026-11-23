@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Northwind.Client;
 using Northwind.Client.Services;
+using Northwind.Client.Services.V1;
 using Northwind.Client.Models;
 using System.Text.Json;
 
@@ -36,7 +37,16 @@ builder.Services.AddScoped<IAuthApi, AuthApi>();
 builder.Services.AddSingleton<ApiHealth>();
 // داده‌هایِ کم‌تغییر (تنظیمات، دسته‌بندی، نظرات، پرسش‌ها) یک‌بار گرفته می‌شوند
 builder.Services.AddSingleton<ApiCache>();
-builder.Services.AddScoped<IStoreApi, HttpStoreApi>();
+// کلاینتِ نسخهٔ ۱ + مسیریاب:
+//   HttpStoreApi قدیمی به‌عنوانِ «پشتوانه» تزریق می‌شود و StoreApiRouter هر
+//   فراخوانی را یا به /api/v1 می‌برد یا (اگر آن بخش هنوز مهاجرت نکرده) به
+//   همان مسیرِ قدیمی. صفحه‌ها هیچ تغییری نمی‌کنند.
+builder.Services.AddScoped<V1Api>();
+builder.Services.AddScoped<IV1Api>(sp => sp.GetRequiredService<V1Api>());
+builder.Services.AddScoped<HttpStoreApi>();
+builder.Services.AddScoped<IStoreApi>(sp => new StoreApiRouter(
+    sp.GetRequiredService<HttpStoreApi>(),
+    sp.GetRequiredService<IV1Api>()));
 
 /* ---------- وضعیتِ سمت کلاینت ---------- */
 builder.Services.AddScoped<JsInterop>();

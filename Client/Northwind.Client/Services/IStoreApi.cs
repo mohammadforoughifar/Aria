@@ -25,7 +25,10 @@ public sealed record CheckoutInput(
     string SessionKey, string? DiscountCode, string PaymentMethod,
     string? CardName, string? CardNumber,
     string BillingName, string? BillingCompany, string BillingEmail, string BillingCountry,
-    string? VatId, string? Notes);
+    string? VatId, string? Notes,
+    // فاکتورِ رسمی: خریدِ حقوقی یا حقیقی. پیش‌فرض همان رفتارِ قبلی است.
+    Northwind.Shared.Contracts.AccountType AccountType = Northwind.Shared.Contracts.AccountType.Individual,
+    string? EconomicCode = null, string? NationalId = null, string? CompanyName = null);
 
 public interface IStoreApi
 {

@@ -143,32 +143,57 @@ public sealed class CartState
         catch (Exception ex) { Console.WriteLine("[cart] " + ex.Message); }
     }
 
+    /// <summary>
+    /// آخرین پیامِ خطایِ سبد — همان چیزی که سرور گفته («این کدِ تخفیف منقضی شده
+    /// است»). صفحهٔ سبد همین را زیرِ فرم نشان می‌دهد تا کاربر بداند چه شد.
+    /// </summary>
+    public string? Error { get; private set; }
+
     public async Task RefreshAsync(string? discount = null)
     {
-        try { Cart = await _api.GetCartAsync(SessionKey, discount); }
-        catch (Exception ex) { Console.WriteLine("[cart] " + ex.Message); }
+        try
+        {
+            Cart = await _api.GetCartAsync(SessionKey, discount);
+            Error = null;
+        }
+        catch (V1.V1ApiException ex) { Error = ex.Message; }
+        catch (Exception ex) { Error = "سبد بارگیری نشد."; Console.WriteLine("[cart] " + ex.Message); }
         OnChange?.Invoke();
     }
 
-    private async Task Run(Func<Task<CartDto>> action)
+    /// <summary>اجرایِ یک تغییر رویِ سبد، با نگه‌داشتنِ پیامِ خطا برایِ نمایش.</summary>
+    private async Task<bool> Run(Func<Task<CartDto>> action)
     {
         IsBusy = true;
+        Error = null;
         OnChange?.Invoke();
-        try { Cart = await action(); }
-        catch (Exception ex) { Console.WriteLine("[cart] " + ex.Message); }
+        try
+        {
+            Cart = await action();
+            return true;
+        }
+        catch (V1.V1ApiException ex) { Error = ex.Message; return false; }
+        catch (Exception ex)
+        {
+            Error = "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.";
+            Console.WriteLine("[cart] " + ex.Message);
+            return false;
+        }
         finally { IsBusy = false; OnChange?.Invoke(); }
     }
 
-    public Task AddAsync(string planId, int quantity = 1)
+    public void ClearError() { Error = null; OnChange?.Invoke(); }
+
+    public Task<bool> AddAsync(string planId, int quantity = 1)
         => Run(() => _api.AddToCartAsync(SessionKey, planId, quantity));
 
-    public Task SetQuantityAsync(string itemId, int quantity)
+    public Task<bool> SetQuantityAsync(string itemId, int quantity)
         => Run(() => _api.UpdateCartItemAsync(SessionKey, itemId, quantity));
 
-    public Task RemoveAsync(string itemId)
+    public Task<bool> RemoveAsync(string itemId)
         => Run(() => _api.RemoveCartItemAsync(SessionKey, itemId));
 
-    public Task ApplyDiscountAsync(string code)
+    public Task<bool> ApplyDiscountAsync(string code)
         => Run(() => _api.ApplyDiscountAsync(SessionKey, code));
 
     public async Task ClearLocalAsync()

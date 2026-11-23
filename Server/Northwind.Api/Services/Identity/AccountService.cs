@@ -46,8 +46,34 @@ public sealed class AccountService : IAccountService
     {
         var email = input.Email.Trim().ToLowerInvariant();
 
-        if (await _db.Users.AnyAsync(u => u.Email.ToLower() == email, ct))
+        var existing = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email, ct);
+
+        if (existing is not null)
+        {
+            // حسابی که با خریدِ مهمان ساخته شده ولی هنوز کسی واردش نشده است،
+            // «بی‌صاحب» است. اگر همان ایمیل ثبت‌نام کند، همین حساب به او داده
+            // می‌شود تا سفارش‌ها، فاکتورها و لایسنس‌هایِ خریدِ مهمان از دست نرود.
+            var claimable = existing.Role == Role.Customer && existing.LastLoginAt is null;
+
+            if (claimable)
+            {
+                existing.FullName = input.FullName.Trim();
+                existing.PasswordHash = _hasher.Hash(input.Password);
+                existing.Phone = existing.Phone ?? input.Phone;
+                existing.Company = existing.Company ?? input.Company;
+                existing.Country = existing.Country ?? input.Country;
+                existing.AccountType = input.AccountType;
+                existing.EconomicCode = existing.EconomicCode ?? input.EconomicCode;
+                existing.NationalId = existing.NationalId ?? input.NationalId;
+
+                await _db.SaveChangesAsync(ct);
+
+                var (claimToken, claimExpires) = _tokens.Create(existing);
+                return new AuthResultViewModel(existing.ToViewModel(), claimToken, claimExpires);
+            }
+
             throw new ConflictException("این ایمیل قبلاً ثبت شده است. وارد شوید یا رمزتان را بازیابی کنید.", "email_taken");
+        }
 
         var user = new User
         {

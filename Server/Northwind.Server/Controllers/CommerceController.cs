@@ -114,10 +114,10 @@ public class CommerceController : ControllerBase
             OrderNumber = $"NW-1404-{1000 + count}",
             UserId = userId,
             Status = OrderStatus.Paid,                      // درگاهِ آزمایشی: موفق فرض می‌شود
-            SubtotalToman = cart.SubtotalToman,
-            DiscountToman = cart.DiscountToman,
-            TaxToman = cart.TaxToman,
-            TotalToman = cart.TotalToman,
+            SubtotalToman = LegacyMoney.ToLegacy(cart.SubtotalToman),
+            DiscountToman = LegacyMoney.ToLegacy(cart.DiscountToman),
+            TaxToman = LegacyMoney.ToLegacy(cart.TaxToman),
+            TotalToman = LegacyMoney.ToLegacy(cart.TotalToman),
             Currency = "IRT",
             DiscountCode = cart.DiscountCode,
             PlacedAt = DateTime.UtcNow,
@@ -132,12 +132,12 @@ public class CommerceController : ControllerBase
             Items = cart.Items.Select(i => new OrderItem
             {
                 ProductId = i.ProductId, PlanId = i.PlanId, ProductName = i.ProductName, PlanName = i.PlanName,
-                BillingType = i.BillingType, UnitPriceToman = i.UnitPriceToman,
-                Quantity = i.Quantity, LineTotalToman = i.LineTotalToman,
+                BillingType = i.BillingType, UnitPriceToman = LegacyMoney.ToLegacy(i.UnitPriceToman),
+                Quantity = i.Quantity, LineTotalToman = LegacyMoney.ToLegacy(i.LineTotalToman),
             }).ToList(),
             Payment = new Payment
             {
-                AmountToman = cart.TotalToman, Method = input.PaymentMethod,
+                AmountToman = LegacyMoney.ToLegacy(cart.TotalToman), Method = input.PaymentMethod,
                 Status = PaymentStatus.Succeeded, TransactionRef = $"TX-{Random.Shared.Next(100000, 999999)}",
                 PaidAt = DateTime.UtcNow,
             },
@@ -145,7 +145,7 @@ public class CommerceController : ControllerBase
             {
                 InvoiceNumber = $"INV-1404-{2000 + count}", Status = InvoiceStatus.Paid,
                 IssuedAt = DateTime.UtcNow, DueAt = DateTime.UtcNow.AddDays(30),
-                TotalToman = cart.TotalToman, TaxToman = cart.TaxToman,
+                TotalToman = LegacyMoney.ToLegacy(cart.TotalToman), TaxToman = LegacyMoney.ToLegacy(cart.TaxToman),
             },
         };
 

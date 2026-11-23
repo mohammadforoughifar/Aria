@@ -46,7 +46,12 @@ await p.goto(BASE + '/', { waitUntil: 'networkidle' });
 await p.waitForTimeout(4000);
 console.log('\n── اکوسیستم ──');
 console.log(`   تب‌ها: ${await p.locator('.eco-tab').count()}   کارت‌ها: ${await p.locator('.eco-card').count()}   رابط‌ها: ${await p.locator('.eco__wire').count()}`);
-console.log(`   سپیدار در صفحه: ${(await p.innerText('body')).includes('سپیدار') ? '❌' : 'ندارد ✅'}`);
+// صفحهٔ نخست حالا محصولاتِ ویژه را از API نسخهٔ ۱ می‌گیرد؛ پس وجودِ نامِ محصول
+// دیگر نشانهٔ باقی‌ماندنِ دادهٔ قدیمی نیست. جایِ آن، «کارتِ محصول دارد» و
+// «قیمتِ صفر نشان نمی‌دهد» بررسی می‌شود.
+const homeCards = await p.locator('.sw-card, .prod-card').count();
+const zeroPrices = await p.locator('.sw-card__price, .prod-card__price', { hasText: /^۰ تومان$/ }).count();
+console.log(`   محصول در صفحهٔ نخست: ${homeCards} کارت   قیمتِ صفر: ${zeroPrices === 0 ? 'هیچ ✅' : zeroPrices + ' ❌'}`);
 
 console.log(`\nخطاها: ${errs.length ? [...new Set(errs)].slice(0, 5).join(' | ') + ' ❌' : 'هیچ ✅'}`);
 console.log(`صفحه‌های مشکل‌دار: ${bad.length ? bad.join(' , ') + ' ❌' : 'هیچ ✅'}`);

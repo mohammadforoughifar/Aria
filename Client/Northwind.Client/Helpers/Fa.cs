@@ -28,18 +28,35 @@ public static class Fa
     public static string Num(decimal value) => DigitsOf(value.ToString("N0", System.Globalization.CultureInfo.InvariantCulture));
     public static string Num(int value) => Num((long)value);
 
-    /// <summary>مبلغ به «تومان» با ارقامِ فارسی: «۴۹٬۸۰۰٬۰۰۰ تومان»</summary>
-    public static string Money(int toman)
-        => DigitsOf(toman.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)) + " تومان";
+    /// <summary>
+    /// مبلغ به «تومان» با ارقامِ فارسی: «۴۹٬۸۰۰٬۰۰۰ تومان».
+    ///
+    /// مبالغ <c>decimal</c> هستند (تا میلیاردی جا داشته باشند). تومان در ایران
+    /// واحدِ بدونِ اعشار است، پس اعشار فقط وقتی نشان داده می‌شود که واقعاً باشد؛
+    /// در حالتِ عادی عددِ صحیح و تمیز می‌بینید، نه «۴۹٬۸۰۰٬۰۰۰٫۰۰».
+    /// </summary>
+    public static string Money(decimal toman)
+    {
+        var whole = Math.Round(toman, 2, MidpointRounding.AwayFromZero);
+        var text = whole == Math.Truncate(whole)
+            ? whole.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)
+            : whole.ToString("N2", System.Globalization.CultureInfo.InvariantCulture);
+        return DigitsOf(text) + " تومان";
+    }
+
+    public static string Money(int toman) => Money((decimal)toman);
 
     /// <summary>مبلغِ فشرده برای نمودارها و KPIها: «۴۹٫۸ میلیون تومان»</summary>
-    public static string MoneyCompact(int toman)
+    public static string MoneyCompact(decimal toman)
     {
-        if (toman >= 1_000_000_000) return $"{DigitsOf((toman / 1_000_000_000m).ToString("0.0"))} میلیارد تومان";
-        if (toman >= 1_000_000) return $"{DigitsOf((toman / 1_000_000m).ToString("0.0"))} میلیون تومان";
-        if (toman >= 1_000) return $"{DigitsOf((toman / 1_000m).ToString("0"))} هزار تومان";
+        var abs = Math.Abs(toman);
+        if (abs >= 1_000_000_000) return $"{DigitsOf((toman / 1_000_000_000m).ToString("0.#"))} میلیارد تومان";
+        if (abs >= 1_000_000) return $"{DigitsOf((toman / 1_000_000m).ToString("0.#"))} میلیون تومان";
+        if (abs >= 1_000) return $"{DigitsOf((toman / 1_000m).ToString("0"))} هزار تومان";
         return Money(toman);
     }
+
+    public static string MoneyCompact(int toman) => MoneyCompact((decimal)toman);
 
     public static string Date(DateTime? value) =>
         value is null ? "—" : $"{Num(Pc.GetDayOfMonth(value.Value))} {Months[Pc.GetMonth(value.Value)]} {Num(Pc.GetYear(value.Value))}";

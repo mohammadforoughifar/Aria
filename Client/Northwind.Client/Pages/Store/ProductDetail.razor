@@ -293,6 +293,7 @@ else
     private int rating = 5;
     private string reviewTitle = "";
     private string reviewBody = "";
+    private bool adding;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -307,12 +308,23 @@ else
         _ => "افزونه",
     };
 
+    /// <summary>
+    /// افزودن به سبد رویِ <c>POST /api/v1/cart/items</c>.
+    /// اگر سرور رد کند (طرحِ غیرفعال، پایانِ موجودی)، پیامِ خودِ سرور نشان داده
+    /// می‌شود و صفحه دست‌نخورده می‌ماند.
+    /// </summary>
     private async Task AddToCart(string planId)
     {
-        if (product is null) return;
+        if (product is null || adding) return;
+        adding = true;
         selectedPlanId = planId;
-        await Cart.AddAsync(planId);
-        Toast.Push("به سبد خرید اضافه شد", product.Name, ToastTone.Ok);
+
+        var ok = await Cart.AddAsync(planId);
+        adding = false;
+
+        Toast.Push(ok ? "به سبد خرید اضافه شد" : "به سبد اضافه نشد",
+                   ok ? $"{product.Name} — {Cart.Count} مورد در سبد" : Cart.Error,
+                   ok ? ToastTone.Ok : ToastTone.Warn);
     }
 
     private void ToggleCompare()

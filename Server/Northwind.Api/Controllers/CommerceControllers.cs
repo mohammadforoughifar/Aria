@@ -87,13 +87,19 @@ public sealed class OrdersController : ControllerBase
         _current = current;
     }
 
-    /// <summary>تسویه‌حساب — سبد به سفارش، پرداخت، فاکتور و لایسنس تبدیل می‌شود.</summary>
+    /// <summary>
+    /// تسویه‌حساب — سبد به سفارش، پرداخت، فاکتور و لایسنس تبدیل می‌شود.
+    /// برایِ کاربرِ واردشده با توکن کار می‌کند و برایِ مهمان با
+    /// <c>sessionKey</c>؛ در حالتِ مهمان، سفارش به حسابی با ایمیلِ صورتحساب
+    /// وصل می‌شود (ساخته می‌شود اگر نباشد).
+    /// </summary>
     [HttpPost("checkout")]
+    [AllowAnonymous]
     [ProducesResponseType<CheckoutResultViewModel>(StatusCodes.Status201Created)]
     [ProducesResponseType<ApiErrorViewModel>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult<CheckoutResultViewModel>> Checkout([FromBody] CheckoutInput input, CancellationToken ct)
     {
-        var result = await _orders.CheckoutAsync(input, _current.RequireId(), ct);
+        var result = await _orders.CheckoutAsync(input, _current.Id, ct);
         return Created($"/api/v1/orders/{result.Order.Id}", result);
     }
 

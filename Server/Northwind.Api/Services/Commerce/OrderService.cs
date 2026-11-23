@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Northwind.Api.Mapping;
 using Northwind.Api.Services.Common;
+using Northwind.Api.Services.Security;
+using Northwind.Domain.Entities.Identity;
 using Northwind.Api.ViewModels.Commerce;
 using Northwind.Api.ViewModels.Common;
 using Northwind.Domain.Entities.Commerce;
@@ -13,7 +15,11 @@ namespace Northwind.Api.Services.Commerce;
 public interface IOrderService
 {
     /// <summary>تسویه‌حساب: سبد → سفارش + پرداخت + فاکتور + لایسنس.</summary>
-    Task<CheckoutResultViewModel> CheckoutAsync(CheckoutInput input, Guid userId, CancellationToken ct = default);
+    /// <summary>
+    /// تسویه‌حساب. <paramref name="userId"/> تهی یعنی «خریدِ مهمان»: سفارش به
+    /// حسابی با ایمیلِ صورتحساب وصل می‌شود و اگر چنین حسابی نباشد ساخته می‌شود.
+    /// </summary>
+    Task<CheckoutResultViewModel> CheckoutAsync(CheckoutInput input, Guid? userId, CancellationToken ct = default);
 
     Task<PagedViewModel<OrderViewModel>> ListMineAsync(Guid userId, ListQuery query, CancellationToken ct = default);
     Task<OrderViewModel> GetAsync(Guid id, Guid userId, bool isAdmin, CancellationToken ct = default);
@@ -28,20 +34,63 @@ public interface IOrderService
 public sealed class OrderService : IOrderService
 {
     private readonly NorthwindDbContext _db;
+    private readonly IPasswordHasher _hasher;
 
-    public OrderService(NorthwindDbContext db) => _db = db;
-
-    public async Task<CheckoutResultViewModel> CheckoutAsync(CheckoutInput input, Guid userId, CancellationToken ct = default)
+    public OrderService(NorthwindDbContext db, IPasswordHasher hasher)
     {
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct)
-            ?? throw new NotFoundException("کاربر", userId);
+        _db = db;
+        _hasher = hasher;
+    }
+
+    /// <summary>
+    /// خریدار را مشخص می‌کند.
+    ///
+    /// اگر کاربر وارد شده باشد، همان است. اگر نه (خریدِ مهمان)، حسابِ موجود با
+    /// ایمیلِ صورتحساب پیدا می‌شود و اگر نبود یک حسابِ مشتری ساخته می‌شود.
+    /// چرا حساب بسازیم؟ چون سفارش، فاکتور و لایسنس باید صاحب داشته باشند و
+    /// کاربر بعداً با همین ایمیل آن‌ها را در پنل ببیند. رمزِ چنین حسابی تصادفی
+    /// است، پس تا وقتی خودش رمز تعیین نکند کسی نمی‌تواند با آن وارد شود.
+    /// </summary>
+    private async Task<User> ResolveBuyerAsync(CheckoutInput input, Guid? userId, CancellationToken ct)
+    {
+        if (userId is { } id && id != Guid.Empty)
+            return await _db.Users.FirstOrDefaultAsync(u => u.Id == id, ct)
+                   ?? throw new NotFoundException("کاربر", id);
+
+        var email = input.BillingEmail.Trim().ToLowerInvariant();
+
+        var existing = await _db.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == email, ct);
+        if (existing is not null) return existing;
+
+        var buyer = new User
+        {
+            Email = email,
+            FullName = string.IsNullOrWhiteSpace(input.BillingName) ? email : input.BillingName.Trim(),
+            PasswordHash = _hasher.Hash(Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N")),
+            Role = Role.Customer,
+            AccountType = input.AccountType,
+            Company = input.BillingCompany ?? input.CompanyName,
+            Country = input.BillingCountry,
+            EconomicCode = input.EconomicCode,
+            NationalId = input.NationalId
+        };
+
+        _db.Users.Add(buyer);
+        return buyer;
+    }
+
+    public async Task<CheckoutResultViewModel> CheckoutAsync(CheckoutInput input, Guid? userId, CancellationToken ct = default)
+    {
+        var user = await ResolveBuyerAsync(input, userId, ct);
 
         if (user.Locked)
             throw new ForbiddenException("حسابِ شما قفل است.");
 
+        var buyerId = user.Id;
+
         var cartItems = await _db.CartItems
             .Include(c => c.Plan).ThenInclude(p => p!.Product)
-            .Where(c => c.UserId == userId || c.SessionKey == input.SessionKey)
+            .Where(c => c.UserId == buyerId || c.SessionKey == input.SessionKey)
             .ToListAsync(ct);
 
         if (cartItems.Count == 0)
@@ -92,7 +141,7 @@ public sealed class OrderService : IOrderService
             var order = new Order
             {
                 OrderNumber = await NextOrderNumberAsync(ct),
-                UserId = userId,
+                UserId = buyerId,
                 Status = OrderStatus.Paid,
                 SubtotalToman = subtotal,
                 DiscountToman = discountToman,
@@ -156,7 +205,7 @@ public sealed class OrderService : IOrderService
                     licenses.Add(new License
                     {
                         LicenseKey = await NextLicenseKeyAsync(ct),
-                        UserId = userId,
+                        UserId = buyerId,
                         ProductId = line.Product.Id,
                         PlanId = line.Plan.Id,
                         Seats = line.Plan.Seats,
@@ -175,7 +224,7 @@ public sealed class OrderService : IOrderService
 
             _db.Notifications.Add(new Notification
             {
-                UserId = userId,
+                UserId = buyerId,
                 Title = "سفارشِ شما ثبت شد",
                 Body = $"سفارش {order.OrderNumber} با موفقیت پرداخت شد و لایسنس‌ها صادر شدند.",
                 Kind = "success",
