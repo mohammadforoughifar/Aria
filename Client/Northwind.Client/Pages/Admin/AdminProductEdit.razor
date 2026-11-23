@@ -1,0 +1,339 @@
+@page "/dashboard/admin/products/new"
+@page "/dashboard/admin/products/{id}"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>@(isNew ? "محصول جدید" : product?.Name ?? "ویرایش محصول") — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <div class="breadcrumb" style="margin-bottom:6px">
+            <a href="/dashboard/admin/products">محصولات</a>
+            <Icon Name="chevron-left" Size="13" />
+            <span>@(isNew ? "جدید" : "ویرایش")</span>
+        </div>
+        <h1 class="page-title">@(isNew ? "محصول جدید" : product?.Name)</h1>
+    </div>
+    <div class="row-2">
+        <a class="btn btn--ghost btn--sm" href="/dashboard/admin/products">انصراف</a>
+        <button class="btn btn--primary btn--sm" @onclick="Save" disabled="@busy">
+            @if (busy) { <span class="btn__spinner"></span> <span>در حال ذخیره…</span> }
+            else { <Icon Name="check" Size="15" /> <span>ذخیره</span> }
+        </button>
+    </div>
+</div>
+
+@if (product is null)
+{
+    <div class="stack-4">
+        <Skeleton Kind="card" /><Skeleton Kind="card" />
+    </div>
+}
+else
+{
+    <div class="grid-2-1">
+        <div class="stack-4">
+            <!-- ===== Basic ===== -->
+            <section class="card card--pad">
+                <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-4)">اطلاعاتِ پایه</h2>
+                <div class="stack-4">
+                    <div class="grid-2" style="gap:var(--sp-4)">
+                        <label class="field">
+                            <span class="field__label">نام محصول <span class="field__req">*</span></span>
+                            <input class="input" @bind="draft.Name" />
+                        </label>
+                        <label class="field">
+                            <span class="field__label">شناسه (slug) <span class="field__req">*</span></span>
+                            <input class="input input--ltr" style="text-align:left" @bind="draft.Slug" />
+                        </label>
+                    </div>
+
+                    <label class="field">
+                        <span class="field__label">شعارِ کوتاه</span>
+                        <input class="input" @bind="draft.Tagline" />
+                    </label>
+
+                    <label class="field">
+                        <span class="field__label">توضیحات</span>
+                        <textarea class="textarea" style="min-height:140px" @bind="draft.Description"></textarea>
+                        <span class="field__hint">با خطِ جدید می‌توانید پاراگراف‌بندی کنید.</span>
+                    </label>
+
+                    <div class="grid-2" style="gap:var(--sp-4)">
+                        <label class="field">
+                            <span class="field__label">دسته‌بندی</span>
+                            <select class="select" @bind="draft.CategoryId">
+                                @foreach (var c in categories)
+                                {
+                                    <option value="@c.Id">@c.Name</option>
+                                }
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span class="field__label">نوع</span>
+                            <select class="select" @bind="typeValue">
+                                <option value="Module">ماژول</option>
+                                <option value="DesktopApp">برنامهٔ دسکتاپ</option>
+                                <option value="AddOn">افزونه</option>
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span class="field__label">سکو</span>
+                            <input class="input" @bind="draft.Platform" />
+                        </label>
+                        <label class="field">
+                            <span class="field__label">نسخه</span>
+                            <input class="input input--ltr" style="text-align:left" @bind="draft.Version" />
+                        </label>
+                        <label class="field">
+                            <span class="field__label">قیمتِ پایه (دلار)</span>
+                            <input class="input input--ltr" style="text-align:left" type="number" @bind="basePriceDollars" />
+                        </label>
+                        <label class="field">
+                            <span class="field__label">روزهای آزمایشی</span>
+                            <input class="input input--ltr" style="text-align:left" type="number" @bind="draft.TrialDays" />
+                        </label>
+                    </div>
+
+                    <label class="field">
+                        <span class="field__label">رنگِ شاخص</span>
+                        <div class="row-2">
+                            <input type="color" @bind="draft.AccentColor" style="width:52px;height:42px;padding:2px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface)" />
+                            <input class="input input--ltr" style="text-align:left" @bind="draft.AccentColor" />
+                        </div>
+                    </label>
+
+                    <div class="row-4" style="flex-wrap:wrap">
+                        <label class="switch">
+                            <input type="checkbox" @bind="draft.IsFeatured" />
+                            <span class="switch__track"></span>
+                            <span class="small">محصولِ ویژه</span>
+                        </label>
+                        <label class="switch">
+                            <input type="checkbox" @bind="draft.IsActive" />
+                            <span class="switch__track"></span>
+                            <span class="small">فعال در فروشگاه</span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== Features ===== -->
+            <section class="card card--pad">
+                <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-2)">امکانات</h2>
+                <p class="tiny muted" style="margin-bottom:var(--sp-3)">هر خط یک مورد.</p>
+                <textarea class="textarea" style="min-height:150px" @bind="featuresText"></textarea>
+            </section>
+
+            <!-- ===== Requirements ===== -->
+            <section class="card card--pad">
+                <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-2)">نیازمندی‌های سیستم</h2>
+                <textarea class="textarea" style="min-height:110px" @bind="requirementsText"></textarea>
+            </section>
+        </div>
+
+        <!-- ===== Plans ===== -->
+        <aside class="stack-4">
+            <section class="card card--pad">
+                <div class="between" style="margin-bottom:var(--sp-3)">
+                    <span class="card__title">طرح‌های قیمت</span>
+                    <span class="tiny muted">@Helpers.Fa.Num(plans.Count) طرح</span>
+                </div>
+
+                <div class="stack-3">
+                    @foreach (var plan in plans)
+                    {
+                        <div class="card card--pad" style="box-shadow:none;background:var(--surface-sunk)">
+                            <div class="between">
+                                <span class="heavy" style="font-size:var(--fs-sm)">@plan.Name</span>
+                                <button class="icon-btn" style="width:28px;height:28px;color:var(--bad-600)" @onclick="() => plans.Remove(plan)">
+                                    <Icon Name="trash" Size="14" />
+                                </button>
+                            </div>
+                            <div class="num heavy" style="margin-top:4px">@Helpers.Fa.Money(plan.PriceToman)</div>
+                            <div class="row-2" style="margin-top:6px;flex-wrap:wrap">
+                                <StatusBadge Status="@plan.Tier.ToString()" Kind="tier" Small="true" />
+                                <StatusBadge Status="@plan.BillingType.ToString()" Kind="billing" Small="true" />
+                                <span class="tiny muted">@Helpers.Fa.Num(plan.Seats) صندلی</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="divider" style="margin-block:var(--sp-4)"></div>
+
+                <div class="stack-3">
+                    <span class="heavy" style="font-size:var(--fs-sm)">افزودنِ طرح</span>
+                    <input class="input" placeholder="نام طرح" @bind="newPlan.Name" />
+                    <div class="grid-2" style="gap:8px">
+                        <select class="select" @bind="newPlanTier">
+                            <option value="SingleUser">تک‌کاربره</option>
+                            <option value="MultiUser">چندکاربره</option>
+                            <option value="Enterprise">سازمانی</option>
+                        </select>
+                        <select class="select" @bind="newPlanBilling">
+                            <option value="OneTime">خرید دائمی</option>
+                            <option value="Annual">اشتراک سالانه</option>
+                        </select>
+                    </div>
+                    <div class="grid-2" style="gap:8px">
+                        <input class="input input--ltr" style="text-align:left" type="number" placeholder="قیمت (دلار)" @bind="newPlanPrice" />
+                        <input class="input input--ltr" style="text-align:left" type="number" placeholder="صندلی" @bind="newPlan.Seats" />
+                    </div>
+                    <button class="btn btn--soft btn--sm btn--block" @onclick="AddPlan">
+                        <Icon Name="plus" Size="14" /> افزودن
+                    </button>
+                </div>
+            </section>
+
+            <section class="card card--pad" style="background:var(--surface-sunk)">
+                <div class="row-2" style="margin-bottom:var(--sp-2)">
+                    <span style="color:var(--brand-600)"><Icon Name="info" Size="16" /></span>
+                    <span class="heavy">نکته</span>
+                </div>
+                <p class="small muted" style="line-height:var(--lh-relax)">
+                    تغییرِ قیمت روی لایسنس‌های صادرشده اثر ندارد؛ فقط خریدهای جدید با قیمتِ تازه محاسبه می‌شوند.
+                </p>
+            </section>
+        </aside>
+    </div>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+
+    private bool isNew => Id == "new" || string.IsNullOrEmpty(Id);
+    private ProductDetailDto? product;
+    private ProductEdit draft = new();
+    private List<PlanDto> plans = new();
+    private IReadOnlyList<CategoryDto> categories = Array.Empty<CategoryDto>();
+    private string featuresText = "";
+    private string requirementsText = "";
+    private string typeValue = "Module";
+    private decimal basePriceDollars;
+    private bool busy;
+
+    private PlanEdit newPlan = new() { Name = "", Seats = 1 };
+    private string newPlanTier = "SingleUser";
+    private string newPlanBilling = "OneTime";
+    private decimal newPlanPrice;
+
+    private sealed class ProductEdit
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Slug { get; set; } = "";
+        public string Tagline { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string CategoryId { get; set; } = "";
+        public string Platform { get; set; } = "ویندوز ۱۰/۱۱";
+        public string Version { get; set; } = "1.0.0";
+        public string AccentColor { get; set; } = "#4f46e5";
+        public int TrialDays { get; set; } = 30;
+        public bool IsFeatured { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    private sealed class PlanEdit
+    {
+        public string Name { get; set; } = "";
+        public int Seats { get; set; } = 1;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = await Api.GetCategoriesAsync(true);
+
+        if (isNew)
+        {
+            draft = new ProductEdit { CategoryId = categories.FirstOrDefault()?.Id ?? "" };
+            product = new ProductDetailDto(Guid.NewGuid().ToString(), "", "", "", "",
+                ProductType.Module, "ویندوز ۱۰/۱۱", "1.0.0", 0, 0, 0, 0, "#4f46e5", null, true,
+                false, 30, DateTime.UtcNow, categories.FirstOrDefault()?.Id ?? "", "", "",
+                Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>(), null,
+                Array.Empty<PlanDto>(), Array.Empty<ProductVersionDto>(), Array.Empty<ReviewDto>());
+        }
+        else
+        {
+            product = await Api.GetProductByIdAsync(Id);
+            if (product is null) return;
+
+            draft = new ProductEdit
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Slug = product.Slug,
+                Tagline = product.Tagline,
+                Description = product.Description,
+                CategoryId = product.CategoryId,
+                Platform = product.Platform,
+                Version = product.Version,
+                AccentColor = product.AccentColor,
+                TrialDays = product.TrialDays,
+                IsFeatured = product.IsFeatured,
+                IsActive = product.IsActive,
+            };
+            plans = product.Plans.ToList();
+            featuresText = string.Join('\n', product.Features);
+            requirementsText = string.Join('\n', product.SystemRequirements);
+            typeValue = product.Type.ToString();
+            basePriceDollars = product.BasePriceToman / 100m;
+        }
+    }
+
+    private void AddPlan()
+    {
+        if (string.IsNullOrWhiteSpace(newPlan.Name) || newPlanPrice <= 0) return;
+
+        plans.Add(new PlanDto(
+            $"{newPlan.Name}-{plans.Count}", newPlan.Name,
+            Enum.Parse<PlanTier>(newPlanTier), Enum.Parse<BillingType>(newPlanBilling),
+            (int)Math.Round(newPlanPrice * 100), newPlan.Seats, null, false));
+
+        newPlan = new PlanEdit { Seats = 1 };
+        newPlanPrice = 0;
+    }
+
+    private async Task Save()
+    {
+        if (product is null) return;
+        if (draft.Name.Trim().Length < 2 || draft.Slug.Trim().Length < 2)
+        {
+            Toast.Push("اطلاعات ناقص است", "نام و شناسهٔ محصول الزامی‌اند.", ToastTone.Warn);
+            return;
+        }
+
+        busy = true;
+        var category = categories.FirstOrDefault(c => c.Id == draft.CategoryId);
+
+        var updated = product with
+        {
+            Name = draft.Name.Trim(),
+            Slug = draft.Slug.Trim(),
+            Tagline = draft.Tagline,
+            Description = draft.Description,
+            CategoryId = draft.CategoryId,
+            CategoryName = category?.Name ?? product.CategoryName,
+            CategorySlug = category?.Slug ?? product.CategorySlug,
+            Platform = draft.Platform,
+            Version = draft.Version,
+            AccentColor = draft.AccentColor,
+            TrialDays = draft.TrialDays,
+            IsFeatured = draft.IsFeatured,
+            IsActive = draft.IsActive,
+            Type = Enum.Parse<ProductType>(typeValue),
+            BasePriceToman = (int)Math.Round(basePriceDollars * 100),
+            Features = featuresText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+            SystemRequirements = requirementsText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+            Plans = plans,
+        };
+
+        await Api.UpsertProductAsync(updated);
+        busy = false;
+
+        Toast.Push("تغییرات ذخیره شد", updated.Name, ToastTone.Ok);
+        Nav.NavigateTo("/dashboard/admin/products");
+    }
+}

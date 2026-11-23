@@ -1,0 +1,40 @@
+@typeparam TValue
+@using Northwind.Client.Models
+@* سگمنت‌کنترلِ کپسولی با نشانگرِ لغزان — جایگزینِ تب‌های سنتی *@
+<div class="seg @(Size == "sm" ? "seg--sm" : "")" role="tablist" style="--seg-n:@Items.Count; --seg-i:@ActiveIndex">
+    <span class="seg__pill"></span>
+    @foreach (var item in Items)
+    {
+        <button type="button" role="tab" class="seg__btn @(Equals(item.Value, Value) ? "is-active" : "")"
+                @onclick="() => Select(item.Value)">
+            @item.Label
+            @if (item.Count is not null)
+            {
+                <span class="seg__count">@Helpers.Fa.Num(item.Count.Value)</span>
+            }
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<SegItem<TValue>> Items { get; set; } = Array.Empty<SegItem<TValue>>();
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue?> ValueChanged { get; set; }
+    [Parameter] public string Size { get; set; } = "md";   // md | sm
+
+    private int ActiveIndex
+    {
+        get
+        {
+            for (var i = 0; i < Items.Count; i++)
+                if (Equals(Items[i].Value, Value)) return i;
+            return 0;
+        }
+    }
+
+    private async Task Select(TValue? value)
+    {
+        Value = value;
+        await ValueChanged.InvokeAsync(value);
+    }
+}

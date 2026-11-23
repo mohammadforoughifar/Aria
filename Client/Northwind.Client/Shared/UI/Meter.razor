@@ -1,0 +1,23 @@
+@* نوارِ پیشرفتِ باریک — ظرفیتِ فعال‌سازی، مصرفِ کد تخفیف و… *@
+<div class="meter" role="progressbar" aria-valuenow="@Value" aria-valuemin="0" aria-valuemax="@Max"
+     style="margin-top:5px">
+    <span class="meter__fill @ToneClass" style="width:@Width%"></span>
+</div>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    [Parameter] public int Max { get; set; } = 1;
+    [Parameter] public string Tone { get; set; } = "auto"; // auto|brand|ok|warn|bad
+
+    private double Width => Max <= 0 ? 0 : Math.Clamp(Value * 100d / Max, 0, 100);
+
+    private string ToneClass => Tone switch
+    {
+        "ok"   => "meter__fill--ok",
+        "warn" => "meter__fill--warn",
+        "bad"  => "meter__fill--bad",
+        _      => Max > 0 && Value >= Max ? "meter__fill--bad"
+                : Max > 0 && Width >= 75  ? "meter__fill--warn"
+                : "",
+    };
+}

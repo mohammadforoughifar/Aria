@@ -1,0 +1,176 @@
+@page "/dashboard/profile"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.AuthState Auth
+@inject Services.ToastService Toast
+
+<PageTitle>پروفایل — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">تنظیماتِ حساب</h1>
+        <p class="page-sub">اطلاعاتِ تماس، شرکت و امنیتِ حساب شما.</p>
+    </div>
+</div>
+
+<div class="grid-1-2">
+    <aside class="card card--pad" style="text-align:center">
+        <span class="avatar avatar--lg" style="width:76px;height:76px;font-size:22px;margin-inline:auto">
+            @Helpers.Fa.Initials(Auth.User?.FullName ?? "م")
+        </span>
+        <div class="heavy" style="margin-top:var(--sp-3);font-size:var(--fs-lg)">@Auth.User?.FullName</div>
+        <div class="small muted" style="direction:ltr">@Auth.User?.Email</div>
+        <div class="row-2" style="justify-content:center;margin-top:var(--sp-3);flex-wrap:wrap">
+            <span class="badge @(Auth.IsAdmin ? "badge--violet" : "badge--brand")">@(Auth.IsAdmin ? "مدیر سیستم" : "مشتری")</span>
+            @if (!string.IsNullOrWhiteSpace(Auth.User?.Company))
+            {
+                <span class="badge badge--neutral">@Auth.User?.Company</span>
+            }
+        </div>
+
+        <div class="divider" style="margin-block:var(--sp-4)"></div>
+
+        <div class="stack-2" style="text-align:right">
+            <div class="between small"><span class="muted">کشور</span><span>@(Auth.User?.Country ?? "—")</span></div>
+            <div class="between small"><span class="muted">تلفن</span><span class="num">@(Auth.User?.Phone ?? "—")</span></div>
+            <div class="between small"><span class="muted">تاریخ عضویت</span><span>@Helpers.Fa.Date(Auth.User?.CreatedAt)</span></div>
+            <div class="between small"><span class="muted">آخرین ورود</span><span>@Helpers.Fa.TimeAgo(Auth.User?.LastLoginAt)</span></div>
+        </div>
+    </aside>
+
+    <div class="stack-5">
+        <section class="card card--pad">
+            <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-4)">اطلاعاتِ شخصی</h2>
+            <div class="stack-4">
+                <div class="grid-2" style="gap:var(--sp-4)">
+                    <label class="field">
+                        <span class="field__label">نام و نام خانوادگی</span>
+                        <input class="input" @bind="fullName" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">ایمیل</span>
+                        <input class="input input--ltr" style="text-align:left" value="@Auth.User?.Email" disabled />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">شرکت</span>
+                        <input class="input" @bind="company" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">تلفن</span>
+                        <input class="input input--ltr" style="text-align:left" @bind="phone" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">کشور</span>
+                        <input class="input" @bind="country" />
+                    </label>
+                </div>
+                <div>
+                    <button class="btn btn--primary" @onclick="Save" disabled="@busy">
+                        @if (busy) { <span class="btn__spinner"></span> <span>در حال ذخیره…</span> }
+                        else { <span>ذخیره تغییرات</span> }
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="card card--pad">
+            <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-4)">تغییرِ رمز عبور</h2>
+            <div class="stack-4">
+                <label class="field">
+                    <span class="field__label">رمز عبورِ فعلی</span>
+                    <input class="input input--ltr" style="text-align:left" type="password" @bind="current" />
+                </label>
+                <div class="grid-2" style="gap:var(--sp-4)">
+                    <label class="field">
+                        <span class="field__label">رمز عبورِ جدید</span>
+                        <input class="input input--ltr" style="text-align:left" type="password" @bind="next" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">تکرارِ رمز جدید</span>
+                        <input class="input input--ltr" style="text-align:left" type="password" @bind="confirm" />
+                    </label>
+                </div>
+                <div>
+                    <button class="btn btn--secondary" @onclick="ChangePassword" disabled="@busy">به‌روزرسانیِ رمز عبور</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="card card--pad" style="border-color:var(--bad-200)">
+            <h2 style="font-size:var(--fs-md);color:var(--bad-700)">خروج از حساب</h2>
+            <p class="small muted" style="margin-top:6px;line-height:var(--lh-relax)">
+                با خروج، دسترسی به پورتال تا ورودِ بعدی غیرفعال می‌شود. داده‌های شما تغییری نمی‌کنند.
+            </p>
+            <button class="btn btn--danger btn--sm" style="margin-top:var(--sp-3)" @onclick="Logout">
+                <Icon Name="logout" Size="15" /> خروج
+            </button>
+        </section>
+    </div>
+</div>
+
+@code {
+    private string fullName = "";
+    private string company = "";
+    private string phone = "";
+    private string country = "";
+    private string current = "";
+    private string next = "";
+    private string confirm = "";
+    private bool busy;
+
+    [Inject] public NavigationManager Nav { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        if (Auth.User is { } u)
+        {
+            fullName = u.FullName;
+            company = u.Company ?? "";
+            phone = u.Phone ?? "";
+            country = u.Country ?? "";
+        }
+    }
+
+    private async Task Save()
+    {
+        if (fullName.Trim().Length < 2)
+        {
+            Toast.Push("نام معتبر نیست", "نام باید حداقل ۲ کاراکتر باشد.", ToastTone.Warn);
+            return;
+        }
+
+        busy = true;
+        var updated = await Api.UpdateProfileAsync(fullName.Trim(), company, phone, country);
+        await Auth.UpdateAsync(updated);
+        busy = false;
+        Toast.Push("تغییرات ذخیره شد", null, ToastTone.Ok);
+    }
+
+    private async Task ChangePassword()
+    {
+        if (next.Length < 8)
+        {
+            Toast.Push("رمز عبور کوتاه است", "حداقل ۸ کاراکتر لازم است.", ToastTone.Warn);
+            return;
+        }
+        if (next != confirm)
+        {
+            Toast.Push("عدم تطابق", "تکرارِ رمز عبور یکسان نیست.", ToastTone.Warn);
+            return;
+        }
+
+        busy = true;
+        var ok = await Api.ChangePasswordAsync(current, next);
+        busy = false;
+
+        current = next = confirm = "";
+        Toast.Push(ok ? "رمز عبور تغییر کرد" : "رمز عبورِ فعلی نادرست است", null,
+            ok ? ToastTone.Ok : ToastTone.Bad);
+    }
+
+    private async Task Logout()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/");
+    }
+}

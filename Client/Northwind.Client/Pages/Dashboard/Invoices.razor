@@ -1,0 +1,138 @@
+@page "/dashboard/invoices"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+
+<PageTitle>فاکتورها — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">فاکتورها</h1>
+        <p class="page-sub">بایگانیِ تمام فاکتورهای صادرشده برای حساب شما.</p>
+    </div>
+</div>
+
+<div class="table-wrap">
+    @if (paged is null)
+    {
+        <div style="padding:var(--sp-4)">
+            @for (var i = 0; i < 5; i++) { <Skeleton Kind="row" /> }
+        </div>
+    }
+    else if (paged.Items.Count == 0)
+    {
+        <EmptyState Icon="file" Title="فاکتوری صادر نشده" Text="پس از نخستین خرید، فاکتورِ رسمی اینجا قرار می‌گیرد." />
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>شمارهٔ فاکتور</th>
+                        <th>تاریخ صدور</th>
+                        <th>سررسید</th>
+                        <th>سفارش</th>
+                        <th>مبلغ</th>
+                        <th style="text-align:left">وضعیت</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var inv in paged.Items)
+                    {
+                        <tr>
+                            <td class="heavy num--lat">@inv.InvoiceNumber</td>
+                            <td class="small muted">@Helpers.Fa.Date(inv.IssuedAt)</td>
+                            <td class="small muted">@Helpers.Fa.Date(inv.DueAt)</td>
+                            <td class="small num--lat">@(inv.Order?.OrderNumber ?? "—")</td>
+                            <td class="num heavy">@Helpers.Fa.Money(inv.TotalToman)</td>
+                            <td style="text-align:left"><StatusBadge Status="@inv.Status.ToString()" Kind="invoice" Small="true" /></td>
+                            <td>
+                                <div class="table__actions">
+                                    <button class="btn btn--secondary btn--sm" @onclick="() => Open(inv)">
+                                        <Icon Name="eye" Size="14" /> مشاهده
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (paged is { Meta.TotalPages: > 1 })
+{
+    <Pager Meta="@paged.Meta" OnPage="Go" />
+}
+
+<Modal IsOpen="@(selected is not null)" Title="@("فاکتور " + selected?.InvoiceNumber)" Wide="true"
+       Subtitle="@(selected?.Order?.OrderNumber ?? "")" OnClose="@(() => selected = null)">
+    <ChildContent>
+        @if (selected is { } inv)
+        {
+            <div class="stack-5">
+                <div class="between">
+                    <div>
+                        <div class="heavy">@Helpers.Fa.Money(inv.TotalToman)</div>
+                        <div class="tiny muted">شامل @Helpers.Fa.Money(inv.TaxToman) مالیات</div>
+                    </div>
+                    <StatusBadge Status="@inv.Status.ToString()" Kind="invoice" />
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="kv">
+                    <div class="kv__item"><span class="kv__k">تاریخ صدور</span><span class="kv__v">@Helpers.Fa.Date(inv.IssuedAt)</span></div>
+                    <div class="kv__item"><span class="kv__k">سررسید</span><span class="kv__v">@Helpers.Fa.Date(inv.DueAt)</span></div>
+                    <div class="kv__item"><span class="kv__k">سفارش</span><span class="kv__v num--lat">@(inv.Order?.OrderNumber ?? "—")</span></div>
+                    <div class="kv__item"><span class="kv__k">صورتحساب به نام</span><span class="kv__v">@(inv.Order?.BillingName ?? "—")</span></div>
+                </div>
+
+                @if (inv.Order?.Items.Count > 0)
+                {
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead><tr><th>شرح</th><th>تعداد</th><th>جمع</th></tr></thead>
+                            <tbody>
+                                @foreach (var item in inv.Order.Items)
+                                {
+                                    <tr>
+                                        <td class="heavy">@item.ProductName <span class="muted" style="font-weight:400">— @item.PlanName</span></td>
+                                        <td class="num">@Helpers.Fa.Num(item.Quantity)</td>
+                                        <td class="num">@Helpers.Fa.Money(item.LineTotalToman)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        <button class="btn btn--secondary" @onclick="() => selected = null">بستن</button>
+        <button class="btn btn--primary" @onclick="Download"><Icon Name="download" Size="15" /> دانلود PDF</button>
+    </Footer>
+</Modal>
+
+@code {
+    private Paged<InvoiceDto>? paged;
+    private InvoiceDto? selected;
+    private int current = 1;
+
+    [Inject] public Services.ToastService Toast { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load() => paged = await Api.GetInvoicesAsync(current, 12);
+    private async Task Go(int p) { current = p; await Load(); }
+
+    private void Open(InvoiceDto inv) => selected = inv;
+
+    private void Download()
+    {
+        Toast.Push("دانلود آغاز شد", $"فاکتور {selected?.InvoiceNumber} آماده می‌شود.", ToastTone.Info);
+    }
+}

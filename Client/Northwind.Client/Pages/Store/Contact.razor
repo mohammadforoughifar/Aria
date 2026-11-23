@@ -1,0 +1,177 @@
+@page "/contact"
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+@inject Services.AuthState Auth
+
+@inject NavigationManager Nav
+
+<PageTitle>تماس با ما — فروغ آریا پارسیان</PageTitle>
+
+<div class="wrap" style="padding-block:var(--sp-9)">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">تماس با ما</h1>
+            <p class="page-sub">فرم را پر کنید؛ تیمِ مربوطه در کمتر از یک روزِ کاری پاسخ می‌دهد.</p>
+        </div>
+    </div>
+
+    <div class="grid-1-2">
+        <!-- ===== Info ===== -->
+        <aside class="stack-4">
+            <div class="card card--pad">
+                <div class="section__eyebrow" style="margin-bottom:var(--sp-3)">راه‌های ارتباطی</div>
+                <div class="stack-4">
+                    <a class="row-3" href="mailto:@settings.SalesEmail" style="color:var(--text)">
+                        <span class="stat__icon"><Icon Name="mail" Size="16" /></span>
+                        <span>
+                            <span class="heavy" style="display:block;font-size:var(--fs-sm)">فروش</span>
+                            <span class="tiny muted" style="direction:ltr;display:block;text-align:right">@settings.SalesEmail</span>
+                        </span>
+                    </a>
+                    <a class="row-3" href="mailto:@settings.SupportEmail" style="color:var(--text)">
+                        <span class="stat__icon" style="background:var(--teal-50);color:var(--teal-600)"><Icon Name="headphones" Size="16" /></span>
+                        <span>
+                            <span class="heavy" style="display:block;font-size:var(--fs-sm)">پشتیبانی</span>
+                            <span class="tiny muted" style="direction:ltr;display:block;text-align:right">@settings.SupportEmail</span>
+                        </span>
+                    </a>
+                    <div class="row-3">
+                        <span class="stat__icon" style="background:var(--violet-50);color:var(--violet-600)"><Icon Name="phone" Size="16" /></span>
+                        <span>
+                            <span class="heavy" style="display:block;font-size:var(--fs-sm)">تلفن</span>
+                            <span class="tiny muted">@settings.SupportPhone</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card--pad" style="background:var(--surface-sunk)">
+                <div class="row-2" style="margin-bottom:var(--sp-3)">
+                    <span style="color:var(--brand-600)"><Icon Name="clock" Size="16" /></span>
+                    <span class="heavy">ساعاتِ پاسخ‌گویی</span>
+                </div>
+                <div class="stack-2 small muted-2">
+                    <div class="between"><span>شنبه تا چهارشنبه</span><span class="num">۹:۰۰ – ۱۸:۰۰</span></div>
+                    <div class="between"><span>پنج‌شنبه</span><span class="num">۹:۰۰ – ۱۴:۰۰</span></div>
+                    <div class="between"><span>مواردِ بحرانی</span><span>همیشه</span></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ===== Form ===== -->
+        <div class="card card--pad-lg">
+            <Segmented TValue="string" Items="@tabs" Value="@mode" ValueChanged="OnModeChanged" />
+
+            <div class="stack-4" style="margin-top:var(--sp-5)">
+                <div class="grid-2" style="gap:var(--sp-4)">
+                    <label class="field">
+                        <span class="field__label">نام و نام خانوادگی <span class="field__req">*</span></span>
+                        <input class="input" @bind="name" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">ایمیلِ کاری <span class="field__req">*</span></span>
+                        <input class="input input--ltr" @bind="email" placeholder="name@company.com" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">شرکت</span>
+                        <input class="input" @bind="company" />
+                    </label>
+
+                    @if (mode == "demo")
+                    {
+                        <label class="field">
+                            <span class="field__label">اندازهٔ سازمان</span>
+                            <select class="select" @bind="companySize">
+                                <option value="">انتخاب کنید</option>
+                                <option>کمتر از ۵۰ نفر</option>
+                                <option>۵۰ تا ۲۵۰ نفر</option>
+                                <option>۲۵۰ تا ۱۰۰۰ نفر</option>
+                                <option>بیش از ۱۰۰۰ نفر</option>
+                            </select>
+                        </label>
+                    }
+                    else
+                    {
+                        <label class="field">
+                            <span class="field__label">موضوع</span>
+                            <select class="select" @bind="topic">
+                                <option>General</option>
+                                <option>Sales</option>
+                                <option>Support</option>
+                                <option>Partnership</option>
+                            </select>
+                        </label>
+                    }
+                </div>
+
+                <label class="field">
+                    <span class="field__label">@(mode == "demo" ? "چه چیزی می‌خواهید ببینید؟" : "پیام شما") <span class="field__req">*</span></span>
+                    <textarea class="textarea" @bind="message" placeholder="@(mode == "demo" ? "مثل: فرآیندِ بستنِ ماهانه با دو شرکتِ تابعه" : "پیام خود را بنویسید…")"></textarea>
+                </label>
+
+                <button class="btn btn--buy btn--lg" @onclick="Submit" disabled="@busy">
+                    @if (busy) { <span class="btn__spinner"></span> <span>در حال ارسال…</span> }
+                    else { <span>@(mode == "demo" ? "درخواست دمو" : "ارسال پیام")</span> <Icon Name="arrow-left" Size="16" /> }
+                </button>
+
+                <p class="tiny muted">با ارسالِ این فرم با <a href="/legal/privacy">سیاستِ حریم خصوصی</a> موافقت می‌کنید.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private SiteSettingsDto settings = new SiteSettingsDto("فروغ آریا پارسیان", "", "", "", "", "", 900, 14, false, "");
+    private string mode = "message";
+    private string name = "";
+    private string email = "";
+    private string company = "";
+    private string companySize = "";
+    private string topic = "General";
+    private string message = "";
+    private bool busy;
+
+    private IReadOnlyList<SegItem<string>> tabs => new[]
+    {
+        new SegItem<string>("ارسال پیام", "message"),
+        new SegItem<string>("درخواست دمو", "demo"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        settings = await Api.GetSettingsAsync();
+
+        if (Helpers.QueryString.Get(Nav.Uri, "topic") == "demo") mode = "demo";
+
+        if (Auth.User is { } u)
+        {
+            name = u.FullName;
+            email = u.Email;
+            company = u.Company ?? "";
+        }
+    }
+
+    private void OnModeChanged(string? value) => mode = value ?? "message";
+
+    private async Task Submit()
+    {
+        if (string.IsNullOrWhiteSpace(name) || !email.Contains('@') || message.Trim().Length < 10)
+        {
+            Toast.Push("اطلاعات ناقص است", "نام، ایمیل معتبر و پیامی با حداقل ۱۰ کاراکتر لازم است.", ToastTone.Warn);
+            return;
+        }
+
+        busy = true;
+        await Task.Delay(500);
+
+        if (mode == "demo")
+            await Api.SubmitDemoRequestAsync(null, name, email, company, companySize, message);
+        else
+            await Api.SubmitContactAsync(name, email, company, topic, message);
+
+        busy = false;
+        message = "";
+        Toast.Push(mode == "demo" ? "درخواست دمو ثبت شد" : "پیام شما ارسال شد",
+            "همکاران ما در کمتر از یک روزِ کاری با شما تماس می‌گیرند.", ToastTone.Ok);
+    }
+}

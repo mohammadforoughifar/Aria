@@ -1,0 +1,43 @@
+@* دکمهٔ کپی با بازخوردِ لحظه‌ای *@
+@inject Services.JsInterop Js
+@inject Services.ToastService Toast
+
+<button class="btn btn--secondary btn--sm" @onclick="Do" disabled="@busy" title="کپی">
+    @if (copied)
+    {
+        <span style="color:var(--ok-600);display:inline-flex"><Icon Name="check" Size="14" /></span>
+        <span>کپی شد</span>
+    }
+    else
+    {
+        <Icon Name="copy" Size="14" />
+        <span>@Label</span>
+    }
+</button>
+
+@code {
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public string Label { get; set; } = "کپی";
+
+    private bool copied;
+    private bool busy;
+
+    private async Task Do()
+    {
+        busy = true;
+        var ok = await Js.Copy(Value);
+        busy = false;
+        if (ok)
+        {
+            copied = true;
+            StateHasChanged();
+            await Task.Delay(1600);
+            copied = false;
+        }
+        else
+        {
+            Toast.Push("کپی انجام نشد", "مرورگر اجازهٔ دسترسی به کلیپ‌بورد را نداد.", ToastTone.Warn);
+        }
+        StateHasChanged();
+    }
+}

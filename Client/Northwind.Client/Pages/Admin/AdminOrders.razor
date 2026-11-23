@@ -1,0 +1,200 @@
+@page "/dashboard/admin/orders"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+
+<PageTitle>مدیریت سفارش‌ها — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">مدیریت سفارش‌ها</h1>
+        <p class="page-sub">@(paged is null ? "…" : Helpers.Fa.Num(paged.Meta.TotalCount) + " سفارش")</p>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="search" style="flex:1;max-width:320px">
+        <span class="search__icon"><Icon Name="search" Size="16" /></span>
+        <input class="input" placeholder="شمارهٔ سفارش یا نام مشتری…" @bind="search" @bind:event="oninput" @onkeyup="OnSearch" />
+    </div>
+    <Segmented TValue="string" Size="sm" Items="@statusTabs" Value="@status" ValueChanged="OnStatusChanged" />
+</div>
+
+<div class="card table-wrap" style="margin-top:var(--sp-4)">
+    @if (paged is null)
+    {
+        <div style="padding:var(--sp-4)">
+            @for (var i = 0; i < 6; i++) { <Skeleton Kind="row" /> }
+        </div>
+    }
+    else if (paged.Items.Count == 0)
+    {
+        <EmptyState Icon="receipt" Title="سفارشی یافت نشد" />
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table class="table">
+                <thead>
+                    <tr><th>شماره</th><th>مشتری</th><th>تاریخ</th><th>اقلام</th><th>مبلغ</th><th>پرداخت</th><th>وضعیت</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in paged.Items)
+                    {
+                        <tr>
+                            <td><button class="order-code" style="cursor:pointer" @onclick="() => Open(o)">@o.OrderNumber</button></td>
+                            <td>
+                                <div class="cell-user">
+                                    <span class="avatar avatar--xs cell-user__avatar">@Helpers.Fa.Initials(o.CustomerName ?? "؟")</span>
+                                    <div>
+                                        <div class="cell-user__name">@(o.CustomerName ?? "—")</div>
+                                        <div class="cell-user__meta">@o.CustomerEmail</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="num small muted">@Helpers.Fa.Date(o.PlacedAt)</td>
+                            <td class="num small">@Helpers.Fa.Num(o.Items.Sum(i => i.Quantity))</td>
+                            <td class="num strong">@Helpers.Fa.Money(o.TotalToman)</td>
+                            <td>
+                                @if (o.Payment is { } pay)
+                                {
+                                    <StatusBadge Status="@pay.Status.ToString()" Kind="payment" Small="true" />
+                                }
+                                else { <span class="tiny muted">—</span> }
+                            </td>
+                            <td><StatusBadge Status="@o.Status.ToString()" Kind="order" Small="true" /></td>
+                            <td>
+                                <div class="table__actions">
+                                    <button class="btn btn--ghost btn--xs" @onclick="() => Open(o)">جزئیات</button>
+                                    @if (o.Status is OrderStatus.Paid or OrderStatus.Processing)
+                                    {
+                                        <button class="btn btn--ghost btn--xs" style="color:var(--ok-600)"
+                                                @onclick="() => SetStatus(o, OrderStatus.Completed)">تکمیل</button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (paged is { Meta.TotalPages: > 1 })
+{
+    <Pager Meta="@paged.Meta" OnPage="Go" />
+}
+
+<Modal IsOpen="@(selected is not null)" Wide="true" Title="@("سفارش " + selected?.OrderNumber)"
+       Subtitle="@(selected is null ? "" : Helpers.Fa.Date(selected.PlacedAt))" OnClose="@(() => selected = null)">
+    <ChildContent>
+        @if (selected is { } order)
+        {
+            <div class="stack-5">
+                <div class="kv">
+                    <div class="kv__item"><span class="kv__k">مشتری</span><span class="kv__v">@order.CustomerName</span></div>
+                    <div class="kv__item"><span class="kv__k">مبلغ کل</span><span class="kv__v num">@Helpers.Fa.Money(order.TotalToman)</span></div>
+                    <div class="kv__item"><span class="kv__k">مالیات</span><span class="kv__v num">@Helpers.Fa.Money(order.TaxToman)</span></div>
+                    <div class="kv__item"><span class="kv__k">تخفیف</span><span class="kv__v num">@Helpers.Fa.Money(order.DiscountToman)</span></div>
+                    <div class="kv__item"><span class="kv__k">روش پرداخت</span><span class="kv__v">@(order.Payment?.Method ?? "—")</span></div>
+                    <div class="kv__item"><span class="kv__k">شمارهٔ تراکنش</span><span class="kv__v num--lat" style="font-size:var(--fs-xs)">@(order.Payment?.TransactionRef ?? "—")</span></div>
+                </div>
+
+                <div>
+                    <div class="strong" style="margin-bottom:var(--sp-3)">اقلامِ سفارش</div>
+                    <div class="table-wrap">
+                        <table class="table table--plain">
+                            <thead><tr><th>محصول</th><th>طرح</th><th>تعداد</th><th>قیمتِ واحد</th><th>جمع</th></tr></thead>
+                            <tbody>
+                                @foreach (var it in order.Items)
+                                {
+                                    <tr>
+                                        <td class="strong">@it.ProductName</td>
+                                        <td class="small muted">@it.PlanName</td>
+                                        <td class="num">@Helpers.Fa.Num(it.Quantity)</td>
+                                        <td class="num">@Helpers.Fa.Money(it.UnitPriceToman)</td>
+                                        <td class="num strong">@Helpers.Fa.Money(it.LineTotalToman)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <label class="field">
+                    <span class="field__label">تغییر وضعیت</span>
+                    <select class="select" value="@nextStatus" @onchange="OnStatusPicked">
+                        <option value="@OrderStatus.Pending">در انتظار پرداخت</option>
+                        <option value="@OrderStatus.Paid">پرداخت‌شده</option>
+                        <option value="@OrderStatus.Processing">در حال پردازش</option>
+                        <option value="@OrderStatus.Completed">تکمیل‌شده</option>
+                        <option value="@OrderStatus.Refunded">مستردشده</option>
+                        <option value="@OrderStatus.Cancelled">لغوشده</option>
+                    </select>
+                </label>
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        <button class="btn btn--secondary" @onclick="() => selected = null">بستن</button>
+        <button class="btn btn--primary" @onclick="ApplyStatus">اعمال وضعیت</button>
+    </Footer>
+</Modal>
+
+@code {
+    private Paged<OrderDto>? paged;
+    private OrderDto? selected;
+    private string search = "", status = "all";
+    private int current = 1;
+    private OrderStatus nextStatus = OrderStatus.Pending;
+
+    private IReadOnlyList<SegItem<string>> statusTabs => new[]
+    {
+        new SegItem<string>("همه", "all"),
+        new SegItem<string>("در انتظار", "Pending"),
+        new SegItem<string>("پرداخت‌شده", "Paid"),
+        new SegItem<string>("در پردازش", "Processing"),
+        new SegItem<string>("تکمیل‌شده", "Completed"),
+        new SegItem<string>("لغو/مسترد", "Cancelled"),
+    };
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load()
+    {
+        paged = await Api.GetOrdersAsync(current, 12, status == "all" ? null : status,
+            string.IsNullOrWhiteSpace(search) ? null : search.Trim());
+    }
+
+    private Task Go(int p) { current = p; return Load(); }
+    private Task OnStatusChanged(string? v) { status = v ?? "all"; current = 1; return Load(); }
+    private Task OnSearch(KeyboardEventArgs e) => e.Key == "Enter" ? Go(1) : Task.CompletedTask;
+
+    private void Open(OrderDto o)
+    {
+        selected = o;
+        nextStatus = o.Status;
+    }
+
+    private void OnStatusPicked(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<OrderStatus>(e.Value?.ToString(), out var parsed)) nextStatus = parsed;
+    }
+
+    private async Task SetStatus(OrderDto o, OrderStatus next)
+    {
+        await Api.UpdateOrderStatusAsync(o.Id, next);
+        Toast.Push("وضعیت بروزرسانی شد", o.OrderNumber, ToastTone.Ok);
+        await Load();
+    }
+
+    private async Task ApplyStatus()
+    {
+        if (selected is null) return;
+        await Api.UpdateOrderStatusAsync(selected.Id, nextStatus);
+        Toast.Push("وضعیت بروزرسانی شد", selected.OrderNumber, ToastTone.Ok);
+        selected = null;
+        await Load();
+    }
+}

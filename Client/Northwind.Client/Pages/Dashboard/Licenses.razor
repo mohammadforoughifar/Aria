@@ -1,0 +1,133 @@
+@page "/dashboard/licenses"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+
+<PageTitle>لایسنس‌ها — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">لایسنس‌های من</h1>
+        <p class="page-sub">کلیدهای فعال، صندلی‌های مصرف‌شده و تاریخِ انقضا.</p>
+    </div>
+    <Segmented TValue="string" Items="@tabs" Value="@status" ValueChanged="OnTab" />
+</div>
+
+@if (paged is null)
+{
+    <div class="grid-2">
+        @for (var i = 0; i < 4; i++) { <Skeleton Kind="card" /> }
+    </div>
+}
+else if (paged.Items.Count == 0)
+{
+    <div class="card">
+        <EmptyState Icon="key" Title="لایسنسی وجود ندارد" Text="پس از خرید، کلیدِ لایسنس بلافاصله در اینجا صادر می‌شود.">
+            <a class="btn btn--primary btn--sm" href="/catalog">دیدنِ محصولات</a>
+        </EmptyState>
+    </div>
+}
+else
+{
+    <div class="grid-2">
+        @foreach (var lic in paged.Items)
+        {
+            var days = Helpers.Fa.DaysUntil(lic.ExpiresAt);
+            <div class="card card--pad card--hover">
+                <div class="between" style="align-items:flex-start;gap:var(--sp-3)">
+                    <div class="row-3" style="min-width:0">
+                        <span class="prod-card__icon" style="width:38px;height:38px">
+                            <Icon Name="key" Size="17" />
+                        </span>
+                        <div style="min-width:0">
+                            <div class="heavy truncate">@lic.ProductName</div>
+                            <div class="tiny muted">@lic.PlanName · @Helpers.Fa.Num(lic.Seats) صندلی</div>
+                        </div>
+                    </div>
+                    <StatusBadge Status="@lic.Status.ToString()" Kind="license" Small="true" />
+                </div>
+
+                <div class="license-key" style="margin-top:var(--sp-4)">
+                    <span class="truncate">@lic.LicenseKey</span>
+                    <CopyButton Value="@lic.LicenseKey" />
+                </div>
+
+                <div class="kv" style="margin-top:var(--sp-4)">
+                    <div class="kv__item">
+                        <span class="kv__k">فعال‌سازی‌ها</span>
+                        <span class="kv__v num">@Helpers.Fa.Num(lic.ActivationsUsed) از @Helpers.Fa.Num(lic.Seats)</span>
+                    </div>
+                    <div class="kv__item">
+                        <span class="kv__k">تاریخ صدور</span>
+                        <span class="kv__v">@Helpers.Fa.Date(lic.IssuedAt)</span>
+                    </div>
+                    <div class="kv__item">
+                        <span class="kv__k">انقضا</span>
+                        <span class="kv__v">@(lic.ExpiresAt is null ? "دائمی" : Helpers.Fa.Date(lic.ExpiresAt))</span>
+                    </div>
+                </div>
+
+                <div class="meter" style="margin-top:var(--sp-3)">
+                    <div class="meter__fill @(lic.ActivationsUsed >= lic.Seats ? "meter__fill--warn" : "")"
+                         style="width:@(lic.Seats == 0 ? 0 : lic.ActivationsUsed * 100 / lic.Seats)%"></div>
+                </div>
+
+                @if (days is > 0 and <= 45)
+                {
+                    <div class="badge badge--warn" style="margin-top:var(--sp-3);height:auto;padding:6px 10px">
+                        <Icon Name="clock" Size="12" /> @Helpers.Fa.Num(days.Value) روز تا انقضا
+                    </div>
+                }
+
+                <div class="row-2" style="margin-top:var(--sp-4);flex-wrap:wrap">
+                    <button class="btn btn--soft btn--sm" @onclick="() => Activate(lic)" disabled="@(lic.ActivationsUsed >= lic.Seats || lic.Status != LicenseStatus.Active)">
+                        <Icon Name="monitor" Size="14" /> فعال‌سازیِ دستگاه
+                    </button>
+                    @if (lic.ExpiresAt is not null)
+                    {
+                        <button class="btn btn--secondary btn--sm" @onclick="() => Extend(lic)">
+                            <Icon Name="refresh" Size="14" /> تمدید
+                        </button>
+                    }
+                    <a class="btn btn--ghost btn--sm" href="/dashboard/downloads"><Icon Name="download" Size="14" /> دانلود</a>
+                </div>
+            </div>
+        }
+    </div>
+
+    <Pager Meta="@paged.Meta" OnPage="Go" />
+}
+
+@code {
+    private Paged<LicenseDto>? paged;
+    private string status = "all";
+    private int current = 1;
+
+    private IReadOnlyList<SegItem<string>> tabs => new[]
+    {
+        new SegItem<string>("همه", "all"),
+        new SegItem<string>("فعال", "Active"),
+        new SegItem<string>("منقضی", "Expired"),
+        new SegItem<string>("باطل‌شده", "Revoked"),
+    };
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load() => paged = await Api.GetLicensesAsync(current, 8, status);
+    private async Task Go(int p) { current = p; await Load(); }
+    private async Task OnTab(string? v) { status = v ?? "all"; current = 1; await Load(); }
+
+    private async Task Activate(LicenseDto lic)
+    {
+        var updated = await Api.LicenseActionAsync(lic.Id, "activate", machineName: "WORKSTATION-01");
+        Toast.Push("دستگاه فعال شد", $"{updated.ActivationsUsed} از {updated.Seats} صندلی استفاده شده است.", ToastTone.Ok);
+        await Load();
+    }
+
+    private async Task Extend(LicenseDto lic)
+    {
+        await Api.LicenseActionAsync(lic.Id, "extend", days: 365);
+        Toast.Push("لایسنس تمدید شد", "یک سال به اعتبار آن افزوده شد.", ToastTone.Ok);
+        await Load();
+    }
+}

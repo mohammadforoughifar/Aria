@@ -1,0 +1,28 @@
+@* یک کارت در دیاگرامِ اکوسیستم — شیشه‌ای، با نشانِ وضعیت *@
+@using Northwind.Client.Models
+
+<div class="eco-card @(Active ? "is-active" : "")"
+     data-eco-card="@Card.Id"
+     style="--i:@Index; --from:@From"
+     aria-current="@(Active ? "true" : "false")">
+
+    <span class="eco-card__icon" aria-hidden="true"><Icon Name="@Card.Icon" Size="16" /></span>
+
+    <div>
+        <div class="eco-card__title">@Card.Title</div>
+        <p class="eco-card__desc">@Card.Desc</p>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Badge))
+    {
+        <span class="badge badge--@Card.BadgeTone badge--sm eco-card__badge">@Badge</span>
+    }
+</div>
+
+@code {
+    [Parameter] public EcosystemCard Card { get; set; } = new();
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public string Badge { get; set; } = "";
+    [Parameter] public int Index { get; set; }
+    [Parameter] public string From { get; set; } = "28px";
+}

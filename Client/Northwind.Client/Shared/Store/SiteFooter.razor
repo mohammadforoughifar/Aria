@@ -1,0 +1,75 @@
+@* فوترِ فروشگاه *@
+@inject Services.IStoreApi Api
+
+<footer class="site-footer">
+    <div class="wrap">
+        <div class="site-footer__grid">
+            <div>
+                <div class="brand">
+                    <span class="brand__mark">NW</span>
+                    <span class="brand__name">@Settings.SiteName</span>
+                </div>
+                <p class="site-footer__about">
+                    مجموعهٔ یکپارچهٔ نرم‌افزار کسب‌وکار برای شرکت‌های متوسط: ماژول‌های ERP،
+                    برنامه‌های دسکتاپ و افزونه‌ها — با لایسنس دلخواه شما و روی زیرساخت خودتان.
+                </p>
+                <div class="row-3" style="margin-top:20px">
+                    <a class="chip" href="mailto:@Settings.SalesEmail"><Icon Name="mail" Size="13" /> @Settings.SalesEmail</a>
+                </div>
+            </div>
+
+            <div>
+                <div class="site-footer__title">محصولات</div>
+                <div class="site-footer__list">
+                    <a href="/catalog">همهٔ محصولات</a>
+                    <a href="/systems">سیستم‌های ابری</a>
+                    <a href="/catalog?category=erp-suite">مجموعهٔ ERP</a>
+                    <a href="/catalog?category=desktop-productivity">برنامه‌های دسکتاپ</a>
+                    <a href="/catalog?category=addons-integrations">افزونه‌ها</a>
+                    <a href="/compare">مقایسهٔ محصولات</a>
+                </div>
+            </div>
+
+            <div>
+                <div class="site-footer__title">پشتیبانی</div>
+                <div class="site-footer__list">
+                    <a href="/blog">وبلاگ</a>
+                    <a href="/support">مرکز پشتیبانی</a>
+                    <a href="/api-docs">مستندات API</a>
+                    <a href="/contact">تماس با ما</a>
+                    <a href="/legal/terms">شرایط استفاده</a>
+                    <a href="/legal/privacy">حریم خصوصی</a>
+                </div>
+            </div>
+
+            <div>
+                <div class="site-footer__title">شرکت</div>
+                <div class="site-footer__list">
+                    <a href="/about">دربارهٔ ما</a>
+                    <a href="/legal/license">قرارداد لایسنس</a>
+                    <a href="/legal/refund">سیاست بازگشت وجه</a>
+                    <a href="/support">درخواست دمو</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="site-footer__bar">
+            <span>© @Helpers.Fa.Num(DateTime.UtcNow.Year) @Settings.SiteName — تمامی حقوق محفوظ است.</span>
+            <span class="row-3">
+                <span class="row-2"><Icon Name="mail" Size="12" /> @Settings.SupportEmail</span>
+                <span class="row-2"><Icon Name="phone" Size="12" /> @Settings.SupportPhone</span>
+            </span>
+        </div>
+    </div>
+</footer>
+
+@code {
+    // مقدارِ پیش‌فرض: بلِیزور پیش از پایانِ فراخوانیِ API یک‌بار رندر می‌کند،
+    // بنابراین این ویژگی نباید تهی باشد وگرنه خطای مرجعِ تهی می‌دهد.
+    private SiteSettingsDto Settings { get; set; } = new SiteSettingsDto("فروغ آریا پارسیان", "", "", "", "", "", 900, 14, false, "");
+
+    protected override async Task OnInitializedAsync()
+    {
+        Settings = await Api.GetSettingsAsync();
+    }
+}

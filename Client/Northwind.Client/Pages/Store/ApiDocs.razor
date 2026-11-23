@@ -1,0 +1,172 @@
+@page "/api-docs"
+
+<PageTitle>مستندات API — فروغ آریا پارسیان</PageTitle>
+
+<div class="wrap" style="padding-block:var(--sp-9)">
+    <div class="page-head">
+        <div>
+            <div class="section__eyebrow">توسعه‌دهندگان</div>
+            <h1 class="page-title" style="margin-top:6px">مستندات API</h1>
+            <p class="page-sub">
+                همهٔ صفحاتِ فروشگاه و پورتال با همین API کار می‌کنند و پاسخ‌ها ساختارِ یکسانی دارند.
+            </p>
+        </div>
+        <div class="row-2">
+            <a class="btn btn--secondary btn--sm" href="/api/openapi" target="_blank">
+                <Icon Name="code" Size="15" /> خروجیِ OpenAPI
+            </a>
+            <button class="btn btn--ghost btn--sm" @onclick="() => showOnlySecured = !showOnlySecured">
+                <Icon Name="lock" Size="15" /> @(showOnlySecured ? "همهٔ مسیرها" : "فقط مسیرهای امن")
+            </button>
+        </div>
+    </div>
+
+    <div class="grid-3" style="margin-bottom:var(--sp-5)">
+        <div class="card card--pad">
+            <div class="tiny muted">آدرس پایه</div>
+            <code class="num--lat" style="display:block;margin-top:4px;font-size:var(--fs-sm)">/api</code>
+        </div>
+        <div class="card card--pad">
+            <div class="tiny muted">احراز هویت</div>
+            <div class="small heavy" style="margin-top:4px">Bearer JWT + کوکیِ Refresh</div>
+        </div>
+        <div class="card card--pad">
+            <div class="tiny muted">تعداد مسیرها</div>
+            <div class="num heavy" style="margin-top:4px;font-size:var(--fs-lg)">@Helpers.Fa.Num(endpoints.Count)</div>
+        </div>
+    </div>
+
+    <div class="filters" style="margin-bottom:var(--sp-4)">
+        <div class="filters__search">
+            <div class="input-group">
+                <span class="input-group__icon"><Icon Name="search" Size="16" /></span>
+                <input class="input" placeholder="جست‌وجو در مسیر یا توضیح…" @bind="q" />
+            </div>
+        </div>
+        <span class="filters__sep"></span>
+        <div class="wrapflex" style="gap:6px">
+            <button class="chip chip--filter @(tag == "all" ? "chip--active" : "")" @onclick='() => tag = "all"'>همه</button>
+            @foreach (var t in Tags)
+            {
+                <button class="chip chip--filter @(tag == t ? "chip--active" : "")" @onclick="() => tag = t">@t</button>
+            }
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <div class="stack" style="padding:var(--sp-3)">
+            @if (!Filtered.Any())
+            {
+                <EmptyState Icon="code" Title="مسیری با این فیلتر پیدا نشد" />
+            }
+            else
+            {
+                @foreach (var e in Filtered)
+                {
+                    <div class="api-row">
+                        <span class="api-method api-method--@e.Method.ToLowerInvariant()">@e.Method</span>
+                        <code class="api-path grow">@e.Path</code>
+                        <span class="tiny muted clamp-2" style="max-width:340px">@e.Summary</span>
+                        <span class="badge badge--plain @(e.Secured ? "badge--warn" : "badge--neutral") badge--sm">
+                            @(e.Secured ? (e.Admin ? "ادمین" : "نیاز به ورود") : "عمومی")
+                        </span>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:var(--sp-6)">
+        <div class="card card--pad">
+            <div class="row-2" style="margin-bottom:var(--sp-3)">
+                <span style="color:var(--brand-600)"><Icon Name="code" Size="17" /></span>
+                <span class="heavy">ساختارِ پاسخ</span>
+            </div>
+            <pre dir="ltr" style="background:var(--ink-900);color:#e2e8f0;padding:var(--sp-4);border-radius:var(--r-md);font-size:var(--fs-xs);line-height:1.7;overflow-x:auto">{
+  "success": true,
+  "data": { ... },
+  "meta": { "page": 1, "pageSize": 12, "totalCount": 42, "totalPages": 4 }
+}</pre>
+        </div>
+
+        <div class="card card--pad">
+            <div class="row-2" style="margin-bottom:var(--sp-3)">
+                <span style="color:var(--bad-600)"><Icon Name="alert" Size="17" /></span>
+                <span class="heavy">ساختارِ خطا</span>
+            </div>
+            <pre dir="ltr" style="background:var(--ink-900);color:#e2e8f0;padding:var(--sp-4);border-radius:var(--r-md);font-size:var(--fs-xs);line-height:1.7;overflow-x:auto">{
+  "success": false,
+  "error": {
+    "code": "validation_failed",
+    "message": "…",
+    "details": { "email": ["ایمیل معتبر نیست"] }
+  }
+}</pre>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string q = "";
+    private string tag = "all";
+    private bool showOnlySecured;
+
+    private IEnumerable<Endpoint> Filtered => endpoints.Where(e =>
+        (!showOnlySecured || e.Secured) &&
+        (tag == "all" || e.Tag == tag) &&
+        (string.IsNullOrWhiteSpace(q) ||
+         e.Path.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+         e.Summary.Contains(q, StringComparison.OrdinalIgnoreCase)));
+
+    private static IReadOnlyList<string> Tags => endpoints.Select(e => e.Tag).Distinct().ToList();
+
+    private sealed record Endpoint(string Method, string Path, string Tag, string Summary, bool Secured, bool Admin);
+
+    // این فهرست آینهٔ جدولِ مسیرها در سمت سرور است.
+    private static readonly IReadOnlyList<Endpoint> endpoints = new[]
+    {
+        new Endpoint("GET", "/api/health", "System", "بررسیِ سلامت", false, false),
+        new Endpoint("GET", "/api/openapi", "System", "سندِ OpenAPI 3.0", false, false),
+        new Endpoint("POST", "/api/system/reseed", "System", "بازسازیِ دادهٔ دمو", true, true),
+        new Endpoint("POST", "/api/auth/register", "Auth", "ایجاد حسابِ مشتری", false, false),
+        new Endpoint("POST", "/api/auth/login", "Auth", "دریافت توکنِ دسترسی و رفرش", false, false),
+        new Endpoint("POST", "/api/auth/refresh", "Auth", "چرخشِ رفرش‌توکن", false, false),
+        new Endpoint("POST", "/api/auth/logout", "Auth", "ابطالِ رفرش‌توکن", false, false),
+        new Endpoint("GET", "/api/auth/me", "Auth", "کاربرِ جاری", true, false),
+        new Endpoint("PATCH", "/api/auth/me", "Auth", "ویرایشِ پروفایل", true, false),
+        new Endpoint("POST", "/api/auth/change-password", "Auth", "تغییرِ رمز عبور", true, false),
+        new Endpoint("GET", "/api/products", "Products", "فهرستِ صفحه‌بندی‌شدهٔ محصولات", false, false),
+        new Endpoint("GET", "/api/products/compare", "Products", "دریافتِ چند محصول برای مقایسه", false, false),
+        new Endpoint("GET", "/api/products/{id}", "Products", "جزئیاتِ محصول", false, false),
+        new Endpoint("POST", "/api/products", "Products", "ایجاد محصول", true, true),
+        new Endpoint("PATCH", "/api/products/{id}", "Products", "ویرایشِ محصول", true, true),
+        new Endpoint("DELETE", "/api/products/{id}", "Products", "حذف محصول", true, true),
+        new Endpoint("POST", "/api/products/{id}/plans", "Plans", "افزودنِ طرحِ قیمت", true, true),
+        new Endpoint("PATCH", "/api/products/{id}/plans/{planId}", "Plans", "ویرایشِ طرح", true, true),
+        new Endpoint("DELETE", "/api/products/{id}/plans/{planId}", "Plans", "حذف طرح", true, true),
+        new Endpoint("POST", "/api/products/{id}/versions", "Versions", "انتشارِ نسخهٔ جدید", true, true),
+        new Endpoint("GET", "/api/categories", "Categories", "دسته‌بندی‌ها با تعداد محصول", false, false),
+        new Endpoint("GET", "/api/cart", "Cart", "سبدِ جاری با پیش‌نمایشِ قیمت", false, false),
+        new Endpoint("POST", "/api/cart/items", "Cart", "افزودنِ طرح به سبد", false, false),
+        new Endpoint("PATCH", "/api/cart/items/{itemId}", "Cart", "تغییرِ تعداد", false, false),
+        new Endpoint("DELETE", "/api/cart/items/{itemId}", "Cart", "حذفِ سطر", false, false),
+        new Endpoint("POST", "/api/cart/discount", "Cart", "اعتبارسنجیِ کد تخفیف", false, false),
+        new Endpoint("GET", "/api/orders", "Orders", "فهرستِ سفارش‌ها", true, false),
+        new Endpoint("POST", "/api/orders", "Orders", "تسویهٔ سبد", true, false),
+        new Endpoint("GET", "/api/orders/{id}", "Orders", "جزئیاتِ سفارش", true, false),
+        new Endpoint("PATCH", "/api/orders/{id}", "Orders", "تغییرِ وضعیتِ سفارش", true, true),
+        new Endpoint("GET", "/api/invoices", "Invoices", "فهرستِ فاکتورها", true, false),
+        new Endpoint("GET", "/api/licenses", "Licenses", "فهرستِ لایسنس‌ها", true, false),
+        new Endpoint("PATCH", "/api/licenses/{id}", "Licenses", "ابطال، تمدید یا فعال‌سازی", true, false),
+        new Endpoint("GET", "/api/downloads/available", "Downloads", "نصاب‌های در دسترس", true, false),
+        new Endpoint("GET", "/api/tickets", "Tickets", "فهرستِ تیکت‌ها", true, false),
+        new Endpoint("POST", "/api/tickets", "Tickets", "ایجاد تیکت", true, false),
+        new Endpoint("POST", "/api/tickets/{id}/messages", "Tickets", "پاسخ به تیکت", true, false),
+        new Endpoint("GET", "/api/reviews", "Reviews", "فهرستِ نقدها", false, false),
+        new Endpoint("POST", "/api/reviews", "Reviews", "ثبتِ نقد", true, false),
+        new Endpoint("GET", "/api/customers", "Customers", "دایرکتوریِ مشتریان", true, true),
+        new Endpoint("GET", "/api/reports/admin", "Dashboard", "شاخص‌های مدیریتی", true, true),
+        new Endpoint("GET", "/api/reports/customer", "Dashboard", "خلاصهٔ پورتالِ مشتری", true, false),
+        new Endpoint("GET", "/api/settings", "Settings", "تنظیماتِ عمومیِ سایت", false, false),
+    };
+}

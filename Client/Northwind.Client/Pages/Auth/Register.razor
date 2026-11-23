@@ -1,0 +1,127 @@
+@page "/register"
+@inject Services.AuthState Auth
+@inject Services.ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>ثبت‌نام — فروغ آریا پارسیان</PageTitle>
+
+<div class="auth">
+    <aside class="auth__aside" style="background:linear-gradient(160deg,#0f766e,#4f46e5 70%,#7c3aed)">
+        <div class="brand">
+            <span class="brand__mark" style="background:rgba(255,255,255,.18);box-shadow:none">NW</span>
+            <span class="brand__name" style="color:#fff">فروغ آریا پارسیان</span>
+        </div>
+        <h1 class="auth__title">نسخهٔ آزمایشی را همان امروز شروع کنید</h1>
+        <p class="auth__lead">
+            ثبت‌نام رایگان است. همهٔ محصولات @Helpers.Fa.Num(30) روز نسخهٔ آزمایشیِ کامل دارند
+            و برای شروع به کارتِ اعتباری نیاز نیست.
+        </p>
+        <div class="auth__points">
+            <div class="auth__point"><i><Icon Name="check" Size="12" /></i> دسترسیِ کامل به همهٔ امکانات</div>
+            <div class="auth__point"><i><Icon Name="check" Size="12" /></i> مهاجرتِ رایگانِ داده با ابزارِ همراه</div>
+            <div class="auth__point"><i><Icon Name="check" Size="12" /></i> پشتیبانی در دورهٔ آزمایشی</div>
+        </div>
+    </aside>
+
+    <section class="auth__panel">
+        <div class="auth__form">
+            <div class="auth__head">
+                <h1 class="auth__h">ایجاد حساب</h1>
+                <p class="auth__p">چند موردِ ساده برای ساختِ حسابِ شما.</p>
+            </div>
+
+            <div class="grid-2" style="gap:var(--sp-4)">
+                <label class="field">
+                    <span class="field__label">نام و نام خانوادگی <span class="field__req">*</span></span>
+                    <input class="input" @bind="fullName" />
+                </label>
+                <label class="field">
+                    <span class="field__label">ایمیلِ کاری <span class="field__req">*</span></span>
+                    <input class="input input--ltr" style="text-align:left" placeholder="name@company.com" @bind="email" />
+                </label>
+                <label class="field">
+                    <span class="field__label">شرکت</span>
+                    <input class="input" @bind="company" />
+                </label>
+                <label class="field">
+                    <span class="field__label">کشور</span>
+                    <input class="input" @bind="country" />
+                </label>
+            </div>
+
+            <label class="field">
+                <span class="field__label">رمز عبور <span class="field__req">*</span></span>
+                <input class="input input--ltr" style="text-align:left" type="password" @bind="password" />
+                <span class="field__hint">حداقل ۸ کاراکتر — ترکیبِ حرف و عدد توصیه می‌شود.</span>
+            </label>
+
+            <label class="field">
+                <span class="field__label">تکرارِ رمز عبور <span class="field__req">*</span></span>
+                <input class="input input--ltr" style="text-align:left" type="password" @bind="confirm" />
+            </label>
+
+            @if (!string.IsNullOrWhiteSpace(error))
+            {
+                <div class="badge badge--bad" style="height:auto;padding:8px 12px;justify-content:flex-start">
+                    <Icon Name="alert" Size="13" /> @error
+                </div>
+            }
+
+            <label class="check" style="align-items:flex-start">
+                <input type="checkbox" @bind="accept" style="margin-top:4px" />
+                <span class="small muted-2">
+                    <a href="/legal/terms">شرایط استفاده</a> و
+                    <a href="/legal/privacy">حریم خصوصی</a> را خوانده‌ام و می‌پذیرم.
+                </span>
+            </label>
+
+            <button class="btn btn--primary btn--lg btn--block" @onclick="Submit" disabled="@busy">
+                @if (busy) { <span class="btn__spinner"></span> <span>در حال ایجاد حساب…</span> }
+                else { <span>ایجاد حساب</span> <Icon Name="arrow-left" Size="16" /> }
+            </button>
+
+            <p class="auth__alt">قبلاً ثبت‌نام کرده‌اید؟ <a href="/login">وارد شوید</a></p>
+        </div>
+    </section>
+</div>
+
+@code {
+    private string fullName = "";
+    private string email = "";
+    private string company = "";
+    private string country = "";
+    private string password = "";
+    private string confirm = "";
+    private string? error;
+    private bool busy;
+    private bool accept = true;
+
+    private async Task Submit()
+    {
+        error = null;
+
+        if (fullName.Trim().Length < 2) { error = "نام کامل را وارد کنید."; return; }
+        if (!email.Contains('@')) { error = "ایمیل معتبر نیست."; return; }
+        if (password.Length < 8) { error = "رمز عبور باید حداقل ۸ کاراکتر باشد."; return; }
+        if (password != confirm) { error = "تکرارِ رمز عبور مطابقت ندارد."; return; }
+        if (!accept) { error = "پذیرشِ شرایط استفاده الزامی است."; return; }
+
+        busy = true;
+        await Task.Delay(400);
+
+        var registered = await Auth.RegisterAsync(fullName.Trim(), email.Trim(), password,
+            string.IsNullOrWhiteSpace(company) ? null : company,
+            string.IsNullOrWhiteSpace(country) ? null : country);
+
+        busy = false;
+
+        if (!registered)
+        {
+            error = "حسابی با این ایمیل از قبل وجود دارد.";
+            return;
+        }
+
+        Toast.Push("حساب شما ساخته شد", "اکنون می‌توانید نسخهٔ آزمایشی را آغاز کنید.", ToastTone.Ok);
+        Nav.NavigateTo("/dashboard", forceLoad: false);
+    }
+}

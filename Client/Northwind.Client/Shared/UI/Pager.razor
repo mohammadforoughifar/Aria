@@ -1,0 +1,61 @@
+@* صفحه‌بندی *@
+@if (Meta is { TotalPages: > 1 })
+{
+    <nav class="pager" aria-label="صفحه‌بندی">
+        <button class="pager__btn" disabled="@(Meta.Page <= 1)" @onclick="() => Go(Meta.Page - 1)" aria-label="صفحهٔ قبل">
+            <Icon Name="chevron-right" Size="16" />
+        </button>
+
+        @foreach (var part in SlotList())
+        {
+            if (part is null)
+            {
+                <span class="pager__gap">…</span>
+            }
+            else
+            {
+                var p = part.Value;
+                <button class="pager__btn @(p == Meta.Page ? "is-active" : "")" @onclick="() => Go(p)">
+                    @Helpers.Fa.Num(p)
+                </button>
+            }
+        }
+
+        <button class="pager__btn" disabled="@(Meta.Page >= Meta.TotalPages)" @onclick="() => Go(Meta.Page + 1)" aria-label="صفحهٔ بعد">
+            <Icon Name="chevron-left" Size="16" />
+        </button>
+    </nav>
+}
+
+@code {
+    [Parameter] public PagedMeta? Meta { get; set; }
+    [Parameter] public EventCallback<int> OnPage { get; set; }
+    [Parameter] public EventCallback OnChanged { get; set; }
+
+    private async Task Go(int page)
+    {
+        await OnPage.InvokeAsync(page);
+        await OnChanged.InvokeAsync();
+    }
+
+    private IEnumerable<int?> SlotList()
+    {
+        if (Meta is null) yield break;
+
+        var total = Meta.TotalPages;
+        var current = Meta.Page;
+        var pages = new List<int>();
+
+        for (var i = 1; i <= total; i++)
+            if (i == 1 || i == total || Math.Abs(i - current) <= 1)
+                pages.Add(i);
+
+        var previous = 0;
+        foreach (var p in pages)
+        {
+            if (previous != 0 && p - previous > 1) yield return null;
+            yield return p;
+            previous = p;
+        }
+    }
+}

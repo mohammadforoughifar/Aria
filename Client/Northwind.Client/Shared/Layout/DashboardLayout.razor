@@ -1,0 +1,96 @@
+@inherits LayoutComponentBase
+@inject Services.AuthState Auth
+@inject NavigationManager Nav
+@implements IDisposable
+
+<div class="dash">
+    <DashboardSidebar Open="@menuOpen" />
+
+    <div class="dash__main">
+        <header class="topbar">
+            <button class="burger" @onclick="() => menuOpen = !menuOpen" aria-label="منو">
+                <Icon Name="menu" Size="20" />
+            </button>
+
+            <div class="topbar__search">
+                <div class="input-group">
+                    <span class="input-group__icon"><Icon Name="search" Size="16" /></span>
+                    <input class="input" placeholder="جست‌وجو در سفارش‌ها، لایسنس‌ها…" @bind="search" @onkeyup="OnSearch" />
+                </div>
+            </div>
+
+            <div class="topbar__actions">
+                <ThemeToggle />
+                <a class="icon-btn" href="/dashboard/tickets" title="تیکت‌ها">
+                    <Icon Name="ticket" Size="18" />
+                </a>
+                <a class="icon-btn" href="/cart" title="سبد خرید">
+                    <Icon Name="cart" Size="18" />
+                </a>
+
+                <div class="dropdown">
+                    <button class="side__user" style="padding:4px 6px" @onclick="() => menu = !menu">
+                        <span class="avatar">@Helpers.Fa.Initials(Auth.User?.FullName ?? "م")</span>
+                        <span style="text-align:right" class="d-none-mobile">
+                            <span class="side__user-name">@(Auth.User?.FullName ?? "کاربر")</span>
+                        </span>
+                        <span style="color:var(--text-4)"><Icon Name="chevron-down" Size="15" /></span>
+                    </button>
+
+                    @if (menu)
+                    {
+                        <div class="dropdown__menu">
+                            <a class="dropdown__item" href="/dashboard/profile"><Icon Name="user" Size="15" /> پروفایل من</a>
+                            <a class="dropdown__item" href="/dashboard/licenses"><Icon Name="key" Size="15" /> لایسنس‌ها</a>
+                            <a class="dropdown__item" href="/dashboard/orders"><Icon Name="file" Size="15" /> سفارش‌ها</a>
+                            <div class="dropdown__sep"></div>
+                            <a class="dropdown__item" href="/"><Icon Name="globe" Size="15" /> نمای فروشگاه</a>
+                            <div class="dropdown__sep"></div>
+                            <button class="dropdown__item dropdown__item--danger" @onclick="Logout">
+                                <Icon Name="logout" Size="15" /> خروج
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </header>
+
+        <div class="dash__content">
+            @Body
+        </div>
+    </div>
+</div>
+
+<ToastHost />
+
+<style>
+    @@media (max-width: 720px) { .d-none-mobile { display: none; } }
+</style>
+
+@code {
+    private bool menuOpen;
+    private bool menu;
+    private string search = "";
+
+    protected override void OnInitialized() => Auth.OnChange += StateHasChanged;
+
+    protected override void OnParametersSet()
+    {
+        // اگر کاربر وارد نشده باشد، به صفحهٔ ورود هدایت می‌شود
+        if (Auth.IsReady && !Auth.IsAuthenticated) Nav.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString(Nav.Uri));
+    }
+
+    private void OnSearch(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(search))
+            Nav.NavigateTo($"/dashboard/orders?search={Uri.EscapeDataString(search)}");
+    }
+
+    private async Task Logout()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/");
+    }
+
+    public void Dispose() => Auth.OnChange -= StateHasChanged;
+}

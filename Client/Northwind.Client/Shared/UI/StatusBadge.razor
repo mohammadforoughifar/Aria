@@ -1,0 +1,71 @@
+@* نشانِ وضعیت — نگاشتِ یکنواخت از enumها به برچسبِ فارسی و رنگ *@
+<span class="badge badge--@tone @(Small ? "badge--sm" : "")">@label</span>
+
+@code {
+    [Parameter] public string Status { get; set; } = "";
+    [Parameter] public string Kind { get; set; } = "order";
+    [Parameter] public bool Small { get; set; }
+
+    private string label = "";
+    private string tone = "neutral";
+
+    protected override void OnParametersSet()
+    {
+        (label, tone) = (Kind, Status) switch
+        {
+            ("order", "Pending")       => ("در انتظار پرداخت", "warn"),
+            ("order", "Paid")          => ("پرداخت‌شده", "info"),
+            ("order", "Processing")    => ("در حال پردازش", "brand"),
+            ("order", "Completed")     => ("تکمیل‌شده", "ok"),
+            ("order", "Refunded")      => ("مستردشده", "bad"),
+            ("order", "Cancelled")     => ("لغوشده", "neutral"),
+
+            ("ticket", "Open")             => ("باز", "info"),
+            ("ticket", "InProgress")       => ("در حال بررسی", "brand"),
+            ("ticket", "WaitingCustomer")  => ("منتظر پاسخ شما", "warn"),
+            ("ticket", "Resolved")         => ("حل‌شده", "ok"),
+            ("ticket", "Closed")           => ("بسته‌شده", "neutral"),
+
+            ("license", "Active")  => ("فعال", "ok"),
+            ("license", "Expired") => ("منقضی‌شده", "warn"),
+            ("license", "Revoked") => ("ابطال‌شده", "bad"),
+
+            ("review", "Pending")  => ("در صف بررسی", "warn"),
+            ("review", "Approved") => ("تأییدشده", "ok"),
+            ("review", "Rejected") => ("ردشده", "bad"),
+
+            ("invoice", "Draft")  => ("پیش‌نویس", "neutral"),
+            ("invoice", "Issued") => ("صادرشده", "info"),
+            ("invoice", "Paid")   => ("پرداخت‌شده", "ok"),
+            ("invoice", "Void")   => ("باطل‌شده", "bad"),
+
+            ("demo", "New")       => ("جدید", "info"),
+            ("demo", "Contacted") => ("تماس گرفته‌شده", "brand"),
+            ("demo", "Qualified") => ("واجدِ شرایط", "ok"),
+            ("demo", "Closed")    => ("بسته‌شده", "neutral"),
+
+            ("priority", "Low")      => ("کم", "neutral"),
+            ("priority", "Normal")   => ("عادی", "info"),
+            ("priority", "High")     => ("زیاد", "warn"),
+            ("priority", "Critical") => ("بحرانی", "bad"),
+
+            ("tier", "SingleUser") => ("تک‌کاربره", "neutral"),
+            ("tier", "MultiUser")  => ("چندکاربره", "brand"),
+            ("tier", "Enterprise") => ("سازمانی", "violet"),
+
+            ("billing", "OneTime") => ("خرید دائمی", "neutral"),
+            ("billing", "Annual")  => ("اشتراک سالانه", "teal"),
+
+            ("type", "Module")     => ("ماژول", "brand"),
+            ("type", "DesktopApp") => ("برنامهٔ دسکتاپ", "violet"),
+            ("type", "AddOn")      => ("افزونه", "teal"),
+
+            ("payment", "Pending")   => ("در انتظار", "warn"),
+            ("payment", "Succeeded") => ("موفق", "ok"),
+            ("payment", "Failed")    => ("ناموفق", "bad"),
+            ("payment", "Refunded")  => ("مستردشده", "bad"),
+
+            _ => (Status, "neutral"),
+        };
+    }
+}

@@ -1,0 +1,56 @@
+@page "/blog/{slug}"
+@inject Services.IStoreApi Api
+
+<PageTitle>@(post?.Title ?? "مقاله") — فروغ آریا پارسیان</PageTitle>
+
+<div class="wrap wrap-sm">
+    @if (post is null)
+    {
+        <div class="card card--pad" style="margin-top:var(--sp-6)"><Skeleton Kind="text" Lines="12" /></div>
+    }
+    else
+    {
+        <div class="page-head">
+            <div>
+                <nav class="breadcrumb" aria-label="مسیر">
+                    <a href="/">خانه</a><span>/</span>
+                    <a href="/blog">وبلاگ</a><span>/</span>
+                    <span>@post.Title</span>
+                </nav>
+                <h1 class="page-title" style="font-size:1.7rem;line-height:1.5">@post.Title</h1>
+                <div class="row-2 tiny muted" style="gap:var(--sp-4);margin-top:var(--sp-3);flex-wrap:wrap">
+                    <span><Icon Name="calendar" Size="13" /> @Helpers.Fa.Date(post.PublishedAt)</span>
+                    <span><Icon Name="clock" Size="13" /> @Helpers.Fa.Num(post.ReadMinutes) دقیقه مطالعه</span>
+                    @if (post.Category is not null) { <span class="badge badge--brand badge--sm">@post.Category</span> }
+                </div>
+            </div>
+        </div>
+
+        <article class="card card--pad" style="margin-top:var(--sp-5)">
+            <p class="medium" style="line-height:1.95;margin-top:0">@post.Excerpt</p>
+            <div class="divider"></div>
+            <div class="legal-body">
+                @foreach (var para in post.Body.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    <p>@para</p>
+                }
+            </div>
+        </article>
+
+        <div class="card card--pad-lg" style="margin:var(--sp-6) 0;background:linear-gradient(135deg,var(--navy-900),var(--navy-700));border:0;color:#fff;text-align:center">
+            <h2 style="color:#fff;font-size:var(--fs-2xl)">آماده‌اید این نسخه را روی دادهٔ واقعی ببینید؟</h2>
+            <p style="color:rgba(255,255,255,.82);margin-top:10px">۱۴ روز نسخهٔ آزمایشیِ کامل، بدون نیاز به کارتِ اعتباری.</p>
+            <div class="row-3" style="justify-content:center;margin-top:var(--sp-5);flex-wrap:wrap">
+                <a class="btn btn--buy btn--lg" href="/catalog"><Icon Name="package" Size="18" /> مشاهدهٔ محصولات</a>
+                <a class="btn btn--outline-light btn--lg" href="/contact"><Icon Name="play" Size="18" /> درخواست دمو</a>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Slug { get; set; } = "";
+    private ArticleDto? post;
+
+    protected override async Task OnParametersSetAsync() => post = await Api.GetArticleBySlugAsync(Slug);
+}

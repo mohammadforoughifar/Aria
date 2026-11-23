@@ -1,0 +1,283 @@
+@* =====================================================================
+   دیاگرامِ تعاملیِ «اکوسیستمِ نرم‌افزار»
+   - صحنهٔ سه‌بعدیِ کم‌عمق با CSS 3D (بدون وابستگیِ خارجی)
+   - کاربران در ستونِ راست، سیستم‌های متصل در ستونِ چپ (RTL)
+   - هندسهٔ اتصال‌ها در ماژولِ js/ecosystem.js و با offsetLeft/Top سنجیده
+     می‌شود؛ گره‌هایِ SVG در مالکیتِ جاوااسکریپت‌اند تا بلِیزر آن‌ها را
+     بازسازی نکند و انیمیشن از نو شروع نشود.
+   ===================================================================== *@
+
+@using Northwind.Client.Models
+@using System.Text.Json
+@implements IAsyncDisposable
+@inject HttpClient Http
+@inject Services.JsInterop Js
+@inject Services.EcosystemData Data
+
+<section class="section eco" @ref="RootEl" id="ecosystem"
+         @onmouseenter="OnEnter" @onmouseleave="OnLeave">
+
+    <div class="eco__floor" aria-hidden="true"></div>
+
+    <div class="wrap">
+        <h2 class="eco__title">
+            <span class="eco__spark" aria-hidden="true">
+                <Icon Name="sparkles" Size="22" />
+            </span>
+            @cfg.Title
+        </h2>
+        <p class="eco__sub">@cfg.Subtitle</p>
+
+        <!-- توضیحِ سناریو برای خوانندهٔ صفحه‌خوان -->
+        <p class="sr-only" aria-live="polite" aria-atomic="true">@ActiveDesc</p>
+
+        @if (cfg.Scenarios.Count > 0)
+        {
+            <!-- ----------------------------- تب‌ها ----------------------------- -->
+            <div class="eco__tabs" role="tablist" aria-label="سناریوهایِ کاری" @onkeydown="OnKey">
+                @for (var i = 0; i < cfg.Scenarios.Count; i++)
+                {
+                    var idx = i;
+                    var sc = cfg.Scenarios[i];
+                    <button class="eco-tab" role="tab" type="button"
+                            id="ecotab-@sc.Id"
+                            aria-selected="@(idx == active ? "true" : "false")"
+                            aria-controls="ecopanel"
+                            tabindex="@(idx == active ? 0 : -1)"
+                            @onclick="() => Select(idx, true)">
+                        @sc.Title
+                        @* نوارِ پیشرفت با انیمیشنِ خالصِ CSS پر می‌شود.
+                           پیش از این مقدارش را هر ۱۰۰ میلی‌ثانیه از سی‌شارپ می‌نوشتیم؛
+                           یعنی کلِ بخش ده بار در ثانیه بازرندر می‌شد و حرکت‌ها می‌لرزیدند.
+                           حالا هیچ رندری برایِ پیشرفت لازم نیست. *@
+                        <span class="eco-tab__bar @(idx == active ? "is-running" : "") @(idx == active && paused ? "is-paused" : "")"
+                              style="--dur:@(CycleMs)ms"></span>
+                    </button>
+                }
+            </div>
+
+            @* ظرفِ توضیح ارتفاعی ثابت دارد تا با تعویضِ سناریو صفحه نپرد *@
+            <div class="eco__descwrap">
+                <p class="eco__desc @(fading ? "is-fading" : "")" id="ecopanel" role="tabpanel"
+                   aria-labelledby="ecotab-@cfg.Scenarios[active].Id">
+                    @ActiveDesc
+                </p>
+            </div>
+        }
+
+        <!-- ----------------------------- صحنه ----------------------------- -->
+        @* stage فقط چشم‌انداز می‌دهد؛ scene همان چیزی است که کج می‌شود و
+           نگه‌دارندهٔ SVG و کارت‌هاست تا خط و کارت با هم کج شوند. *@
+        <div class="eco__stage">
+            <div class="eco__scene" data-eco-scene>
+
+                <!-- اتصال‌ها و ذرات — محتوا را جاوااسکریپت می‌سازد -->
+                <svg class="eco__wires" data-eco-wires aria-hidden="true" focusable="false"></svg>
+
+                <div class="eco__grid">
+
+                    <!-- ستونِ راست: کاربران (داده به هاب می‌رود) -->
+                    <div class="eco__col eco__col--people">
+                        <div class="eco__colhead">
+                            <Icon Name="users" Size="14" /> کاربران (افرادی که از داده استفاده می‌کنند)
+                        </div>
+                        @foreach (var p in cfg.People)
+                        {
+                            <EcoCard Card="p" Active="IsActive(p.Id)"
+                                     Badge="@BadgeOf(p.Id)" Index="@Index(p.Id)" From="28px" />
+                        }
+                    </div>
+
+                    <!-- هابِ مرکزی -->
+                    <div class="eco__hub-wrap">
+                        <div class="eco-hub" data-eco-hub>
+                            <div>
+                                <div class="eco-hub__name">@cfg.Hub.Name</div>
+                                <div class="eco-hub__tag">@cfg.Hub.Tagline</div>
+                            </div>
+                            <span class="eco-hub__ring" aria-hidden="true"></span>
+                            <span class="eco-hub__light" aria-hidden="true"></span>
+                        </div>
+                    </div>
+
+                    <!-- ستونِ چپ: سیستم‌های متصل (داده از هاب می‌رود) -->
+                    <div class="eco__col eco__col--systems">
+                        <div class="eco__colhead">
+                            <Icon Name="server" Size="14" /> سیستم‌های متصل (داده‌ها به آن‌ها می‌رسد)
+                        </div>
+                        @foreach (var s in cfg.Systems)
+                        {
+                            <EcoCard Card="s" Active="IsActive(s.Id)"
+                                     Badge="@BadgeOf(s.Id)" Index="@Index(s.Id)" From="-28px" />
+                        }
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ----------------------------- CTA ----------------------------- -->
+        @* بیرون از stage و در جریانِ عادی — هیچ‌گاه روی دیاگرام نمی‌افتد *@
+        <div class="eco__cta">
+            <a class="btn btn--buy btn--lg" href="/contact">
+                <Icon Name="play" Size="18" /> درخواست دمو
+            </a>
+        </div>
+    </div>
+</section>
+
+@code {
+    private ElementReference RootEl;
+
+    private EcosystemConfig cfg = new();
+    private int active;
+    private int elapsed;                  // میلی‌ثانیه از آغازِ سناریویِ جاری
+    private bool ticking;                 // جلوگیری از روی‌هم افتادنِ ضربان‌ها
+    private bool fading;                  // برای محو/ظاهر شدنِ توضیح
+    private bool paused;                  // توقف به‌دلیلِ قرار گرفتنِ اشاره‌گر روی بخش
+    private bool reduceMotion;
+    private bool dataLoaded;              // دادهٔ پیکربندی رسیده؟
+    private bool mounted;                 // ماژولِ جاوااسکریپت بالا آمده؟
+    private System.Threading.Timer? timer;
+    private DateTime lastInteraction = DateTime.MinValue;
+
+    private const int CycleMs = 5000;     // هر سناریو ۵ ثانیه
+    private const int TickMs = 250;       // ضربانِ زمان‌سنج (بدونِ بازرندر)
+    private const int ResumeAfterMs = 8000; // پس از ۸ ثانیه بی‌کاری دوباره شروع شود
+
+    private IEnumerable<EcosystemCard> AllCards
+        => cfg.People.Concat(cfg.Systems);
+
+    private string ActiveDesc
+        => cfg.Scenarios.Count > 0 ? cfg.Scenarios[active].Description : "";
+
+    private bool IsActive(string id)
+        => cfg.Scenarios.Count > 0 && cfg.Scenarios[active].Cards.Contains(id);
+
+    private int Index(string id)
+    {
+        var i = cfg.People.FindIndex(x => x.Id == id);
+        if (i >= 0) return i;
+        i = cfg.Systems.FindIndex(x => x.Id == id);
+        return i < 0 ? 0 : i + cfg.People.Count;
+    }
+
+    private string BadgeOf(string id)
+        => cfg.Scenarios.Count > 0 && cfg.Scenarios[active].Badges.TryGetValue(id, out var b) ? b : "";
+
+    /* ----------------------------- چرخهٔ حیات ----------------------------- */
+
+    protected override async Task OnInitializedAsync()
+    {
+        // پیکربندی در آغازِ برنامه پیش‌بارگیری شده؛ اینجا به‌صورتِ همزمان
+        // برداشته می‌شود تا نخستین رندر همان کامل باشد (بدون جابه‌جایی).
+        cfg = Data.Config;
+
+        // اگر به هر دلیلی پیش‌بارگیری ناموفق بود، همین‌جا یک‌بار دیگر تلاش کن
+        if (cfg.Scenarios.Count == 0)
+        {
+            try
+            {
+                var json = await Http.GetStringAsync("data/ecosystem.json");
+                cfg = JsonSerializer.Deserialize<EcosystemConfig>(json, EcosystemData.Options)
+                      ?? new EcosystemConfig();
+                foreach (var p in cfg.People) p.IsPerson = true;
+            }
+            catch
+            {
+                cfg = new EcosystemConfig();
+            }
+        }
+        dataLoaded = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // ماژول باید پس از آمدنِ داده بالا بیاید — وگرنه کارتی برای اندازه‌گیری نیست
+        if (!dataLoaded || mounted) return;
+        mounted = true;
+
+        reduceMotion = await Js.EcoPrefersReducedMotion();
+        await Js.EcoMount(RootEl);
+
+        if (reduceMotion) return;      // بدون پخشِ خودکار
+        timer = new System.Threading.Timer(_ => _ = Tick(), null, TickMs, TickMs);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        timer?.Dispose();
+        timer = null;
+        try { await Js.EcoUnmount(); } catch { }
+    }
+
+    /* ----------------------------- تعامل ----------------------------- */
+
+    private void OnEnter() { paused = true; lastInteraction = DateTime.UtcNow; }
+
+    private void OnLeave()
+    {
+        paused = false;
+        lastInteraction = DateTime.UtcNow;
+        elapsed = 0;
+    }
+
+    private async Task Select(int index, bool userAction)
+    {
+        if (index == active) return;
+
+        fading = true;
+        StateHasChanged();
+        await Task.Delay(180);            // محو شدنِ توضیح
+        active = index;
+        elapsed = 0;
+        fading = false;
+        StateHasChanged();
+
+        // مسیرها دوباره اندازه‌گیری شوند (ارتفاعِ کارت‌ها ممکن است عوض شده باشد)
+        await Js.EcoUpdate();
+
+        if (userAction) lastInteraction = DateTime.UtcNow;
+    }
+
+    private async Task OnKey(KeyboardEventArgs e)
+    {
+        if (cfg.Scenarios.Count == 0) return;
+        var n = cfg.Scenarios.Count;
+        if (e.Key == "ArrowRight") { await Select((active + 1) % n, true); await FocusActive(); }
+        else if (e.Key == "ArrowLeft") { await Select((active - 1 + n) % n, true); await FocusActive(); }
+        else if (e.Key == "Home") { await Select(0, true); await FocusActive(); }
+        else if (e.Key == "End") { await Select(n - 1, true); await FocusActive(); }
+    }
+
+    private async Task FocusActive()
+        => await Js.FocusElementById("ecotab-" + cfg.Scenarios[active].Id);
+
+    /* ------------------------ پخشِ خودکار ------------------------ */
+
+    private async Task Tick()
+    {
+        if (ticking || reduceMotion || cfg.Scenarios.Count == 0) return;
+        ticking = true;
+        try
+        {
+            if (paused)
+            {
+                if ((DateTime.UtcNow - lastInteraction).TotalMilliseconds < ResumeAfterMs) return;
+                paused = false;
+                await InvokeAsync(StateHasChanged);
+                return;
+            }
+
+            elapsed += TickMs;
+            if (elapsed < CycleMs) return;
+
+            elapsed = 0;
+            await InvokeAsync(() => Select((active + 1) % cfg.Scenarios.Count, false));
+        }
+        finally
+        {
+            ticking = false;
+        }
+    }
+}

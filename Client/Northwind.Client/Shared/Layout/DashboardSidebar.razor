@@ -1,0 +1,156 @@
+@* نوار کناریِ پورتال — در چیدمانِ راست‌به‌چپ در سمت راست قرار می‌گیرد *@
+@inject Services.AuthState Auth
+@implements IDisposable
+
+<aside class="side @(open ? "is-open" : "")">
+    <div class="side__head">
+        <a class="brand" href="/">
+            <span class="brand__mark">NW</span>
+            <span class="brand__name">فروغ آریا پارسیان</span>
+        </a>
+    </div>
+
+    <div class="side__body">
+        <div class="side__group">
+            <div class="side__label">حساب کاربری</div>
+            <NavLink class="side__link" href="/dashboard" Match="NavLinkMatch.All">
+                <span class="side__icon"><Icon Name="grid" Size="17" /></span> پیشخوان
+            </NavLink>
+            <NavLink class="side__link" href="/dashboard/orders">
+                <span class="side__icon"><Icon Name="file" Size="17" /></span> سفارش‌ها
+                @if (Auth.IsAdmin) { <span class="side__count">@Helpers.Fa.Num(orderCount)</span> }
+            </NavLink>
+            <NavLink class="side__link" href="/dashboard/invoices">
+                <span class="side__icon"><Icon Name="receipt" Size="17" /></span> فاکتورها
+            </NavLink>
+            <NavLink class="side__link" href="/dashboard/licenses">
+                <span class="side__icon"><Icon Name="key" Size="17" /></span> لایسنس‌ها
+                <span class="side__count">@Helpers.Fa.Num(licenseCount)</span>
+            </NavLink>
+            <NavLink class="side__link" href="/dashboard/downloads">
+                <span class="side__icon"><Icon Name="download" Size="17" /></span> دانلودها
+            </NavLink>
+            <NavLink class="side__link" href="/dashboard/tickets">
+                <span class="side__icon"><Icon Name="ticket" Size="17" /></span> تیکت‌ها
+                @if (ticketCount > 0) { <span class="side__count">@Helpers.Fa.Num(ticketCount)</span> }
+            </NavLink>
+            <NavLink class="side__link" href="/dashboard/profile">
+                <span class="side__icon"><Icon Name="user" Size="17" /></span> پروفایل
+            </NavLink>
+        </div>
+
+        @if (Auth.IsAdmin)
+        {
+            <div class="side__group">
+                <div class="side__label">مدیریت</div>
+                <NavLink class="side__link" href="/dashboard/admin">
+                    <span class="side__icon"><Icon Name="chart" Size="17" /></span> نمای کلی
+                </NavLink>
+                <NavLink class="side__link" href="/dashboard/admin/products">
+                    <span class="side__icon"><Icon Name="package" Size="17" /></span> محصولات
+                </NavLink>
+                <NavLink class="side__link" href="/dashboard/admin/categories">
+                    <span class="side__icon"><Icon Name="layers" Size="17" /></span> دسته‌بندی‌ها
+                </NavLink>
+                <NavLink class="side__link" href="/dashboard/admin/customers">
+                    <span class="side__icon"><Icon Name="users" Size="17" /></span> مشتریان
+                </NavLink>
+                <NavLink class="side__link" href="/dashboard/admin/orders">
+                    <span class="side__icon"><Icon Name="truck" Size="17" /></span> سفارش‌ها
+                </NavLink>
+                <NavLink class="side__link" href="/dashboard/admin/licenses">
+                    <span class="side__icon"><Icon Name="key" Size="17" /></span> لایسنس‌ها
+                </NavLink>
+                <NavLink class="side__link" href="/dashboard/admin/discounts">
+                    <span class="side__icon"><Icon Name="percent" Size="17" /></span> کدهای تخفیف
+                </NavLink>
+                <NavLink class="side__link" href="/dashboard/admin/reviews">
+                    <span class="side__icon"><Icon Name="message" Size="17" /></span> نقد و بررسی
+                    @if (reviewCount > 0) { <span class="side__count">@Helpers.Fa.Num(reviewCount)</span> }
+                </NavLink>
+                <NavLink class="side__link" href="/dashboard/admin/tickets">
+                    <span class="side__icon"><Icon Name="ticket" Size="17" /></span> تیکت‌ها
+                </NavLink>
+                <NavLink class="side__link" href="/dashboard/admin/demo-requests">
+                    <span class="side__icon"><Icon Name="monitor" Size="17" /></span> درخواست‌های دمو
+                </NavLink>
+                <NavLink class="side__link" href="/dashboard/admin/blog">
+                    <span class="side__icon"><Icon Name="book" Size="17" /></span> وبلاگ و مقالات
+                </NavLink>
+                <NavLink class="side__link" href="/dashboard/admin/settings">
+                    <span class="side__icon"><Icon Name="settings" Size="17" /></span> تنظیمات سایت
+                </NavLink>
+            </div>
+        }
+
+        <div class="side__group">
+            <div class="side__label">فروشگاه</div>
+            <a class="side__link" href="/"><span class="side__icon"><Icon Name="globe" Size="17" /></span> نمای فروشگاه</a>
+            <a class="side__link" href="/support"><span class="side__icon"><Icon Name="shield" Size="17" /></span> مرکز پشتیبانی</a>
+        </div>
+    </div>
+
+    <div class="side__foot">
+        <button class="side__user" @onclick="Logout" title="خروج">
+            <span class="avatar">@Helpers.Fa.Initials(Auth.User?.FullName ?? "م")</span>
+            <span class="grow" style="text-align:right">
+                <span class="side__user-name">@(Auth.User?.FullName ?? "کاربر")</span>
+                <span class="side__user-mail">@(Auth.User?.Email ?? "")</span>
+            </span>
+            <span style="color:var(--text-4)"><Icon Name="logout" Size="16" /></span>
+        </button>
+    </div>
+</aside>
+
+@if (open)
+{
+    <div class="side__scrim" @onclick="() => open = false"></div>
+}
+
+@code {
+    [Parameter] public bool Open { get; set; }
+
+    private bool open;
+    private int ticketCount, licenseCount, orderCount, reviewCount;
+
+    protected override void OnParametersSet() => open = Open;
+
+    protected override void OnInitialized()
+    {
+        Auth.OnChange += OnAuthChanged;
+        _ = LoadCounts();
+    }
+
+    private async Task LoadCounts()
+    {
+        if (Auth.IsAdmin)
+        {
+            var o = await Api.GetAdminOverviewAsync();
+            ticketCount = o.OpenTickets;
+            licenseCount = o.ActiveLicenses;
+            orderCount = o.TotalProducts;
+            reviewCount = o.PendingReviews;
+        }
+        else if (Auth.IsAuthenticated)
+        {
+            var o = await Api.GetCustomerOverviewAsync();
+            ticketCount = o.OpenTickets;
+            licenseCount = o.ActiveLicenses;
+            orderCount = o.OrderCount;
+        }
+        StateHasChanged();
+    }
+
+    private void OnAuthChanged() => _ = LoadCounts();
+
+    [Inject] public Services.IStoreApi Api { get; set; } = default!;
+    [Inject] public NavigationManager Nav { get; set; } = default!;
+
+    private async Task Logout()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/", forceLoad: false);
+    }
+
+    public void Dispose() => Auth.OnChange -= OnAuthChanged;
+}

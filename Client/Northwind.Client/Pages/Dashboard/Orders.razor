@@ -1,0 +1,194 @@
+@page "/dashboard/orders"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject NavigationManager Nav
+
+<PageTitle>سفارش‌ها — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">سفارش‌های من</h1>
+        <p class="page-sub">تاریخچهٔ کاملِ خریدها، فاکتورها و وضعیتِ هر سفارش.</p>
+    </div>
+    <a class="btn btn--primary btn--sm" href="/catalog"><Icon Name="plus" Size="15" /> سفارشِ جدید</a>
+</div>
+
+<div class="filters" style="margin-bottom:var(--sp-4)">
+    <div class="filters__search">
+        <div class="input-group">
+            <span class="input-group__icon"><Icon Name="search" Size="16" /></span>
+            <input class="input" placeholder="جست‌وجو در شمارهٔ سفارش…" @bind="search" @onkeyup="OnSearch" />
+        </div>
+    </div>
+    <span class="filters__sep"></span>
+    <Segmented TValue="string" Items="@statusTabs" Value="@status" ValueChanged="OnStatusChanged" />
+</div>
+
+<div class="table-wrap">
+    @if (paged is null)
+    {
+        <div style="padding:var(--sp-4)">
+            @for (var i = 0; i < 5; i++) { <Skeleton Kind="row" /> }
+        </div>
+    }
+    else if (paged.Items.Count == 0)
+    {
+        <EmptyState Icon="file" Title="سفارشی با این فیلتر نیست" Text="فیلتر را تغییر دهید یا یک خریدِ جدید انجام دهید." />
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>شمارهٔ سفارش</th>
+                        <th>تاریخ</th>
+                        <th>اقلام</th>
+                        <th>مبلغ</th>
+                        @if (isAdmin) { <th>مشتری</th> }
+                        <th>پرداخت</th>
+                        <th style="text-align:left">وضعیت</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var o in paged.Items)
+                    {
+                        <tr>
+                            <td><button class="heavy num--lat" style="background:none;border:0;padding:0;color:var(--brand-600);cursor:pointer" @onclick="() => Open(o)">@o.OrderNumber</button></td>
+                            <td class="small muted">@Helpers.Fa.Date(o.PlacedAt)</td>
+                            <td class="num">@Helpers.Fa.Num(o.Items.Sum(i => i.Quantity))</td>
+                            <td class="num heavy">@Helpers.Fa.Money(o.TotalToman)</td>
+                            @if (isAdmin)
+                            {
+                                <td>
+                                    <div class="small heavy">@o.CustomerName</div>
+                                    <div class="tiny muted" style="direction:ltr;text-align:right">@o.CustomerEmail</div>
+                                </td>
+                            }
+                            <td class="small">
+                                @if (o.Payment is { } p)
+                                {
+                                    <StatusBadge Status="@p.Status.ToString()" Kind="payment" Small="true" />
+                                }
+                                else { <span class="muted">—</span> }
+                            </td>
+                            <td style="text-align:left"><StatusBadge Status="@o.Status.ToString()" Kind="order" Small="true" /></td>
+                            <td>
+                                <div class="table__actions">
+                                    <button class="icon-btn" @onclick="() => Open(o)" title="جزئیات"><Icon Name="eye" Size="16" /></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (paged is { Meta.TotalPages: > 1 })
+{
+    <Pager Meta="@paged.Meta" OnPage="Go" />
+}
+
+<!-- ===== Detail modal ===== -->
+<Modal IsOpen="@(selected is not null)" Title="@("سفارش " + selected?.OrderNumber)" Wide="true"
+       Subtitle="@(selected is null ? "" : Helpers.Fa.Date(selected.PlacedAt))" OnClose="@(() => selected = null)">
+    <ChildContent>
+        @if (selected is { } order)
+        {
+            <div class="stack-5">
+                <div class="kv">
+                    <div class="kv__item"><span class="kv__k">وضعیت</span><span class="kv__v"><StatusBadge Status="@order.Status.ToString()" Kind="order" /></span></div>
+                    <div class="kv__item"><span class="kv__k">مبلغ کل</span><span class="kv__v num">@Helpers.Fa.Money(order.TotalToman)</span></div>
+                    <div class="kv__item"><span class="kv__k">مالیات</span><span class="kv__v num">@Helpers.Fa.Money(order.TaxToman)</span></div>
+                    <div class="kv__item"><span class="kv__k">تخفیف</span><span class="kv__v num">@Helpers.Fa.Money(order.DiscountToman)</span></div>
+                    <div class="kv__item"><span class="kv__k">روش پرداخت</span><span class="kv__v">@(order.Payment?.Method ?? "—")</span></div>
+                    <div class="kv__item"><span class="kv__k">شمارهٔ تراکنش</span><span class="kv__v num--lat" style="font-size:var(--fs-xs)">@(order.Payment?.TransactionRef ?? "—")</span></div>
+                </div>
+
+                <div>
+                    <div class="heavy" style="margin-bottom:var(--sp-3)">اقلامِ سفارش</div>
+                    <div class="table-wrap">
+                        <table class="table">
+                            <thead>
+                                <tr><th>محصول</th><th>طرح</th><th>تعداد</th><th>قیمتِ واحد</th><th>جمع</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in order.Items)
+                                {
+                                    <tr>
+                                        <td class="heavy">@item.ProductName</td>
+                                        <td class="small muted">@item.PlanName</td>
+                                        <td class="num">@Helpers.Fa.Num(item.Quantity)</td>
+                                        <td class="num">@Helpers.Fa.Money(item.UnitPriceToman)</td>
+                                        <td class="num heavy">@Helpers.Fa.Money(item.LineTotalToman)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="heavy" style="margin-bottom:var(--sp-2)">صورتحساب</div>
+                    <div class="small muted-2">
+                        @order.BillingName@(string.IsNullOrWhiteSpace(order.BillingCompany) ? "" : " · " + order.BillingCompany)
+                        <br />
+                        <span style="direction:ltr;display:inline-block">@order.BillingEmail</span> · @order.BillingCountry
+                    </div>
+                </div>
+            </div>
+        }
+    </ChildContent>
+    <Footer>
+        @if (selected?.Invoice is { } inv)
+        {
+            <div class="grow small muted row-2">
+                <Icon Name="file" Size="14" /> فاکتور <span class="num--lat">@inv.InvoiceNumber</span>
+            </div>
+        }
+        <button class="btn btn--secondary" @onclick="() => selected = null">بستن</button>
+        <a class="btn btn--primary" href="/dashboard/invoices">دیدنِ فاکتورها</a>
+    </Footer>
+</Modal>
+
+@code {
+    private Paged<OrderDto>? paged;
+    private OrderDto? selected;
+    private string status = "all";
+    private string search = "";
+    private int current = 1;
+    private bool isAdmin;
+
+    [Inject] public Services.AuthState Auth { get; set; } = default!;
+
+    private IReadOnlyList<SegItem<string>> statusTabs => new[]
+    {
+        new SegItem<string>("همه", "all"),
+        new SegItem<string>("پرداخت‌شده", "Paid"),
+        new SegItem<string>("در حال پردازش", "Processing"),
+        new SegItem<string>("تکمیل‌شده", "Completed"),
+        new SegItem<string>("مستردشده", "Refunded"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        isAdmin = Auth.IsAdmin;
+        var q = Helpers.QueryString.Parse(Nav.Uri);
+        if (q.TryGetValue("search", out var s)) search = s;
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        paged = await Api.GetOrdersAsync(current, 10, status, string.IsNullOrWhiteSpace(search) ? null : search);
+    }
+
+    private async Task Go(int p) { current = p; await Load(); }
+    private async Task OnStatusChanged(string? v) { status = v ?? "all"; current = 1; await Load(); }
+    private async Task OnSearch(KeyboardEventArgs e) { if (e.Key == "Enter") { current = 1; await Load(); } }
+
+    private void Open(OrderDto o) => selected = o;
+}

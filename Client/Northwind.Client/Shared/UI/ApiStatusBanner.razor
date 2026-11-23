@@ -1,0 +1,38 @@
+@* پیامی دوستانه وقتی ارتباط با سرورِ API برقرار نیست.
+   پیش از این، چنین خطایی کلِ برنامه را از کار می‌انداخت و صفحه سفید می‌شد. *@
+
+@inject Services.ApiHealth Health
+@implements IDisposable
+
+@if (ShouldShow)
+{
+    <div class="api-warn" role="alert">
+        <Icon Name="alert" Size="18" />
+        <div>
+            <b>ارتباط با سرور برقرار نیست.</b>
+            <span>
+                @(Health.Detail ?? "سرورِ API اجرا نشده یا نشانیِ آن درست نیست.")
+                برای رفعِ آن: پروژهٔ <b>Northwind.Server</b> را هم اجرا کنید تا روی
+                نشانیِ <span class="num--lat">http://localhost:5182</span> گوش بدهد.
+                تا وقتی سرور روشن نباشد، ورود و خرید ممکن نیست.
+            </span>
+        </div>
+        <button class="icon-btn" style="width:30px;height:30px" @onclick="Dismiss" aria-label="بستن">
+            <Icon Name="x" Size="15" />
+        </button>
+    </div>
+}
+
+@code {
+    private bool dismissed;
+
+    protected override void OnInitialized() => Health.OnChange += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    private void Dismiss() { dismissed = true; StateHasChanged(); }
+
+    public void Dispose() => Health.OnChange -= Refresh;
+
+    private bool ShouldShow => !Health.Reachable && !dismissed;
+}

@@ -1,0 +1,43 @@
+@* جایگاهِ بارگذاری — شِimmerِ نرم به‌جای لودرِ خشن *@
+@switch (Kind)
+{
+    case "card":
+        <div class="card" style="padding:20px">
+            <div class="sk sk--thumb" style="margin-bottom:16px"></div>
+            <div class="sk sk--title" style="width:62%;margin-bottom:10px"></div>
+            <div class="sk sk--text" style="width:88%;margin-bottom:8px"></div>
+            <div class="sk sk--text" style="width:74%"></div>
+        </div>
+        break;
+    case "row":
+        <div class="row-3" style="padding:14px 0;border-bottom:1px solid var(--line-soft)">
+            <div class="sk sk--avatar"></div>
+            <div class="stack-2 grow">
+                <div class="sk sk--text" style="width:38%"></div>
+                <div class="sk sk--text" style="width:22%;height:9px"></div>
+            </div>
+        </div>
+        break;
+    case "stat":
+        <div class="stat">
+            <div class="between">
+                <div class="sk sk--text" style="width:44%"></div>
+                <div class="sk" style="width:34px;height:34px;border-radius:12px"></div>
+            </div>
+            <div class="sk sk--title" style="width:56%;height:24px;margin-top:16px"></div>
+            <div class="sk sk--text" style="width:30%;height:9px;margin-top:10px"></div>
+        </div>
+        break;
+    default:
+        @for (var i = 0; i < Lines; i++)
+        {
+            <div class="sk sk--text" style="width:@(i == Lines - 1 ? 62 : 100)%;margin-bottom:10px"></div>
+        }
+        break;
+}
+
+@code {
+    [Parameter] public string Kind { get; set; } = "text";
+    /// <summary>تعدادِ خطوط در حالتِ متنی.</summary>
+    [Parameter] public int Lines { get; set; } = 3;
+}

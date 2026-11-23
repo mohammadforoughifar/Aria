@@ -1,0 +1,95 @@
+@page "/dashboard/admin/demo-requests"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+
+<PageTitle>درخواست‌های دمو — مدیریت</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">درخواست‌های دمو و مشاوره</h1>
+        <p class="page-sub">پی‌گیریِ سرنخ‌های سازمانی و تغییرِ وضعیت.</p>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="seg seg--sm">
+        <button class="seg__btn @(status is null ? "is-active" : "")" @onclick="() => Pick(null)">همه</button>
+        <button class="seg__btn @(status == DemoRequestStatus.New ? "is-active" : "")" @onclick="() => Pick(DemoRequestStatus.New)">جدید</button>
+        <button class="seg__btn @(status == DemoRequestStatus.Contacted ? "is-active" : "")" @onclick="() => Pick(DemoRequestStatus.Contacted)">تماس گرفته‌شده</button>
+        <button class="seg__btn @(status == DemoRequestStatus.Qualified ? "is-active" : "")" @onclick="() => Pick(DemoRequestStatus.Qualified)">واجدِ شرایط</button>
+        <button class="seg__btn @(status == DemoRequestStatus.Closed ? "is-active" : "")" @onclick="() => Pick(DemoRequestStatus.Closed)">بسته‌شده</button>
+    </div>
+</div>
+
+<div class="card table-wrap">
+    @if (items is null)
+    {
+        <div style="padding:var(--sp-4)">@for (var i = 0; i < 5; i++) { <Skeleton Kind="row" /> }</div>
+    }
+    else if (items.Count == 0)
+    {
+        <EmptyState Icon="monitor" Title="درخواستی ثبت نشده است" Text="فرمِ «درخواست دمو» در سایت اینجا نمایش داده می‌شود." />
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table class="table">
+                <thead>
+                    <tr><th>متقاضی</th><th>سازمان</th><th>اندازه</th><th>محصول</th><th>تاریخ</th><th>وضعیت</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in items)
+                    {
+                        <tr>
+                            <td>
+                                <div class="cell-user">
+                                    <span class="avatar avatar--sm">@Helpers.Fa.Initials(d.Name)</span>
+                                    <span class="cell-user__meta">
+                                        <span class="cell-user__name">@d.Name</span>
+                                        <span class="tiny muted num--lat">@d.Email</span>
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="small">@(d.Company ?? "—")</td>
+                            <td class="small muted">@(d.CompanySize ?? "—")</td>
+                            <td class="small">@(d.ProductName ?? "عمومی")</td>
+                            <td class="small muted num">@Helpers.Fa.Date(d.CreatedAt)</td>
+                            <td><StatusBadge Status="@d.Status.ToString()" Kind="demo" Small="true" /></td>
+                            <td>
+                                <div class="table__actions">
+                                    <select class="select select--sm"
+                                            @onchange="e => Change(d, (DemoRequestStatus)Convert.ToInt32(e.Value!))"
+                                            aria-label="تغییرِ وضعیتِ درخواست">
+                                        <option value="0" selected="@(d.Status == DemoRequestStatus.New)">جدید</option>
+                                        <option value="1" selected="@(d.Status == DemoRequestStatus.Contacted)">تماس گرفته‌شده</option>
+                                        <option value="2" selected="@(d.Status == DemoRequestStatus.Qualified)">واجدِ شرایط</option>
+                                        <option value="3" selected="@(d.Status == DemoRequestStatus.Closed)">بسته‌شده</option>
+                                    </select>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<DemoRequestDto>? items;
+    private DemoRequestStatus? status;
+
+    protected override async Task OnInitializedAsync() => await Reload();
+
+    private async Task Reload() => items = await Api.GetDemoRequestsAsync(status?.ToString());
+
+    private async Task Pick(DemoRequestStatus? s) { status = s; await Reload(); }
+
+    private async Task Change(DemoRequestDto d, DemoRequestStatus next)
+    {
+        await Api.UpdateDemoRequestStatusAsync(d.Id, next);
+        Toast.Push("وضعیت به‌روزرسانی شد", d.Name, ToastTone.Ok);
+        await Reload();
+    }
+}

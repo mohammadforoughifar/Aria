@@ -1,0 +1,448 @@
+@page "/catalog"
+@implements IAsyncDisposable
+@inject Services.IStoreApi Api
+@inject Services.CartState Cart
+@inject Services.ToastService Toast
+@inject Services.JsInterop Js
+@inject NavigationManager Nav
+
+<PageTitle>نرم‌افزارها — فروغ آریا پارسیان</PageTitle>
+
+<!-- ============ ۱. سرصفحه ============ -->
+<section class="hero hero--split">
+    <div class="wrap hero__inner">
+
+        <!-- ستونِ متن: در راست‌چین سمتِ راست می‌نشیند -->
+        <div class="hero__copy">
+            <span class="hero__eyebrow">
+                <b>نرم‌افزارها</b>
+                برای هر بخشِ کسب‌وکار، یک راه‌حلِ آماده
+            </span>
+
+            <h1 class="hero__title">
+                نرم‌افزارهای <span>فروغ آریا پارسیان</span>؛ از حسابداری تا حقوق و دستمزد
+            </h1>
+
+            <p class="hero__sub">
+                هر سیستم را جداگانه بخرید یا کنار هم بچینید. همهٔ آن‌ها روی یک پایگاهِ دادهٔ
+                مشترک کار می‌کنند، بنابراین اطلاعات یک‌بار ثبت می‌شود و در همه‌جا در دسترس است.
+            </p>
+
+            <div class="hero__cta">
+                <a class="btn btn--buy btn--lg" href="#software">
+                    <Icon Name="grid" Size="18" /> مشاهدهٔ نرم‌افزارها
+                </a>
+                <a class="btn btn--outline-light btn--lg" href="#consult">
+                    <Icon Name="headphones" Size="18" /> مشاورهٔ رایگان
+                </a>
+            </div>
+        </div>
+
+        <!-- گرافیکِ متحرک: در راست‌چین سمتِ چپ.
+             درونش را جاوااسکریپت می‌سازد تا بازرندرهایِ بلِیزر انیمیشن را از نو نکند. -->
+        <div class="hero__visual">
+            <div class="orb" @ref="OrbEl" role="img"
+                 aria-label="ماژول‌های نرم‌افزار که به یک پایگاه داده مشترک وصل می‌شوند"></div>
+        </div>
+
+        @* آمار: مقدارِ نهایی در نشانه‌گذاری حاضر است. سرصفحه هیچ وابستگی‌ای
+           به API ندارد و در صورت نرسیدنِ داده، «۰» نشان نمی‌دهد. *@
+        <div class="hero__stats" @ref="StatsEl">
+            <div class="hero__stat">
+                <b class="num" data-stat data-n="@statModules">@statModulesText</b>
+                <span>ماژول یکپارچه</span>
+            </div>
+            <div class="hero__stat">
+                <b class="num" data-stat data-n="@statDatabase">@statDatabaseText</b>
+                <span>پایگاه داده مشترک</span>
+            </div>
+            <div class="hero__stat">
+                <b class="num" data-stat data-n="@statTrial">@statTrialText</b>
+                <span>روز نسخه آزمایشی</span>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- ============ ۲. دسته‌بندی‌ها ============ -->
+<section class="section section--tight" id="software">
+    <div class="wrap">
+        <div class="section__head">
+            <div class="section__eyebrow">گروه‌ها</div>
+            <h2 class="section__title">کدام بخشِ کسب‌وکارتان را سامان می‌دهید؟</h2>
+            <p class="section__sub">روی هر گروه بزنید تا نرم‌افزارهایش را ببینید.</p>
+        </div>
+
+        <div class="cat-grid">
+            <button class="cat-card @(category is null ? "is-active" : "")"
+                    @onclick='() => SetCategory(null)' type="button">
+                <span class="cat-card__icon" style="background:rgba(37,99,235,.12);color:var(--blue-600)">
+                    <Icon Name="layers" Size="20" />
+                </span>
+                <b class="cat-card__name">همهٔ نرم‌افزارها</b>
+                <span class="cat-card__desc">نمایِ کاملِ مجموعه</span>
+                <span class="cat-card__count num">@Helpers.Fa.Num(result?.Meta.TotalCount ?? 0)</span>
+            </button>
+
+            @foreach (var cat in categories)
+            {
+                <button class="cat-card @(category == cat.Slug ? "is-active" : "")"
+                        @onclick="() => SetCategory(cat.Slug)" type="button">
+                    <span class="cat-card__icon">
+                        <Icon Name="@IconOf(cat.Slug)" Size="20" />
+                    </span>
+                    <b class="cat-card__name">@cat.Name</b>
+                    <span class="cat-card__desc clamp-2">@(cat.Description ?? "—")</span>
+                    <span class="cat-card__count num">@Helpers.Fa.Num(cat.ProductCount) نرم‌افزار</span>
+                </button>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- ============ ۳. جست‌وجو و مرتب‌سازی ============ -->
+<section class="section section--sunk">
+    <div class="wrap">
+        <div class="filters">
+            <div class="filters__search">
+                <div class="input-group">
+                    <span class="input-group__icon"><Icon Name="search" Size="16" /></span>
+                    <input class="input" placeholder="جست‌وجو در نام یا توضیحاتِ نرم‌افزار…"
+                           value="@search" @oninput="OnSearchInput" @onkeyup="OnSearchKey" />
+                </div>
+            </div>
+
+            <span class="filters__sep"></span>
+
+            <Segmented TValue="string" Items="@sortItems" Value="@sortBy" ValueChanged="OnSortChanged" />
+
+            @if (category is not null || !string.IsNullOrWhiteSpace(search))
+            {
+                <button class="btn btn--secondary btn--sm" @onclick="Reset">
+                    <Icon Name="refresh" Size="14" /> پاک کردن
+                </button>
+            }
+        </div>
+
+        <div class="row" style="justify-content:space-between;margin-top:var(--sp-4)">
+            <span class="small muted">
+                @if (result is not null)
+                {
+                    <text><span class="num">@Helpers.Fa.Num(result.Meta.TotalCount)</span> نرم‌افزار یافت شد</text>
+                }
+                else
+                {
+                    <text>در حال جست‌وجو…</text>
+                }
+            </span>
+            @if (category is not null)
+            {
+                <span class="badge badge--plain badge--brand">
+                    @(categories.FirstOrDefault(c => c.Slug == category)?.Name ?? category)
+                </span>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- ============ ۴. شبکهٔ نرم‌افزارها ============ -->
+<section class="section">
+    <div class="wrap">
+        @if (result is null)
+        {
+            <div class="prod-grid">
+                @for (var i = 0; i < 6; i++) { <Skeleton Kind="card" /> }
+            </div>
+        }
+        else if (result.Items.Count == 0)
+        {
+            <div class="card">
+                <EmptyState Icon="search" Title="نرم‌افزاری با این فیلتر پیدا نشد"
+                            Text="فیلترها را تغییر دهید یا عبارتِ جست‌وجو را کوتاه‌تر کنید.">
+                    <button class="btn btn--secondary btn--sm" @onclick="Reset">پاک کردن فیلترها</button>
+                </EmptyState>
+            </div>
+        }
+        else
+        {
+            <div class="prod-grid">
+                @foreach (var p in result.Items)
+                {
+                    <SoftwareCard Product="@p" Detail="@DetailOf(p.Id)" />
+                }
+            </div>
+
+            <Pager Meta="@result.Meta" OnPage="GoPage" />
+        }
+    </div>
+</section>
+
+<!-- ============ ۵. راهنمایِ انتخاب ============ -->
+<section class="section section--sunk">
+    <div class="wrap grid-3">
+        <div class="card card--pad card--hover">
+            <span class="stat__icon" style="background:rgba(245,158,11,.14);color:var(--warning)">
+                <Icon Name="sliders" Size="20" />
+            </span>
+            <h3 class="card__title">نمی‌دانید کدام مناسب است؟</h3>
+            <p class="muted small">
+                ویژگی‌ها و قیمتِ چند نرم‌افزار را کنار هم ببینید و آگاهانه انتخاب کنید.
+            </p>
+            <a class="btn btn--secondary btn--sm" href="/compare">مقایسهٔ نرم‌افزارها</a>
+        </div>
+
+        <div class="card card--pad card--hover">
+            <span class="stat__icon" style="background:rgba(22,163,74,.13);color:var(--success)">
+                <Icon Name="package" Size="20" />
+            </span>
+            <h3 class="card__title">چند سیستم را با هم می‌خواهید؟</h3>
+            <p class="muted small">
+                بسته‌هایِ آماده ارزان‌تر از خریدِ جداگانه‌اند و از همان روزِ اول هماهنگ‌اند.
+            </p>
+            <a class="btn btn--secondary btn--sm" href="/pricing">دیدنِ بسته‌ها</a>
+        </div>
+
+        <div class="card card--pad card--hover">
+            <span class="stat__icon" style="background:rgba(37,99,235,.12);color:var(--blue-600)">
+                <Icon Name="headphones" Size="20" />
+            </span>
+            <h3 class="card__title">مشاورهٔ رایگان</h3>
+            <p class="muted small">
+                نیازِ کسب‌وکارتان را بگویید تا دقیقاً همان چیزی را پیشنهاد دهیم که لازم دارید.
+            </p>
+            <a class="btn btn--secondary btn--sm" href="/contact">درخواست مشاوره</a>
+        </div>
+    </div>
+</section>
+
+<!-- ============ ۶. پرسش‌های پرتکرار ============ -->
+@if (faqs.Count > 0)
+{
+    <section class="section">
+        <div class="wrap wrap-sm">
+            <div class="section__head">
+                <div class="section__eyebrow">پرسش‌های پرتکرار</div>
+                <h2 class="section__title">پیش از خرید، این‌ها را بخوانید</h2>
+            </div>
+
+            <div class="faq">
+                @foreach (var f in faqs)
+                {
+                    <div class="faq__item @(openFaq == f.Id ? "is-open" : "")">
+                        <button class="faq__q" type="button" @onclick="() => ToggleFaq(f.Id)">
+                            @f.Question
+                            <Icon Name="chevron-down" Class="faq__chev" Size="17" />
+                        </button>
+                        @if (openFaq == f.Id)
+                        {
+                            <div class="faq__a">@f.Answer</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
+<!-- ============ ۷. فراخوانِ پایانی ============ -->
+<section class="section section--tight" id="consult">
+    <div class="wrap">
+        <div class="card card--pad card--accent" style="text-align:center;padding-block:var(--sp-8)">
+            <h2 class="section__title">۱۴ روز، رایگان امتحان کنید</h2>
+            <p class="muted" style="max-width:52ch;margin-inline:auto">
+                نسخهٔ آزمایشیِ کامل است؛ نیازی به کارتِ اعتباری ندارد و داده‌هایتان
+                در پایانِ دوره پاک نمی‌شود.
+            </p>
+            <div class="cta-row">
+                <a class="btn btn--buy btn--lg" href="/contact">
+                    <Icon Name="play" Size="17" /> دریافت نسخهٔ آزمایشی
+                </a>
+                <a class="btn btn--ghost btn--lg" href="/support">
+                    <Icon Name="message" Size="17" /> گفتگو با پشتیبانی
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private Paged<ProductListItemDto>? result;
+    private IReadOnlyList<CategoryDto> categories = Array.Empty<CategoryDto>();
+    private IReadOnlyList<FaqDto> faqs = Array.Empty<FaqDto>();
+    private Dictionary<string, ProductDetailDto> details = new();
+    private string? openFaq;
+
+    private string? category;
+    private string search = "";
+    private string sortBy = "popular";
+    private int page = 1;
+
+    private ElementReference OrbEl;
+    private ElementReference StatsEl;
+    private bool statsDirty;
+
+    /* ---------------- آمارِ سرصفحه ----------------
+       سرصفحه هرگز منتظرِ API نمی‌ماند: مقدارهایِ جایگزین همان ابتدا در
+       نشانه‌گذاری حاضرند. اگر دادهٔ واقعی رسید، جایگزین می‌شود — و هرگز
+       «۰» به‌عنوانِ نشانهٔ شکست نشان داده نمی‌شود.                        */
+    private const int FallbackModules = 28;
+    private const int FallbackTrial = 14;
+
+    private int statModules = FallbackModules;
+    private int statDatabase = 1;
+    private int statTrial = FallbackTrial;
+
+    // متن یک‌بار رندر می‌شود و بعداً تغییر نمی‌کند تا بلِیزر مالکِ شمارش نماند
+    private readonly string statModulesText = Helpers.Fa.Num(FallbackModules);
+    private readonly string statDatabaseText = Helpers.Fa.Num(1);
+    private readonly string statTrialText = Helpers.Fa.Num(FallbackTrial);
+
+    private IReadOnlyList<SegItem<string>> sortItems => new[]
+    {
+        new SegItem<string>("پرطرفدار", "popular"),
+        new SegItem<string>("جدیدترین", "newest"),
+        new SegItem<string>("امتیاز", "rating"),
+        new SegItem<string>("ارزان‌تر", "price-asc"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        ParseQuery();
+
+        // همه با هم — صفحه منتظرِ زنجیره‌ای از درخواست‌ها نمی‌ماند
+        var catTask = Api.GetCategoriesAsync();
+        var faqTask = Api.GetFaqsAsync();
+        var prodTask = Api.GetProductsAsync(new ProductQuery
+        {
+            Page = page,
+            PageSize = 12,
+            Search = string.IsNullOrWhiteSpace(search) ? null : search,
+            Category = category,
+            SortBy = sortBy,
+        });
+
+        await Task.WhenAll(catTask, faqTask, prodTask);
+
+        categories = await catTask;
+        faqs = (await faqTask).Take(6).ToList();
+        openFaq = faqs.FirstOrDefault()?.Id;
+        result = await prodTask;
+
+        /* فقط وقتی عددِ معناداری رسیده جایگزین کن — والا همان مقدارِ جایگزین
+           می‌ماند تا کاربر صفر نبیند. */
+        var total = result?.Meta.TotalCount ?? 0;
+        if (total > 0 && total != statModules) { statModules = total; statsDirty = true; }
+
+        StateHasChanged();
+        _ = LoadDetails();      // ویژگی‌هایِ هر کارت، در پس‌زمینه
+    }
+
+    private ProductDetailDto? DetailOf(string id)
+        => details.TryGetValue(id, out var d) ? d : null;
+
+    /// <summary>
+    /// ویژگی‌هایِ هر نرم‌افزار با یک درخواستِ دسته‌ای گرفته می‌شود،
+    /// نه با دوازده درخواستِ جداگانه.
+    /// </summary>
+    private async Task LoadDetails()
+    {
+        if (result is null || result.Items.Count == 0) return;
+        try
+        {
+            var list = await Api.GetProductsByIdsAsync(result.Items.Select(x => x.Id));
+            details = list.ToDictionary(x => x.Id);
+            StateHasChanged();
+        }
+        catch (Exception ex) { Console.WriteLine("[details] " + ex.Message); }
+    }
+
+    private void ParseQuery()
+    {
+        var query = Helpers.QueryString.Parse(Nav.Uri);
+        if (query.TryGetValue("category", out var c)) category = c;
+        if (query.TryGetValue("search", out var s)) search = s;
+        if (query.TryGetValue("sortBy", out var so)) sortBy = so;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try { await Js.HeroOrbitMount(OrbEl, StatsEl); }
+            catch { /* اگر نشد، گرافیک همان حالتِ ایستا می‌ماند */ }
+        }
+
+        // مقدارِ واقعی رسیده است: از عددِ کنونی به آن می‌رویم، نه از صفر
+        if (statsDirty)
+        {
+            statsDirty = false;
+            try { await Js.HeroStatsUpdate(StatsEl); } catch { }
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await Js.HeroOrbitDispose(); } catch { }
+    }
+
+    private async Task Load()
+    {
+        result = await Api.GetProductsAsync(new ProductQuery
+        {
+            Page = page,
+            PageSize = 12,
+            Search = string.IsNullOrWhiteSpace(search) ? null : search,
+            Category = category,
+            SortBy = sortBy,
+        });
+        details = new();
+        StateHasChanged();
+        _ = LoadDetails();
+    }
+
+    private async Task GoPage(int p) { page = p; await Load(); }
+
+    private async Task OnSortChanged(string? value)
+    {
+        sortBy = value ?? "popular";
+        page = 1;
+        await Load();
+    }
+
+    private async Task SetCategory(string? slug)
+    {
+        category = slug;
+        page = 1;
+        await Load();
+    }
+
+    private async Task OnSearchInput(ChangeEventArgs e)
+    {
+        search = e.Value?.ToString() ?? "";
+        if (string.IsNullOrWhiteSpace(search)) { page = 1; await Load(); }
+    }
+
+    private async Task OnSearchKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") { page = 1; await Load(); }
+    }
+
+    private async Task Reset()
+    {
+        category = null; search = ""; sortBy = "popular"; page = 1;
+        await Load();
+    }
+
+    private void ToggleFaq(string id) => openFaq = openFaq == id ? null : id;
+
+    private static string IconOf(string slug) => slug switch
+    {
+        "erp-suite" => "layers",
+        "finance-accounting" => "calculator",
+        "operations-inventory" => "boxes",
+        "desktop-productivity" => "monitor",
+        "addons-integrations" => "puzzle",
+        _ => "package",
+    };
+}

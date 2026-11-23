@@ -1,0 +1,490 @@
+@page "/systems"
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+
+<PageTitle>سیستم‌های فروغ آریا پارسیان ابری — از ثبت سند تا گزارش نهایی</PageTitle>
+
+<!-- ============================ قهرمان ============================ -->
+<section class="hero">
+    <div class="wrap hero__inner">
+        <span class="hero__eyebrow"><b>نسخهٔ ابری</b> بدون نصب، بدون سرور، بدون نگه‌داری</span>
+
+        <h1 class="hero__title">سیستم‌های <span>فروغ آریا پارسیان ابری</span></h1>
+
+        <p class="hero__sub">از ثبت سند تا گزارش نهایی، روی یک بستر یکپارچه</p>
+
+        <p class="lead" style="max-width:70ch;margin:var(--sp-4) auto 0;text-align:center;line-height:2">
+            سیستم حسابداری، پایهٔ اصلی نرم‌افزار فروغ آریا پارسیان ابری است.
+            بقیهٔ سیستم‌ها را متناسب با فعالیتِ کسب‌وکارتان اضافه می‌کنید.
+        </p>
+
+        <div class="hero__cta">
+            <a class="btn btn--buy btn--lg" href="#packages"><Icon Name="package" Size="18" /> انتخابِ بسته</a>
+            <a class="btn btn--outline-light btn--lg" href="#consult"><Icon Name="headphones" Size="18" /> مشاورهٔ رایگان</a>
+        </div>
+
+        <div class="hero__stats">
+            <div class="hero__stat"><b class="num">@Helpers.Fa.Num(7)</b><span>سیستمِ یکپارچه</span></div>
+            <div class="hero__stat"><b class="num">@Helpers.Fa.Num(14)</b><span>روز آزمایشِ رایگان</span></div>
+            <div class="hero__stat"><b class="num">@Helpers.Fa.Num(99)</b><span>درصد در دسترس‌بودن</span></div>
+            <div class="hero__stat"><b class="num">@Helpers.Fa.Num(24)</b><span>ساعت پاسخ‌گویی</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================ سیستم‌ها ============================ -->
+<section class="section section--tight" id="systems">
+    <div class="wrap">
+        <div class="section__head">
+            <div class="section__eyebrow">سیستم‌ها</div>
+            <h2 class="section__title">کدام سیستم‌ها را نیاز دارید؟</h2>
+            <p class="section-sub">
+                حسابداری پایهٔ همه‌چیز است؛ بقیه را هر زمان بخواهید فعال می‌کنید
+                و همه از همان لحظه با هم کار می‌کنند.
+            </p>
+        </div>
+
+        <div class="grid-3">
+            @foreach (var s in systems)
+            {
+                <div class="card card--pad card--hover @(s.IsCore ? "card--accent" : "")">
+                    <div class="row-2" style="align-items:center;justify-content:space-between">
+                        <span class="stat__icon" style="background:@s.TintBg;color:@s.TintFg">
+                            <Icon Name="@s.Icon" Size="19" />
+                        </span>
+                        @if (s.IsCore)
+                        {
+                            <span class="badge badge--brand badge--sm">پایهٔ اصلی</span>
+                        }
+                    </div>
+                    <h3 style="margin:var(--sp-3) 0 var(--sp-2);font-size:var(--fs-md)">@s.Title</h3>
+                    <p class="small muted" style="margin:0;line-height:1.9">@s.Desc</p>
+                    <div class="feat-list" style="margin-top:var(--sp-3)">
+                        @foreach (var f in s.Items)
+                        {
+                            <div class="feat"><span class="feat__check"><Icon Name="check" Size="12" /></span>@f</div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- ======================= برای مدیرِ کسب‌وکار ======================= -->
+<section class="section section--sunk" id="manager">
+    <div class="wrap">
+        <div class="section__head">
+            <div class="section__eyebrow">برای مدیر کسب‌وکار</div>
+            <h2 class="section__title">همراهی در کارهای روزمره، خیالِ آسوده در کارهای مهم</h2>
+            <p class="section-sub">
+                خیال آسوده با گزارش‌های مدیریتی و تکالیف قانونی — شما تصمیم می‌گیرید،
+                سیستم پیگیری می‌کند.
+            </p>
+        </div>
+
+        <div class="grid-2" style="align-items:start">
+            <div class="card card--pad">
+                <div class="row-2" style="align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-4)">
+                    <span class="stat__icon" style="background:#eff6ff;color:#2563eb"><Icon Name="chart" Size="19" /></span>
+                    <b>گزارش‌های مدیریتی</b>
+                </div>
+                <div class="stack-3">
+                    @foreach (var m in managerReports)
+                    {
+                        <div class="row-2" style="gap:var(--sp-3);align-items:flex-start">
+                            <span class="feat__check"><Icon Name="check" Size="12" /></span>
+                            <div>
+                                <b class="small">@m.Title</b>
+                                <p class="tiny muted" style="margin:3px 0 0;line-height:1.8">@m.Desc</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card card--pad">
+                <div class="row-2" style="align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-4)">
+                    <span class="stat__icon" style="background:#ecfdf5;color:#059669"><Icon Name="shield" Size="19" /></span>
+                    <b>تکالیفِ قانونی</b>
+                </div>
+                <div class="stack-3">
+                    @foreach (var m in legalTasks)
+                    {
+                        <div class="row-2" style="gap:var(--sp-3);align-items:flex-start">
+                            <span class="feat__check"><Icon Name="check" Size="12" /></span>
+                            <div>
+                                <b class="small">@m.Title</b>
+                                <p class="tiny muted" style="margin:3px 0 0;line-height:1.8">@m.Desc</p>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ======================== مقایسهٔ نسخه‌ها ======================== -->
+<section class="section" id="choose">
+    <div class="wrap">
+        <div class="section__head">
+            <div class="section__eyebrow">قبل از خرید، آگاهانه انتخاب کنید</div>
+            <h2 class="section__title">کدام فروغ آریا پارسیان برای شما مناسب‌تر است؟</h2>
+            <p class="section-sub">تفاوت‌های اصلی، در یک نگاه</p>
+        </div>
+
+        <div class="card table-wrap">
+            <div class="table-scroll">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="min-width:190px">معیار</th>
+                            <th>ابری</th>
+                            <th>رومیزی</th>
+                            <th>سازمانی</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in compare)
+                        {
+                            <tr>
+                                <th scope="row" class="small">@r.Label</th>
+                                <td class="small @(r.Best == "cloud" ? "strong" : "muted")">@r.Cloud</td>
+                                <td class="small @(r.Best == "desktop" ? "strong" : "muted")">@r.Desktop</td>
+                                <td class="small @(r.Best == "ent" ? "strong" : "muted")">@r.Enterprise</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========================= دو پرسش ========================= -->
+<section class="section section--sunk" id="packages">
+    <div class="wrap">
+        <div class="grid-2">
+            <div class="card card--pad" style="display:flex;flex-direction:column;gap:var(--sp-4)">
+                <div class="row-2" style="align-items:center;gap:var(--sp-3)">
+                    <span class="stat__icon" style="background:#eff6ff;color:#2563eb"><Icon Name="globe" Size="20" /></span>
+                    <b style="font-size:var(--fs-md)">زیرساختِ آماده و دسترسیِ آنلاین می‌خواهید؟</b>
+                </div>
+                <p class="small muted" style="margin:0;line-height:1.95">
+                    اگر سیستم‌های ابری پاسخگوی نیازتان هستند، بستهٔ مناسب خود را انتخاب کنید.
+                </p>
+                <div class="row-2" style="margin-top:auto;gap:var(--sp-3);flex-wrap:wrap">
+                    <a class="btn btn--buy" style="flex:1" href="/pricing"><Icon Name="cart" Size="16" /> انتخابِ بسته</a>
+                    <a class="btn btn--secondary" href="/compare">مقایسهٔ دقیق‌تر</a>
+                </div>
+            </div>
+
+            <div class="card card--pad" style="display:flex;flex-direction:column;gap:var(--sp-4)">
+                <div class="row-2" style="align-items:center;gap:var(--sp-3)">
+                    <span class="stat__icon" style="background:#fff7ed;color:#ea580c"><Icon Name="refresh" Size="20" /></span>
+                    <b style="font-size:var(--fs-md)">قصد تغییرِ نرم‌افزار به فروغ آریا پارسیان را دارید؟</b>
+                </div>
+                <p class="small muted" style="margin:0;line-height:1.95">
+                    نیازتان را با مشاور مطرح کنید تا نسخهٔ مناسبِ کسب‌وکارتان مشخص شود.
+                </p>
+                <div class="row-2" style="margin-top:auto;gap:var(--sp-3);flex-wrap:wrap">
+                    <a class="btn btn--buy" style="flex:1" href="#consult"><Icon Name="headphones" Size="16" /> گفتگو با مشاور</a>
+                    <a class="btn btn--secondary" href="/contact">تماس با ما</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===================== قصهٔ همراهی ===================== -->
+<section class="section" id="story">
+    <div class="wrap">
+        <div class="section__head">
+            <div class="section__eyebrow">قصهٔ همراهی</div>
+            <h2 class="section__title">قصهٔ همراهی با فروغ آریا پارسیان ابری</h2>
+            <p class="section-sub">از نخستین روز تا سال‌ها بعد — چه اتفاقی می‌افتد؟</p>
+        </div>
+
+        <div class="grid-2" style="align-items:start">
+            <div class="timeline">
+                @foreach (var st in story)
+                {
+                    <div class="timeline__item">
+                        <span class="timeline__dot timeline__dot--@st.Tone"><Icon Name="@st.Icon" Size="11" /></span>
+                        <div>
+                            <div class="timeline__title">@st.Title</div>
+                            <div class="timeline__meta">@st.When</div>
+                            <div class="timeline__body small muted">@st.Body</div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="card card--pad" style="position:sticky;top:100px">
+                <span class="chip"><Icon Name="quote" Size="13" /> از زبانِ مشتریان</span>
+                <p class="medium" style="line-height:2;margin:var(--sp-4) 0">
+                    «ماه اول فقط حسابداری را داشتیم. ماه سوم انبار را اضافه کردیم چون دیدیم
+                    موجودی‌اش با اسنادِ مالی یکی است. حالا صورت‌حساب‌ها خودکار به سامانهٔ مودیان
+                    می‌رود و من هر صبح فقط داشبورد را باز می‌کنم.»
+                </p>
+                <div class="row-2" style="align-items:center;gap:var(--sp-3)">
+                    <span class="avatar">م.ر</span>
+                    <div>
+                        <b class="small">مدیرعامل</b>
+                        <div class="tiny muted">شرکت پخشِ سراسری — ۳۲ نفر</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== درخواستِ مشاورهٔ رایگان ==================== -->
+<section class="section section--sunk" id="consult">
+    <div class="wrap wrap-sm">
+        <div class="section__head" style="text-align:center;justify-items:center">
+            <div class="section__eyebrow">مشاورهٔ رایگان</div>
+            <h2 class="section__title">درخواستِ مشاورهٔ رایگان</h2>
+            <p class="section-sub">
+                یک جلسهٔ ۳۰ دقیقه‌ای؛ نسخه و بستهٔ مناسبِ کسب‌وکارتان همان روز مشخص می‌شود.
+            </p>
+        </div>
+
+        <div class="card card--pad">
+            @if (sent)
+            {
+                <div style="text-align:center;padding:var(--sp-5) 0">
+                    <span class="stat__icon" style="background:#ecfdf5;color:#059669;margin-inline:auto">
+                        <Icon Name="check" Size="24" />
+                    </span>
+                    <h3 style="margin:var(--sp-4) 0 var(--sp-2)">درخواست شما ثبت شد</h3>
+                    <p class="small muted" style="margin:0;line-height:1.9">
+                        همکاران ما در کمتر از یک روزِ کاری با شما تماس می‌گیرند.
+                    </p>
+                    <button class="btn btn--secondary" style="margin-top:var(--sp-4)" @onclick="() => sent = false">
+                        ثبتِ درخواستِ دیگر
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="grid-2" style="gap:var(--sp-4)">
+                    <label class="field">
+                        <span class="field__label">نام و نام خانوادگی <span class="field__req">*</span></span>
+                        <input class="input" @bind="form.Name" placeholder="مثلاً مریم رضایی" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">ایمیل <span class="field__req">*</span></span>
+                        <input class="input input--ltr" style="text-align:left" @bind="form.Email" placeholder="name@company.com" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">نامِ شرکت</span>
+                        <input class="input" @bind="form.Company" placeholder="اختیاری" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">تعدادِ کارکنان</span>
+                        <select class="select" @bind="form.Size">
+                            <option value="">انتخاب کنید</option>
+                            <option value="1-10">۱ تا ۱۰ نفر</option>
+                            <option value="11-50">۱۱ تا ۵۰ نفر</option>
+                            <option value="51-200">۵۱ تا ۲۰۰ نفر</option>
+                            <option value="200+">بالای ۲۰۰ نفر</option>
+                        </select>
+                    </label>
+                </div>
+
+                <label class="field" style="margin-top:var(--sp-4)">
+                    <span class="field__label">توضیحِ نیاز</span>
+                    <textarea class="textarea" rows="4" @bind="form.Message"
+                              placeholder="مثلاً از نرم‌افزارِ دیگری می‌آییم و حدود ۵۰۰۰ قلم کالا داریم."></textarea>
+                </label>
+
+                <div class="row-2" style="margin-top:var(--sp-5);gap:var(--sp-3);align-items:center">
+                    <button class="btn btn--buy btn--lg" style="flex:1" @onclick="Submit" disabled="@busy">
+                        @if (busy) { <span class="btn__spinner"></span> <text>در حال ارسال…</text> }
+                        else { <Icon Name="headphones" Size="18" /> <text>ارسالِ درخواست</text> }
+                    </button>
+                    <span class="tiny muted">بدونِ تعهد و بدونِ هزینه</span>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- ==================== پرسش‌هایِ احتمالی ==================== -->
+<section class="section">
+    <div class="wrap wrap-sm">
+        <div class="section__head" style="text-align:center;justify-items:center">
+            <div class="section__eyebrow">پیش از تصمیم</div>
+            <h2 class="section__title">سوالاتی که ممکن است داشته باشید</h2>
+        </div>
+
+        <div class="faq">
+            @foreach (var f in faqs)
+            {
+                <div class="faq__item @(openFaq == f.Q ? "is-open" : "")">
+                    <button class="faq__q" @onclick="() => Toggle(f.Q)">
+                        <span>@f.Q</span>
+                        <span class="faq__chev"><Icon Name="chevron-down" Size="18" /></span>
+                    </button>
+                    @if (openFaq == f.Q)
+                    {
+                        <div class="faq__a animate-in">@f.A</div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    private bool sent, busy;
+    private string? openFaq;
+
+    private ConsultForm form = new();
+    private sealed class ConsultForm
+    {
+        public string Name { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string? Company { get; set; }
+        public string? Size { get; set; }
+        public string? Message { get; set; }
+    }
+
+    protected override void OnInitialized() => openFaq = faqs[0].Q;
+
+    private void Toggle(string q) => openFaq = openFaq == q ? null : q;
+
+    private async Task Submit()
+    {
+        if (form.Name.Trim().Length < 3)
+        {
+            Toast.Push("نام لازم است", "لطفاً نام و نام خانوادگی خود را بنویسید.", ToastTone.Warn);
+            return;
+        }
+        if (!form.Email.Contains('@') || form.Email.Length < 5)
+        {
+            Toast.Push("ایمیل نامعتبر است", "یک نشانیِ ایمیلِ معتبر بنویسید.", ToastTone.Warn);
+            return;
+        }
+
+        busy = true;
+        try
+        {
+            await Api.SubmitDemoRequestAsync(
+                null, form.Name.Trim(), form.Email.Trim(),
+                string.IsNullOrWhiteSpace(form.Company) ? null : form.Company.Trim(),
+                form.Size,
+                string.IsNullOrWhiteSpace(form.Message) ? "درخواستِ مشاوره از صفحهٔ سیستم‌های ابری" : form.Message.Trim());
+            sent = true;
+            form = new ConsultForm();
+            Toast.Push("ثبت شد", "به‌زودی با شما تماس می‌گیریم.", ToastTone.Ok);
+        }
+        catch
+        {
+            Toast.Push("ارسال ناموفق بود", "کمی بعد دوباره تلاش کنید.", ToastTone.Bad);
+        }
+        finally { busy = false; }
+    }
+
+    /* ----------------------------- داده‌ها ----------------------------- */
+
+    private static readonly Sys[] systems =
+    {
+        new("حسابداری", "calculator", "#eff6ff", "#2563EB", true,
+            "پایهٔ اصلیِ سامانه — بدون آن هیچ سیستمِ دیگری معنا ندارد.",
+            "سندِ حسابداریِ چندسطحی", "دفترِ کل و معین", "گزارشِ سود و زیان", "ترازنامه"),
+        new("اداری", "file", "#f5f3ff", "#7C3AED", false,
+            "امورِ روزمرهٔ دفتر و پیگیریِ کارها در یک کارتابل.",
+            "آرشیوِ اسناد", "اموال و دارایی ثابت", "کارتابل و یادآوری", "یادداشت و پیگیری"),
+        new("دریافت و پرداخت", "credit-card", "#ecfdf5", "#059669", false,
+            "خزانه‌داری، چک‌ها و پیگیریِ بدهی‌ها و مطالبات.",
+            "صندوق و بانک", "چک‌های دریافتی و پرداختی", "تطبیقِ بانکی", "سررسیدِ اقساط"),
+        new("انبارداری", "boxes", "#fff7ed", "#EA580C", false,
+            "کنترلِ موجودی در چند انبار با ردیابیِ دقیقِ کالا.",
+            "رسید و حواله", "انبارِ چندگانه", "انبارگردانی", "کاردکس و نقطهٔ سفارش"),
+        new("فروش کالا و خدمت", "tag", "#eff6ff", "#0369A1", false,
+            "از پیش‌فاکتور تا فاکتورِ نهایی و گزارشِ فروش.",
+            "پیش‌فاکتور و فاکتور", "قیمت‌گذاریِ چندگانه", "فاکتورِ خدماتی", "گزارشِ فروش و حاشیهٔ سود"),
+        new("سامانهٔ مودیان", "server", "#fef2f2", "#DC2626", false,
+            "اتصالِ مستقیم و ارسالِ خودکارِ صورتحساب‌ها.",
+            "ارسالِ خودکار", "پیگیریِ کدِ یکتا", "امضای دیجیتال", "گزارشِ خطاها"),
+        new("حقوق و دستمزد", "users", "#f0fdfa", "#0D9488", false,
+            "از کارکرد تا فیشِ حقوق و لیست‌های بیمه و مالیات.",
+            "محاسبهٔ حقوق", "فیشِ حقوق", "لیستِ بیمه", "مالیاتِ حقوق"),
+    };
+
+    private sealed record Sys(string Title, string Icon, string TintBg, string TintFg,
+                              bool IsCore, string Desc, params string[] Items);
+
+    private static readonly Item[] managerReports =
+    {
+        new("داشبوردِ روزانه", "فروش، نقدینگی و بدهی‌ها در یک نگاه، هر صبح"),
+        new("گزارشِ حاشیهٔ سود", "سودِ واقعیِ هر کالا، خدمت یا پروژه"),
+        new("پیش‌بینیِ نقدینگی", "چه دریافت‌ها و پرداخت‌هایی در راه است"),
+        new("مقایسهٔ دوره‌ای", "عملکردِ امسال در برابرِ سالِ قبل"),
+    };
+
+    private static readonly Item[] legalTasks =
+    {
+        new("صورتحسابِ الکترونیکی", "ارسالِ خودکار به سامانهٔ مودیان و پیگیریِ تأیید"),
+        new("لیستِ بیمه", "تهیهٔ دیسکتِ ماهانه برای سازمانِ تأمین اجتماعی"),
+        new("اظهارنامهٔ ارزش افزوده", "گزارشِ آماده برای ارائه به ادارهٔ مالیات"),
+        new("نگهداریِ سوابق", "ثبتِ تغییرات و ردیابیِ کامل برای حسابرسی"),
+    };
+
+    private sealed record Item(string Title, string Desc);
+
+    private static readonly Row[] compare =
+    {
+        new("نصب و راه‌اندازی", "ندارد — همین الان", "روی دستگاهِ شما", "استقرارِ اختصاصی", "cloud"),
+        new("دسترسی از هر جا", "با موبایل و دسکتاپ", "فقط همان دستگاه", "شبکهٔ داخلی و VPN", "cloud"),
+        new("به‌روزرسانی", "خودکار و بی‌وقفه", "دستی", "با هماهنگی", "cloud"),
+        new("پشتیبان‌گیری", "خودکارِ روزانه", "به‌عهدهٔ شما", "بر اساسِ قرارداد", "cloud"),
+        new("هزینهٔ آغازین", "اشتراکِ ماهانه", "خریدِ یک‌باره", "قراردادِ سالانه", "desktop"),
+        new("شخصی‌سازیِ عمیق", "محدود", "متوسط", "نامحدود", "ent"),
+        new("مناسب برای", "تیم‌های ۱ تا ۵۰ نفر", "کسب‌وکارهای تک‌دفتره", "سازمان‌های بزرگ", null),
+    };
+
+    private sealed record Row(string Label, string Cloud, string Desktop, string Enterprise, string? Best);
+
+    private static readonly Step[] story =
+    {
+        new("user", "ok", "روزِ اول — آشنایی",
+            "یک جلسهٔ کوتاه؛ فرآیندهایتان را می‌شنویم و نسخهٔ مناسب را پیشنهاد می‌دهیم.",
+            "همان هفته"),
+        new("download", "brand", "هفتهٔ اول — راه‌اندازی",
+            "حسابداری فعال می‌شود، کدینگ و اشخاص منتقل می‌گردد و اولین سند ثبت می‌شود.",
+            "۱ تا ۳ روز"),
+        new("boxes", "brand", "ماهِ اول — افزودنِ سیستم‌ها",
+            "انبار، دریافت و پرداخت یا هر سیستمِ دیگری که لازم دارید اضافه می‌شود.",
+            "۲ تا ۴ هفته"),
+        new("server", "ok", "ماه‌هایِ بعد — اتصال‌ها",
+            "سامانهٔ مودیان، بانک و دستیارِ هوشمند به جریان وصل می‌شوند.",
+            "پیوسته"),
+        new("headphones", "ok", "سال‌ها بعد — همراهی",
+            "تمدید، آموزشِ نیروی جدید و پشتیبانی؛ بدونِ قطعِ کارِ شما.",
+            "همیشه"),
+    };
+
+    private sealed record Step(string Icon, string Tone, string Title, string Body, string When);
+
+    private static readonly Faq[] faqs =
+    {
+        new("آیا نسخهٔ ابری امن است؟",
+            "داده‌ها در مرکزِ دادهٔ داخلِ کشور با رمزنگاری و پشتیبان‌گیریِ روزانه نگهداری می‌شود. دسترسی‌ها را خودتان سطح‌بندی می‌کنید و همهٔ تغییرات ثبت می‌گردد."),
+        new("اگر اینترنت قطع شود چه می‌شود؟",
+            "اطلاعات در مرورگر ذخیره می‌ماند و با وصل‌شدنِ دوباره همگام می‌شود. ثبتِ اسناد در لحظهٔ قطع هم ممکن است."),
+        new("می‌توانم بعداً سیستمِ دیگری اضافه کنم؟",
+            "بله. هر زمان که بخواهید سیستمِ جدید را فعال می‌کنید؛ داده‌هایِ قبلی دست‌نخورده باقی می‌مانند و از همان لحظه یکپارچه‌اند."),
+        new("انتقال از نرم‌افزارِ قبلی چطور انجام می‌شود؟",
+            "اشخاص، کالاها، ماندهٔ حساب‌ها و اسناد با ابزارِ مهاجرت منتقل و پیش از قطعیِ سیستمِ قبلی بررسی می‌شوند."),
+        new("آیا آموزش هم ارائه می‌دهید؟",
+            "بله. آموزشِ پایه همراهِ هر بسته است و دوره‌های اختصاصی برای تیمِ شما هم برگزار می‌شود."),
+        new("نسخهٔ آزمایشی چقدر است و چه دارد؟",
+            "۱۴ روز دسترسیِ کامل به همهٔ سیستم‌ها، بدون نیاز به کارتِ اعتباری. در پایان می‌توانید بستهٔ مورد نظر را بخرید یا ادامه ندهید."),
+    };
+
+    private sealed record Faq(string Q, string A);
+}

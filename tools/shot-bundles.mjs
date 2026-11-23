@@ -1,0 +1,11 @@
+import { chromium } from 'playwright-core';
+const b=await chromium.launch({args:['--no-sandbox']});
+const ctx=await b.newContext({viewport:{width:1440,height:900},deviceScaleFactor:2});
+const p=await ctx.newPage();
+await p.goto('http://localhost:5210/',{waitUntil:'domcontentloaded',timeout:120000});
+await p.waitForSelector('.bundle-grid',{state:'attached',timeout:30000});
+await p.waitForTimeout(2000);
+await p.locator('.bundle-grid').scrollIntoViewIfNeeded();
+await p.waitForTimeout(600);
+await p.locator('.bundle-grid').screenshot({path:'/home/user/shots/بسته‌ها-۱۴۴۰.png'});
+await b.close(); console.log('ok');

@@ -1,0 +1,128 @@
+@* هدرِ فروشگاه — چسبان با افکتِ شیشه‌ای *@
+@inject Services.CartState Cart
+@inject Services.AuthState Auth
+@inject Services.JsInterop Js
+@implements IDisposable
+
+<header class="site-header" id="siteHeader">
+    <div class="wrap site-header__inner">
+        <a class="brand" href="/" aria-label="فروغ آریا پارسیان — صفحهٔ اصلی">
+            <span class="brand__mark brand__mark--logo" aria-hidden="true">
+                <svg width="30" height="30" viewBox="0 0 32 32" fill="none">
+                    <rect x="1" y="1" width="30" height="30" rx="9" fill="url(#faGrad)" />
+                    <path d="M9 22.5V9.5h13.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M9 16h9" stroke="#F59E0B" stroke-width="2.6" stroke-linecap="round" />
+                    <circle cx="22.5" cy="9.5" r="2.8" fill="#F59E0B" />
+                    <defs>
+                        <linearGradient id="faGrad" x1="1" y1="1" x2="31" y2="31" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#1E3A8A" /><stop offset="1" stop-color="#0B1F3A" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </span>
+            <span class="brand__name">فروغ آریا پارسیان</span>
+        </a>
+
+        <nav class="nav nav--desktop">
+            <NavLink class="nav__link" href="/" Match="NavLinkMatch.All">خانه</NavLink>
+            <NavLink class="nav__link" href="/catalog">نرم‌افزارها</NavLink>
+            <NavLink class="nav__link" href="/systems">سیستم‌های ابری</NavLink>
+            <NavLink class="nav__link" href="/agencies">نمایندگی‌ها</NavLink>
+            <NavLink class="nav__link" href="/support">پشتیبانی</NavLink>
+            <NavLink class="nav__link" href="/training">آموزش</NavLink>
+            <NavLink class="nav__link" href="/about">درباره ما</NavLink>
+            <NavLink class="nav__link" href="/compare">
+                مقایسه
+                @if (CompareCount > 0)
+                {
+                    <span class="seg__count" style="margin-right:4px">@Helpers.Fa.Num(CompareCount)</span>
+                }
+            </NavLink>
+        </nav>
+
+        <div class="header-actions">
+            <ThemeToggle />
+            @if (Auth.IsReady)
+            {
+                @if (Auth.IsAuthenticated)
+                {
+                    <a class="btn btn--ghost btn--sm" href="/dashboard">
+                        <Icon Name="grid" Size="15" /> پورتال من
+                    </a>
+                    @if (Auth.IsAdmin)
+                    {
+                        <a class="btn btn--ghost btn--sm" href="/dashboard/admin">
+                            <Icon Name="sliders" Size="15" /> مدیریت
+                        </a>
+                    }
+                }
+                else
+                {
+                    <a class="btn btn--ghost btn--sm" href="/login">ورود</a>
+                    <a class="btn btn--primary btn--sm" href="/register">ثبت‌نام</a>
+                }
+            }
+
+            <a class="cart-btn" href="/cart" aria-label="سبد خرید">
+                <Icon Name="cart" Size="19" />
+                @if (Cart.Count > 0)
+                {
+                    <span class="cart-badge">@Helpers.Fa.Num(Cart.Count)</span>
+                }
+            </a>
+
+            <button class="burger" @onclick="ToggleMobile" aria-label="منو">
+                <Icon Name="menu" Size="20" />
+            </button>
+        </div>
+    </div>
+
+    @if (mobileOpen)
+    {
+        <div style="border-top:1px solid var(--line-soft);background:var(--surface);padding:10px 0">
+            <div class="wrap stack-2">
+                <NavLink class="nav__link" href="/" Match="NavLinkMatch.All" @onclick="ToggleMobile">خانه</NavLink>
+                <NavLink class="nav__link" href="/catalog" @onclick="ToggleMobile">نرم‌افزارها</NavLink>
+                <NavLink class="nav__link" href="/systems" @onclick="ToggleMobile">سیستم‌های ابری</NavLink>
+                <NavLink class="nav__link" href="/agencies" @onclick="ToggleMobile">نمایندگی‌ها</NavLink>
+                <NavLink class="nav__link" href="/support" @onclick="ToggleMobile">پشتیبانی</NavLink>
+                <NavLink class="nav__link" href="/training" @onclick="ToggleMobile">آموزش</NavLink>
+                <NavLink class="nav__link" href="/about" @onclick="ToggleMobile">درباره ما</NavLink>
+                <NavLink class="nav__link" href="/compare" @onclick="ToggleMobile">مقایسه</NavLink>
+                <NavLink class="nav__link" href="/blog" @onclick="ToggleMobile">وبلاگ</NavLink>
+                <NavLink class="nav__link" href="/contact" @onclick="ToggleMobile">تماس با ما</NavLink>
+                <NavLink class="nav__link" href="/api-docs" @onclick="ToggleMobile">مستندات API</NavLink>
+            </div>
+        </div>
+    }
+</header>
+
+@code {
+    [Parameter] public string SiteName { get; set; } = "فروغ آریا پارسیان";
+
+    private bool mobileOpen;
+    private int CompareCount => Compare.Ids.Count;
+
+    [Inject] public Services.CompareState Compare { get; set; } = default!;
+
+    private void ToggleMobile() => mobileOpen = !mobileOpen;
+
+    protected override void OnInitialized()
+    {
+        Cart.OnChange += StateHasChanged;
+        Auth.OnChange += StateHasChanged;
+        Compare.OnChange += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) await Js.WatchSticky("#siteHeader", "is-stuck");
+    }
+
+    public void Dispose()
+    {
+        Cart.OnChange -= StateHasChanged;
+        Auth.OnChange -= StateHasChanged;
+        Compare.OnChange -= StateHasChanged;
+    }
+}

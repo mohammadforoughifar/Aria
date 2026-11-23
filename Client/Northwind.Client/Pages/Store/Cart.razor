@@ -1,0 +1,171 @@
+@page "/cart"
+@inject Services.CartState CartState
+@inject Services.ToastService Toast
+@inject NavigationManager Nav
+@implements IDisposable
+
+<PageTitle>سبد خرید — فروغ آریا پارسیان</PageTitle>
+
+<div class="wrap" style="padding-block:var(--sp-9)">
+    <div class="breadcrumb" style="margin-bottom:var(--sp-4)">
+        <a href="/">خانه</a> <Icon Name="chevron-left" Size="13" /> <span>سبد خرید</span>
+    </div>
+
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">سبد خرید</h1>
+            <p class="page-sub">
+                @if (CartState.Cart is { } c)
+                {
+                    <span>@Helpers.Fa.Num(c.ItemCount) مورد انتخاب شده است</span>
+                }
+            </p>
+        </div>
+        <a class="btn btn--ghost btn--sm" href="/catalog"><Icon Name="plus" Size="14" /> افزودن محصول</a>
+    </div>
+
+    @if (CartState.Cart is null)
+    {
+        <div class="card"><Skeleton Kind="row" /><Skeleton Kind="row" /><Skeleton Kind="row" /></div>
+    }
+    else if (CartState.Cart.Items.Count == 0)
+    {
+        <div class="card">
+            <EmptyState Icon="cart" Title="سبد شما خالی است"
+                        Text="محصولی را از فروشگاه انتخاب کنید؛ پیش از پرداخت می‌توانید هر زمان آن را تغییر دهید.">
+                <a class="btn btn--primary btn--sm" href="/catalog">مشاهدهٔ محصولات</a>
+            </EmptyState>
+        </div>
+    }
+    else
+    {
+        <div class="checkout-grid">
+            <!-- ===== Lines ===== -->
+            <div class="card card--pad">
+                @foreach (var item in CartState.Cart.Items)
+                {
+                    <div class="cart-line">
+                        <span class="prod-card__icon" style="background:@(item.AccentColor)1a;color:@item.AccentColor">
+                            <Icon Name="package" Size="18" />
+                        </span>
+
+                        <div class="grow" style="min-width:0">
+                            <a class="heavy" href="/products/@item.ProductSlug" style="color:var(--ink-900)">@item.ProductName</a>
+                            <div class="row-2" style="margin-top:4px;flex-wrap:wrap">
+                                <StatusBadge Status="@item.Tier.ToString()" Kind="tier" Small="true" />
+                                <StatusBadge Status="@item.BillingType.ToString()" Kind="billing" Small="true" />
+                                <span class="tiny muted">@item.PlanName</span>
+                            </div>
+                        </div>
+
+                        <div class="qty">
+                            <button @onclick="() => SetQty(item.Id, item.Quantity - 1)" disabled="@(item.Quantity <= 1)" aria-label="کاهش">
+                                <Icon Name="minus" Size="14" />
+                            </button>
+                            <span class="qty__value num">@Helpers.Fa.Num(item.Quantity)</span>
+                            <button @onclick="() => SetQty(item.Id, item.Quantity + 1)" disabled="@(item.Quantity >= 99)" aria-label="افزایش">
+                                <Icon Name="plus" Size="14" />
+                            </button>
+                        </div>
+
+                        <div style="min-width:104px;text-align:left">
+                            <div class="heavy num">@Helpers.Fa.Money(item.LineTotalToman)</div>
+                            <div class="tiny muted num">@Helpers.Fa.Money(item.UnitPriceToman) هر واحد</div>
+                        </div>
+
+                        <button class="icon-btn" @onclick="() => Remove(item.Id)" title="حذف">
+                            <Icon Name="trash" Size="16" />
+                        </button>
+                    </div>
+                }
+            </div>
+
+            <!-- ===== Summary ===== -->
+            <aside class="summary stack-4">
+                <div class="card card--pad">
+                    <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-3)">خلاصهٔ سفارش</h2>
+
+                    <div class="summary__row">
+                        <span>جمع کل</span>
+                        <span class="num">@Helpers.Fa.Money(CartState.Cart.SubtotalToman)</span>
+                    </div>
+
+                    @if (CartState.Cart.DiscountToman > 0)
+                    {
+                        <div class="summary__row" style="color:var(--ok-600)">
+                            <span>تخفیف (@CartState.Cart.DiscountCode)</span>
+                            <span class="num">−@Helpers.Fa.Money(CartState.Cart.DiscountToman)</span>
+                        </div>
+                    }
+
+                    <div class="summary__row">
+                        <span>مالیات و عوارض</span>
+                        <span class="num">@Helpers.Fa.Money(CartState.Cart.TaxToman)</span>
+                    </div>
+
+                    <div class="summary__row summary__row--total">
+                        <span>قابل پرداخت</span>
+                        <span class="num">@Helpers.Fa.Money(CartState.Cart.TotalToman)</span>
+                    </div>
+
+                    <a class="btn btn--buy btn--block btn--lg" style="margin-top:var(--sp-4)" href="/checkout">
+                        <Icon Name="lock" Size="16" /> ادامه و تسویه
+                    </a>
+                </div>
+
+                <div class="card card--pad">
+                    <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-3)">کد تخفیف</h2>
+                    <div class="row-2">
+                        <input class="input input--ltr" style="text-align:left" placeholder="مثل LAUNCH25" @bind="code" />
+                        <button class="btn btn--secondary" @onclick="ApplyCode" disabled="@CartState.IsBusy">اعمال</button>
+                    </div>
+                    <p class="tiny muted" style="margin-top:var(--sp-2)">کدهای فعالِ دمو: <code>LAUNCH25</code>، <code>BUNDLE15</code>، <code>EDU40</code></p>
+                </div>
+
+                <div class="card card--pad" style="background:var(--surface-sunk)">
+                    <div class="feat-list" style="gap:8px">
+                        <div class="feat" style="font-size:var(--fs-sm)">
+                            <span class="feat__check"><Icon Name="check" Size="11" /></span>
+                            <span>لایسنس بلافاصله پس از پرداخت صادر می‌شود</span>
+                        </div>
+                        <div class="feat" style="font-size:var(--fs-sm)">
+                            <span class="feat__check"><Icon Name="check" Size="11" /></span>
+                            <span>فاکتور رسمی در پورتال شما قابل دانلود است</span>
+                        </div>
+                        <div class="feat" style="font-size:var(--fs-sm)">
+                            <span class="feat__check"><Icon Name="check" Size="11" /></span>
+                            <span>@Helpers.Fa.Num(30) روز ضمانت بازگشت وجه</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    }
+</div>
+
+@code {
+    private string code = "";
+
+    protected override void OnInitialized() => CartState.OnChange += StateHasChanged;
+
+    private async Task SetQty(string id, int qty) => await CartState.SetQuantityAsync(id, qty);
+
+    private async Task Remove(string id)
+    {
+        await CartState.RemoveAsync(id);
+        Toast.Push("مورد حذف شد", null, ToastTone.Info);
+    }
+
+    private async Task ApplyCode()
+    {
+        if (string.IsNullOrWhiteSpace(code)) return;
+        var before = CartState.Cart?.DiscountToman ?? 0;
+        await CartState.ApplyDiscountAsync(code.Trim().ToUpperInvariant());
+        var after = CartState.Cart?.DiscountToman ?? 0;
+
+        Toast.Push(after > before ? "کد تخفیف اعمال شد" : "این کد معتبر نیست یا منقضی شده",
+            code, after > before ? ToastTone.Ok : ToastTone.Warn);
+    }
+
+    public void Dispose() => CartState.OnChange -= StateHasChanged;
+}

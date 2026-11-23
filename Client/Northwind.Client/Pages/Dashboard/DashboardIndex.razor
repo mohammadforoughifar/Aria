@@ -1,0 +1,161 @@
+@page "/dashboard"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.AuthState Auth
+@inject Services.ToastService Toast
+
+<PageTitle>پیشخوان — فروغ آریا پارسیان</PageTitle>
+
+@if (overview is null)
+{
+    <div class="stack-5">
+        <div class="stat-grid">
+            @for (var i = 0; i < 4; i++) { <Skeleton Kind="stat" /> }
+        </div>
+        <Skeleton Kind="card" />
+    </div>
+}
+else
+{
+    <!-- ===== Greeting ===== -->
+    <div class="card card--pad" style="margin-bottom:var(--sp-5);background:linear-gradient(120deg,var(--brand-700),var(--violet-600));border:0;color:#fff">
+        <div class="between" style="flex-wrap:wrap;gap:var(--sp-4)">
+            <div>
+                <h1 style="color:#fff;font-size:var(--fs-2xl)">سلام، @Auth.User?.FullName 👋</h1>
+                <p style="color:rgba(255,255,255,.78);margin-top:6px;font-size:var(--fs-sm)">
+                    @Helpers.Fa.Num(overview.ActiveLicenses) لایسنسِ فعال و
+                    @Helpers.Fa.Num(overview.OpenTickets) تیکتِ باز دارید.
+                    @if (overview.ExpiringLicenses > 0)
+                    {
+                        <span style="color:#fde68a"> · @Helpers.Fa.Num(overview.ExpiringLicenses) لایسنس به‌زودی منقضی می‌شود</span>
+                    }
+                </p>
+            </div>
+            <div class="row-2" style="flex-wrap:wrap">
+                <a class="btn btn--sm" style="background:#fff;color:var(--brand-700)" href="/dashboard/licenses">
+                    <Icon Name="key" Size="15" /> لایسنس‌ها
+                </a>
+                <a class="btn btn--sm" style="background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.3)" href="/dashboard/tickets">
+                    <Icon Name="ticket" Size="15" /> تیکت جدید
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== KPIs ===== -->
+    <div class="stat-grid" style="margin-bottom:var(--sp-5)">
+        <StatCard Label="مجموع سفارش‌ها" Value="@Helpers.Fa.Num(overview.OrderCount)" Icon="file" Hint="از ابتدا">
+            <Sparkline Points="@overview.SpendSeries.Select(s => (long)s.TotalToman).ToList()" />
+        </StatCard>
+        <StatCard Label="لایسنس‌های فعال" Value="@Helpers.Fa.Num(overview.ActiveLicenses)" Icon="key" Tone="ok"
+                  Hint="@(overview.ExpiringLicenses > 0 ? $"{Helpers.Fa.Num(overview.ExpiringLicenses)} مورد نزدیک به انقضا" : "همه معتبرند")">
+            <div class="meter">
+                <div class="meter__fill meter__fill--ok" style="width:@(Percent(overview.ActiveLicenses, overview.ActiveLicenses + overview.ExpiringLicenses))%"></div>
+            </div>
+        </StatCard>
+        <StatCard Label="مجموع خرید" Value="@Helpers.Fa.MoneyCompact(overview.TotalSpentToman)" Icon="credit-card" Tone="violet" Hint="بدون احتسابِ مرجوعی" />
+        <StatCard Label="تیکت‌های باز" Value="@Helpers.Fa.Num(overview.OpenTickets)" Icon="ticket" Tone="warn" Hint="در انتظارِ پاسخ" />
+    </div>
+
+    <div class="grid-2-1">
+        <!-- ===== Recent orders ===== -->
+        <div class="card">
+            <div class="card__head">
+                <span class="card__title">آخرین سفارش‌ها</span>
+                <a class="small" href="/dashboard/orders">مشاهدهٔ همه</a>
+            </div>
+
+            @if (overview.RecentOrders.Count == 0)
+            {
+                <EmptyState Icon="file" Title="هنوز سفارشی ثبت نشده" Text="پس از نخستین خرید، سفارش‌های شما اینجا دیده می‌شوند.">
+                    <a class="btn btn--primary btn--sm" href="/catalog">دیدنِ محصولات</a>
+                </EmptyState>
+            }
+            else
+            {
+                <div class="table-scroll">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>شماره</th>
+                                <th>تاریخ</th>
+                                <th>مبلغ</th>
+                                <th style="text-align:left">وضعیت</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var o in overview.RecentOrders)
+                            {
+                                <tr>
+                                    <td><a class="heavy num--lat" href="/dashboard/orders">@o.OrderNumber</a></td>
+                                    <td class="small muted">@Helpers.Fa.Date(o.PlacedAt)</td>
+                                    <td class="num heavy">@Helpers.Fa.Money(o.TotalToman)</td>
+                                    <td style="text-align:left"><StatusBadge Status="@o.Status.ToString()" Kind="order" Small="true" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <div class="stack-4">
+            <!-- ===== Expiring ===== -->
+            <div class="card">
+                <div class="card__head"><span class="card__title">لایسنس‌های نزدیک به انقضا</span></div>
+                @if (overview.ExpiringLicensesList.Count == 0)
+                {
+                    <div class="card__body">
+                        <p class="small muted">هیچ لایسنسِ نزدیک‌به‌انقضایی ندارید.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="stack-3 card__body">
+                        @foreach (var l in overview.ExpiringLicensesList)
+                        {
+                            var days = Helpers.Fa.DaysUntil(l.ExpiresAt);
+                            <div>
+                                <div class="between">
+                                    <span class="small heavy truncate">@l.ProductName</span>
+                                    <span class="badge @(days <= 14 ? "badge--bad" : "badge--warn") badge--sm">
+                                        @Helpers.Fa.Num(days ?? 0) روز
+                                    </span>
+                                </div>
+                                <div class="meter" style="margin-top:6px">
+                                    <div class="meter__fill @(days <= 14 ? "meter__fill--bad" : "meter__fill--warn")"
+                                         style="width:@(Math.Clamp(100 - (days ?? 0), 5, 100))%"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="card__foot">
+                        <a class="small" href="/dashboard/licenses">مدیریتِ لایسنس‌ها</a>
+                    </div>
+                }
+            </div>
+
+            <!-- ===== Quick actions ===== -->
+            <div class="card card--pad">
+                <span class="card__title" style="display:block;margin-bottom:var(--sp-3)">دسترسیِ سریع</span>
+                <div class="stack-2">
+                    <a class="dropdown__item" href="/dashboard/downloads"><Icon Name="download" Size="16" /> دانلودِ نصاب‌ها</a>
+                    <a class="dropdown__item" href="/dashboard/invoices"><Icon Name="file" Size="16" /> فاکتورها</a>
+                    <a class="dropdown__item" href="/dashboard/tickets"><Icon Name="ticket" Size="16" /> تیکت‌های من</a>
+                    <a class="dropdown__item" href="/dashboard/profile"><Icon Name="user" Size="16" /> تنظیماتِ حساب</a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private CustomerOverviewDto? overview;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Auth.IsAuthenticated) overview = await Api.GetCustomerOverviewAsync();
+    }
+
+    private static int Percent(int a, int b) => b <= 0 ? 0 : Math.Clamp(a * 100 / b, 0, 100);
+}

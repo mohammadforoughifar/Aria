@@ -1,0 +1,35 @@
+@* پنجرهٔ modal *@
+@if (IsOpen)
+{
+    <div class="backdrop" @onclick="Close">
+        <div class="modal @(Wide ? "modal--wide" : "")" @onclick:stopPropagation="true" role="dialog" aria-modal="true">
+            <div class="modal__head">
+                <div class="grow">
+                    <div class="modal__title">@Title</div>
+                    @if (!string.IsNullOrWhiteSpace(Subtitle))
+                    {
+                        <div class="modal__sub">@Subtitle</div>
+                    }
+                </div>
+                <button class="icon-btn" @onclick="Close" aria-label="بستن"><Icon Name="x" /></button>
+            </div>
+            <div class="modal__body">@ChildContent</div>
+            @if (Footer is not null)
+            {
+                <div class="modal__foot">@Footer</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public bool Wide { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private async Task Close() => await OnClose.InvokeAsync();
+}

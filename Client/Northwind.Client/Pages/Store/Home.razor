@@ -1,0 +1,459 @@
+@page "/"
+@inject Services.IStoreApi Api
+@inject Services.CartState Cart
+@inject Services.ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>فروغ آریا پارسیان — مجموعه نرم‌افزار کسب‌وکار</PageTitle>
+
+@if (settings is null)
+{
+    @* تا رسیدنِ تنظیمات، اسکلت نشان می‌دهیم — نه یک جعبهٔ خالی.
+       با این کار نه صفحه خالی می‌ماند و نه پس از بارگیری، layout می‌پرد. *@
+    <section class="hero">
+        <div class="wrap hero__inner">
+            <div class="sk sk--text" style="width:190px;height:26px"></div>
+            <div class="sk" style="height:52px;margin-top:18px;border-radius:12px"></div>
+            <div class="sk" style="height:34px;width:78%;margin-top:14px;border-radius:12px"></div>
+            <div style="display:flex;gap:12px;margin-top:26px">
+                <div class="sk" style="width:180px;height:50px;border-radius:12px"></div>
+                <div class="sk" style="width:150px;height:50px;border-radius:12px"></div>
+            </div>
+        </div>
+    </section>
+    <section class="section section--tight">
+        <div class="wrap grid-3">
+            <div class="sk sk--card"></div>
+            <div class="sk sk--card"></div>
+            <div class="sk sk--card"></div>
+        </div>
+    </section>
+}
+else
+{
+    <!-- ============ Hero ============ -->
+    <section class="hero">
+        <div class="wrap hero__inner">
+            <span class="hero__eyebrow">
+                <b>نسخهٔ ۲۰۲۵٫۲</b>
+                منتشر شد — موتور قواعد مغایرت‌گیری و API نسخهٔ ۲
+            </span>
+
+            <h1 class="hero__title">
+                نرم‌افزار کسب‌وکاری که <span>واقعاً منتشر می‌شود</span>، مقیاس می‌یابد و می‌ماند
+            </h1>
+
+            <p class="hero__sub">@settings.HeroSubheading</p>
+
+            <div class="hero__cta">
+                <a class="btn btn--buy btn--lg" href="/catalog">
+                    <Icon Name="package" Size="18" /> مشاهدهٔ محصولات
+                </a>
+                <a class="btn btn--outline-light btn--lg" href="#demo">
+                    <Icon Name="play" Size="18" /> درخواست دمو
+                </a>
+            </div>
+
+            <div class="hero__stats">
+                <div class="hero__stat"><b class="num">@Helpers.Fa.Num(products?.Count ?? 0)</b><span>محصولِ یکپارچه</span></div>
+                <div class="hero__stat"><b class="num">@Helpers.Fa.Num(totalCustomers)</b><span>سازمانِ مشتری</span></div>
+                <div class="hero__stat"><b class="num">@Helpers.Fa.Num(settings.TrialDays)</b><span>روز نسخهٔ آزمایشی</span></div>
+                <div class="hero__stat"><b class="num">@Helpers.Fa.Num(98)</b><span>درصد نرخ تمدید</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ اکوسیستمِ نرم‌افزار (دیاگرامِ تعاملی) ============ -->
+    <Ecosystem />
+
+    <!-- ============ Categories ============ -->
+    <section class="section section--tight">
+        <div class="wrap">
+            <div class="section__head section__head--split">
+                <div>
+                    <div class="section__eyebrow">دسته‌بندی</div>
+                    <h2 class="section__title">یک مجموعه، به‌جای ده ابزارِ جدا</h2>
+                </div>
+                <a class="btn btn--ghost btn--sm" href="/catalog">
+                    همهٔ محصولات <Icon Name="arrow-left" Size="15" />
+                </a>
+            </div>
+
+            <div class="cat-grid">
+                @foreach (var cat in categories)
+                {
+                    <a class="cat-tile" href="/catalog?category=@cat.Slug">
+                        <span class="cat-tile__icon"><Icon Name="@IconOf(cat.Slug)" Size="19" /></span>
+                        <div>
+                            <div class="cat-tile__name">@cat.Name</div>
+                            <p class="cat-tile__desc">@cat.Description</p>
+                        </div>
+                        <span class="cat-tile__count">@Helpers.Fa.Num(cat.ProductCount) محصول</span>
+                    </a>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ Featured ============ -->
+    <section class="section section--sunk">
+        <div class="wrap">
+            <div class="section__head section__head--split">
+                <div>
+                    <div class="section__eyebrow">منتخب</div>
+                    <h2 class="section__title">پرطرفدارترین ماژول‌ها</h2>
+                    <p class="section__sub">بر اساسِ تعداد نصبِ فعال و امتیازِ مشتریان در سه ماه گذشته.</p>
+                </div>
+            </div>
+
+            @if (featured is null)
+            {
+                <div class="prod-grid">
+                    @for (var i = 0; i < 3; i++) { <Skeleton Kind="card" /> }
+                </div>
+            }
+            else
+            {
+                <div class="prod-grid">
+                    @foreach (var p in featured)
+                    {
+                        <ProductCard Product="@p" />
+                    }
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- ============ Value props ============ -->
+    <section class="section">
+        <div class="wrap">
+            <div class="section__head">
+                <div class="section__eyebrow">چرا فروغ آریا پارسیان</div>
+                <h2 class="section__title">مهندسی‌شده برای کسب‌وکارهایی که تحملِ توقف ندارند</h2>
+            </div>
+
+            <div class="grid-3">
+                @foreach (var v in values)
+                {
+                    <div class="card card--pad card--hover">
+                        <span class="stat__icon" style="background:@v.TintBg;color:@v.TintFg">
+                            <Icon Name="@v.Icon" Size="18" />
+                        </span>
+                        <h3 style="margin-top:16px;font-size:var(--fs-md)">@v.Title</h3>
+                        <p class="small muted-2" style="margin-top:6px;line-height:var(--lh-relax)">@v.Text</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ مقایسه ============ -->
+    <section class="section section--sunk" id="compare">
+        <div class="wrap">
+            <div class="section__head">
+                <div class="section__eyebrow">مقایسه</div>
+                <h2 class="section__title">کدام بسته برای شما مناسب‌تر است؟</h2>
+                <p class="section-sub">
+                    بسته‌ها را کنار هم ببینید، امکانات را مقایسه کنید و همان‌جا تصمیم بگیرید.
+                </p>
+            </div>
+
+            <div class="compare-cta">
+                <div class="compare-cta__side">
+                    <div class="compare-cta__row">
+                        <span class="feat__check"><Icon Name="check" Size="12" /></span>
+                        <span>مقایسهٔ امکاناتِ همهٔ بسته‌ها</span>
+                    </div>
+                    <div class="compare-cta__row">
+                        <span class="feat__check"><Icon Name="check" Size="12" /></span>
+                        <span>مقایسهٔ قیمتِ ۶ و ۱۲ ماهه</span>
+                    </div>
+                    <div class="compare-cta__row">
+                        <span class="feat__check"><Icon Name="check" Size="12" /></span>
+                        <span>امکانِ ترکیبِ ماژول‌ها در بستهٔ اختصاصی</span>
+                    </div>
+                </div>
+                <div class="compare-cta__actions">
+                    <a class="btn btn--buy btn--lg" href="#pricing">
+                        <Icon Name="cart" Size="18" /> خرید
+                    </a>
+                    <a class="btn btn--outline btn--lg" href="/contact">
+                        <Icon Name="headphones" Size="18" /> مشاورهٔ رایگان
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ چهار مزیت ============ -->
+    <section class="section">
+        <div class="wrap">
+            <div class="grid-4">
+                <div class="benefit">
+                    <span class="benefit__icon"><Icon Name="globe" Size="22" /></span>
+                    <b class="benefit__title">بدون نیاز به نصب و سرور</b>
+                    <p class="benefit__text">دسترسی از هر جا با موبایل و دسکتاپ</p>
+                </div>
+                <div class="benefit">
+                    <span class="benefit__icon"><Icon Name="layers" Size="22" /></span>
+                    <b class="benefit__title">اطلاعات یکپارچه</b>
+                    <p class="benefit__text">یک منبع برای تیم مالی و مدیریت</p>
+                </div>
+                <div class="benefit">
+                    <span class="benefit__icon"><Icon Name="refresh" Size="22" /></span>
+                    <b class="benefit__title">همواره به‌روز</b>
+                    <p class="benefit__text">به‌روزرسانی و پشتیبان‌گیری خودکار</p>
+                </div>
+                <div class="benefit">
+                    <span class="benefit__icon"><Icon Name="headphones" Size="22" /></span>
+                    <b class="benefit__title">همراهی فروغ آریا پارسیان</b>
+                    <p class="benefit__text">آموزش و پشتیبانی در مسیر استفاده</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ قیمت و خرید اشتراک ============ -->
+    <section class="section section--sunk" id="pricing">
+        <div class="wrap">
+            <div class="section__head">
+                <div class="section__eyebrow">قیمت و خرید اشتراک</div>
+                <h2 class="section__title">بستهٔ آماده یا انتخابِ اختصاصی؟</h2>
+                <p class="section-sub">
+                    بستهٔ متناسب با فعالیتتان را انتخاب کنید یا سیستم‌های مورد نیازتان را
+                    کنار هم بگذارید — به صورت ۶ ماهه و ۱۲ ماهه.
+                </p>
+            </div>
+
+            @if (bundles is null)
+            {
+                <div class="grid-3">@for (var i = 0; i < 3; i++) { <Skeleton Kind="card" /> }</div>
+            }
+            else
+            {
+                <div class="bundle-grid">
+                    @foreach (var b in bundles)
+                    {
+                        var p6 = b.Plans.FirstOrDefault(x => x.LicenseMonths == 6);
+                        var p12 = b.Plans.FirstOrDefault(x => x.LicenseMonths == 12) ?? b.Plans.FirstOrDefault();
+                        <article class="bundle">
+                            <div class="bundle__stripe" style="background:@b.AccentColor"></div>
+                            <div class="bundle__head">
+                                <b class="bundle__name">@b.Name</b>
+                                <p class="bundle__tagline">@b.Tagline</p>
+                            </div>
+
+                            <div class="bundle__prices">
+                                <button class="bundle__price @(Sel(b.Id) == 6 ? "is-active" : "")"
+                                        @onclick="() => Pick(b.Id, 6)">
+                                    <span class="bundle__period">۶ ماهه</span>
+                                    <span class="bundle__amount num">@Helpers.Fa.Money(p6?.PriceToman ?? 0)</span>
+                                </button>
+                                <button class="bundle__price @(Sel(b.Id) == 12 ? "is-active" : "")"
+                                        @onclick="() => Pick(b.Id, 12)">
+                                    <span class="bundle__period">۱۲ ماهه</span>
+                                    <span class="bundle__amount num">@Helpers.Fa.Money(p12?.PriceToman ?? 0)</span>
+                                </button>
+                            </div>
+
+                            <div class="bundle__feats">
+                                @foreach (var f in b.Features.Take(5))
+                                {
+                                    <div class="feat"><span class="feat__check"><Icon Name="check" Size="12" /></span>@f</div>
+                                }
+                            </div>
+
+                            <div class="bundle__actions">
+                                <button class="btn btn--buy btn--block" @onclick="() => Buy(b)">
+                                    <Icon Name="cart" Size="16" /> خرید آنلاین
+                                </button>
+                                <a class="btn btn--secondary btn--block" href="/contact?topic=مشاوره">
+                                    <Icon Name="headphones" Size="16" /> درخواست مشاوره
+                                </a>
+                            </div>
+                        </article>
+                    }
+                </div>
+
+                <div class="bundle-note">
+                    <Icon Name="info" Size="16" />
+                    <span>
+                        همهٔ بسته‌ها شاملِ نصب، انتقالِ داده و آموزشِ پایه هستند.
+                        امکانِ ارتقا در هر زمان و تمدید با تخفیف وجود دارد.
+                    </span>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- ============ Testimonials ============ -->
+    <section class="section section--sunk">
+        <div class="wrap">
+            <div class="section__head">
+                <div class="section__eyebrow">تجربهٔ مشتریان</div>
+                <h2 class="section__title">از زبانِ تیم‌هایی که هر روز با آن کار می‌کنند</h2>
+            </div>
+
+            <div class="quote-grid">
+                @foreach (var t in testimonials)
+                {
+                    <figure class="quote">
+                        <div class="quote__mark">”</div>
+                        <blockquote class="quote__text">@t.Quote</blockquote>
+                        <figcaption class="quote__who">
+                            <span class="avatar">@Helpers.Fa.Initials(t.AuthorName)</span>
+                            <span>
+                                <span class="quote__name">@t.AuthorName</span>
+                                <span class="quote__role">@t.AuthorRole · @t.Company</span>
+                            </span>
+                        </figcaption>
+                    </figure>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ FAQ ============ -->
+    <section class="section">
+        <div class="wrap wrap-sm">
+            <div class="section__head" style="text-align:center;justify-items:center">
+                <div class="section__eyebrow">پرسش‌های پرتکرار</div>
+                <h2 class="section__title">پیش از تماس، این‌ها را بخوانید</h2>
+            </div>
+
+            <div class="faq">
+                @foreach (var f in faqs)
+                {
+                    <div class="faq__item @(openFaq == f.Id ? "is-open" : "")">
+                        <button class="faq__q" @onclick="() => ToggleFaq(f.Id)">
+                            <span>@f.Question</span>
+                            <span class="faq__chev"><Icon Name="chevron-down" Size="18" /></span>
+                        </button>
+                        @if (openFaq == f.Id)
+                        {
+                            <div class="faq__a animate-in">@f.Answer</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ CTA ============ -->
+    <section class="section" id="demo">
+        <div class="wrap">
+            <div class="card card--pad-lg" style="background:linear-gradient(135deg,var(--brand-700),var(--violet-600));border:0;color:#fff;text-align:center">
+                <h2 style="color:#fff;font-size:var(--fs-3xl)">یک دموی اختصاصی برای تیم خود ببینید</h2>
+                <p style="color:rgba(255,255,255,.82);margin-top:12px;max-width:60ch;margin-inline:auto;line-height:var(--lh-relax)">
+                    ۴۵ دقیقه، روی داده‌های واقعیِ خودتان — بدون اسلایدِ فروش.
+                </p>
+                <div class="row-3" style="justify-content:center;margin-top:24px;flex-wrap:wrap">
+                    <a class="btn btn--lg" style="background:#fff;color:var(--brand-700)" href="/contact">
+                        <Icon Name="calendar" Size="18" /> رزرو دمو
+                    </a>
+                    <a class="btn btn--lg" style="background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.28)" href="/catalog">
+                        <Icon Name="package" Size="18" /> مقایسهٔ محصولات
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+@code {
+    private SiteSettingsDto? settings;
+    private IReadOnlyList<CategoryDto> categories = Array.Empty<CategoryDto>();
+    private IReadOnlyList<ProductListItemDto>? featured;
+    private IReadOnlyList<ProductListItemDto>? products;
+    private IReadOnlyList<TestimonialDto> testimonials = Array.Empty<TestimonialDto>();
+    private IReadOnlyList<FaqDto> faqs = Array.Empty<FaqDto>();
+    private int totalCustomers = 480;
+    private string? openFaq;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // همهٔ درخواست‌ها هم‌زمان فرستاده می‌شوند.
+        // پیش از این یکی‌یکی بودند و صفحه تا پایانِ آخرینِ آن‌ها خالی می‌ماند.
+        var settingsTask = Api.GetSettingsAsync();
+        var categoriesTask = Api.GetCategoriesAsync();
+        var testimonialsTask = Api.GetTestimonialsAsync();
+        var faqsTask = Api.GetFaqsAsync();
+        var productsTask = Api.GetProductsAsync(new ProductQuery { PageSize = 100, SortBy = "popular" });
+
+        await Task.WhenAll(settingsTask, categoriesTask, testimonialsTask, faqsTask, productsTask);
+
+        settings = await settingsTask;
+        categories = await categoriesTask;
+        testimonials = await testimonialsTask;
+        faqs = await faqsTask;
+        openFaq = faqs.FirstOrDefault()?.Id;
+
+        var all = await productsTask;
+        products = all.Items;
+        featured = all.Items.Where(p => p.IsFeatured).Take(3).ToList();
+        StateHasChanged();
+        _ = LoadBundles();
+    }
+
+    private void ToggleFaq(string id) => openFaq = openFaq == id ? null : id;
+
+    private static string IconOf(string slug) => slug switch
+    {
+        "erp-suite" => "layers",
+        "finance-accounting" => "calculator",
+        "operations-inventory" => "boxes",
+        "desktop-productivity" => "monitor",
+        "addons-integrations" => "puzzle",
+        _ => "package",
+    };
+
+    /// <summary>بسته‌های اشتراک (از پایگاه‌داده؛ دستهٔ bundles در پنل قابلِ ویرایش است).</summary>
+    private IReadOnlyList<ProductDetailDto>? bundles;
+
+    /// <summary>دورهٔ انتخاب‌شده برای هر بسته (پیش‌فرض ۱۲ ماهه).</summary>
+    private readonly Dictionary<string, int> picked = new();
+
+    private int Sel(string id) => picked.TryGetValue(id, out var m) ? m : 12;
+    private void Pick(string id, int months) { picked[id] = months; }
+
+    private async Task Buy(ProductDetailDto b)
+    {
+        var months = Sel(b.Id);
+        var plan = b.Plans.FirstOrDefault(x => x.LicenseMonths == months) ?? b.Plans.FirstOrDefault();
+        if (plan is null) return;
+        await Cart.AddAsync(plan.Id, 1);
+        Toast.Push("به سبد افزوده شد", b.Name + " — " + plan.Name, ToastTone.Ok);
+        Nav.NavigateTo("/cart");
+    }
+
+    private async Task LoadBundles()
+    {
+        try
+        {
+            var list = await Api.GetProductsAsync(new ProductQuery { Category = "bundles", PageSize = 20, SortBy = "popular" });
+
+            // جزئیاتِ بسته‌ها با یک درخواستِ دسته‌ای گرفته می‌شود
+            // (پیش از این پنج درخواستِ جدا بود)
+            bundles = await Api.GetProductsByIdsAsync(list.Items.Select(x => x.Id));
+            Console.WriteLine($"[bundles] {bundles.Count} بسته بارگیری شد");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("[bundles] خطا: " + ex.Message);
+            bundles = Array.Empty<ProductDetailDto>();
+        }
+        StateHasChanged();
+    }
+
+    private static readonly IReadOnlyList<ValueProp> values = new[]
+    {
+        new ValueProp("server", "روی زیرساخت خودتان", "داده‌ها از سازمان خارج نمی‌شود. نصب روی سرورِ داخلی یا ابرِ اختصاصی، با پشتیبان‌گیریِ خودکار.", "#eef2ff", "#4f46e5"),
+        new ValueProp("zap", "استقرار در یک بعدازظهر", "جادوگرِ نصب و ابزار مهاجرت، انتقال از سیستم قبلی را بدون توقفِ عملیات انجام می‌دهد.", "#ecfdf5", "#059669"),
+        new ValueProp("code", "API برای هر یکپارچه‌سازی", "مستنداتِ OpenAPI، کلیدهای اختصاصی و لایهٔ معنایی آماده برای ابزارهای تحلیلی.", "#f5f3ff", "#7c3aed"),
+        new ValueProp("headphones", "پشتیبانیِ مهندسی", "تیکت‌ها را مهندسانی پاسخ می‌دهند که خودِ ماژول را نوشته‌اند — نه یک مرکز تماسِ عمومی.", "#fff1f2", "#e11d48"),
+        new ValueProp("shield", "حسابرسی و ردیابی کامل", "تاریخچهٔ تغییرات، تفکیک وظایف و گزارش‌های قانونی از همان روز اول فعال‌اند.", "#eff6ff", "#2563eb"),
+        new ValueProp("database", "یک لایهٔ دادهٔ مشترک", "همهٔ ماژول‌ها روی یک هستهٔ تراکنشی کار می‌کنند؛ مغایرت‌گیریِ دستی حذف می‌شود.", "#f0fdfa", "#0d9488"),
+    };
+
+    private sealed record ValueProp(string Icon, string Title, string Text, string TintBg, string TintFg);
+}

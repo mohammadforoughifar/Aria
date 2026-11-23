@@ -1,0 +1,386 @@
+/* ==========================================================================
+   Utilities — لایهٔ کمکیِ نازک: متن، فاصله‌گذاری، جریان و نشانه‌گذاریِ جدولی
+   فقط کلاس‌هایی که در نشانه‌گذاریِ صفحات مصرف شده‌اند اینجا تعریف می‌شوند.
+   ========================================================================== */
+
+/* ------------------------------- متن و رنگ ------------------------------- */
+.muted   { color: var(--text-3); }
+.strong  { font-weight: var(--fw-semi); color: var(--ink-900); }
+.tiny    { font-size: var(--fs-xs); }
+.small   { font-size: var(--fs-sm); }
+.center  { text-align: center; }
+.nowrap  { white-space: nowrap; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* اعداد: فارسی (پیش‌فرض) یا لاتین برای کدها و شناسه‌ها */
+.num     { font-variant-numeric: tabular-nums; direction: rtl; }
+.num--lat { font-family: var(--font-mono); direction: ltr; unicode-bidi: embed; letter-spacing: .01em; }
+
+/* ------------------------------ جریان و فضا ------------------------------ */
+.between { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+/* نکته: .wrap در base.css نگه‌دارنده‌یِ صفحه (بیشینه‌پهنا + میان‌مرکز) است.
+   اینجا زمانی display:flex گرفته بود که با آن تصادم می‌کرد و همهٔ شبکه‌هایِ
+   درونِ آن (.cat-grid و...) به اندازهٔ محتوا جمع می‌شدند و تک‌ستونه می‌ماندند.
+   برای چیدمانِ انعطاف‌پذیر از .wrapflex (در base.css) استفاده کنید. */
+.wrap    { /* بدون display — نگه‌دارنده می‌ماند، بلوکی */ }
+.spacer  { flex: 1 1 auto; }
+
+.row-2   { display: flex; align-items: center; gap: var(--sp-2); }
+.row-3   { display: flex; align-items: center; gap: var(--sp-3); }
+.row-4   { display: flex; align-items: center; gap: var(--sp-4); }
+.col-2   { display: grid; gap: var(--sp-2); }
+.col-3   { display: grid; gap: var(--sp-3); }
+
+.stack-2 { display: grid; gap: var(--sp-2); }
+.stack-3 { display: grid; gap: var(--sp-3); }
+.stack-4 { display: grid; gap: var(--sp-4); }
+.stack-5 { display: grid; gap: var(--sp-5); }
+.stack-6 { display: grid; gap: var(--sp-6); }
+
+/* ---------------------------------- جستجو -------------------------------- */
+.search { position: relative; display: block; min-width: 0; }
+.search .input { padding-right: var(--sp-8); }
+.search__icon {
+  position: absolute; top: 50%; right: var(--sp-3); transform: translateY(-50%);
+  display: grid; place-items: center; color: var(--text-4); pointer-events: none;
+}
+.search .input:focus + .search__icon,
+.search:focus-within .search__icon { color: var(--brand-600); }
+
+/* نوار ابزارِ شناورِ بالای جدول‌ها */
+.toolbar {
+  display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap;
+}
+.toolbar > .seg { flex: none; }
+
+/* ------------------------------- بخش و برچسب ----------------------------- */
+.section-label {
+  font-size: var(--fs-xs); font-weight: var(--fw-bold); color: var(--text-3);
+  letter-spacing: .04em; text-transform: none;
+  padding-bottom: var(--sp-2); margin-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+/* --------------------------------- جدول‌ها ------------------------------- */
+.table--plain thead th {
+  background: var(--surface-sunk); font-size: var(--fs-xs); font-weight: var(--fw-semi);
+  color: var(--text-3); text-transform: none; letter-spacing: 0;
+}
+.table--plain td, .table--plain th { padding: var(--sp-3); }
+
+/* جفتِ کلید/مقدارِ فشرده (اطلاعاتِ سفارش، تنظیمات و…) */
+.kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--sp-4); }
+.kv { display: grid; gap: 3px; padding: var(--sp-3) var(--sp-4); background: var(--surface-sunk); border: 1px solid var(--line-soft); border-radius: var(--r-md); }
+.kv > span { font-size: var(--fs-xs); color: var(--text-3); }
+.kv > b { font-size: var(--fs-base); font-weight: var(--fw-semi); color: var(--ink-900); }
+
+/* ------------------------------ سلولِ کاربر ------------------------------ */
+.cell-user { display: flex; align-items: center; gap: var(--sp-3); min-width: 0; }
+.cell-user__name { font-size: var(--fs-base); font-weight: var(--fw-semi); color: var(--ink-900); line-height: 1.35; }
+.cell-user__meta { font-size: var(--fs-xs); color: var(--text-4); line-height: 1.35; direction: ltr; text-align: right; }
+.cell-user__avatar { flex: none; }
+
+/* -------------------------------- آواتار -------------------------------- */
+.avatar--xs { width: 26px; height: 26px; font-size: 10px; }
+.avatar--sm { width: 32px; height: 32px; font-size: 11.5px; }
+.avatar--xl { width: 72px; height: 72px; font-size: var(--fs-xl); }
+
+/* -------------------------------- دکمه‌ها ------------------------------- */
+.btn--xs {
+  height: 28px; padding: 0 10px; border-radius: var(--r-sm);
+  font-size: var(--fs-xs); gap: 4px;
+}
+
+/* ------------------------------- کد و شناسه ----------------------------- */
+.order-code {
+  font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: var(--fw-semi);
+  color: var(--brand-700); background: var(--brand-50);
+  padding: 2px 7px; border-radius: var(--r-sm); border: 1px solid var(--brand-100);
+  direction: ltr; display: inline-block; letter-spacing: .02em;
+}
+
+/* -------------------------- شبکهٔ کارت‌های شاخص -------------------------- */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sp-4); }
+
+/* --------------------------------- پرچم -------------------------------- */
+.flag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: var(--fs-xs); font-weight: var(--fw-semi);
+  padding: 2px 8px; border-radius: var(--r-full);
+  background: var(--ink-100); color: var(--ink-600);
+}
+.flag--ok   { background: var(--ok-50);   color: var(--ok-700); }
+.flag--warn { background: var(--warn-50); color: var(--warn-700); }
+.flag--bad  { background: var(--bad-50);  color: var(--bad-700); }
+.flag--brand{ background: var(--brand-50); color: var(--brand-700); }
+
+/* ------------------------------- افکت‌های ریز ---------------------------- */
+.hover-lift { transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease); }
+.hover-lift:hover { transform: translateY(-2px); box-shadow: var(--sh-md); }
+
+/* ------------------------------- واکنش‌گرایی ---------------------------- */
+@media (max-width: 720px) {
+  .toolbar { gap: var(--sp-2); }
+  .toolbar > .search, .toolbar > .seg { width: 100%; max-width: none; }
+}
+
+/* --------------------- اندازهٔ فشردهٔ سگمنت‌کنترل (نوار ابزار) ------------- */
+.seg--sm { padding: 3px; }
+.seg--sm .seg__btn { height: 28px; padding: 0 var(--sp-3); font-size: var(--fs-sm); }
+.seg--sm .seg__pill { top: 3px; bottom: 3px; width: calc((100% - 6px) / var(--seg-n, 2)); right: calc(3px + var(--seg-i, 0) * ((100% - 6px) / var(--seg-n, 2))); }
+
+/* ============================ کلیدِ تغییرِ تم ============================= */
+.theme-toggle {
+  border: 0; background: transparent; padding: 0; cursor: pointer;
+  display: inline-grid; place-items: center;
+}
+.theme-toggle__track {
+  position: relative; width: 52px; height: 28px; border-radius: var(--r-full);
+  background: var(--ink-150); border: 1px solid var(--line);
+  display: block; transition: background-color var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease);
+}
+:root[data-theme="dark"] .theme-toggle__track { background: var(--brand-200); border-color: transparent; }
+.theme-toggle__thumb {
+  position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--surface); color: var(--warn-600);
+  display: grid; place-items: center; box-shadow: var(--sh-sm);
+  transition: transform var(--dur-3) var(--ease-spring), color var(--dur-2) var(--ease);
+}
+:root[data-theme="dark"] .theme-toggle__thumb { transform: translateX(-24px); color: var(--brand-700); }
+.theme-toggle:hover .theme-toggle__track { border-color: var(--brand-300); }
+
+/* ======================= دکمهٔ خرید (کهرباییِ اختصاصی) ==================== */
+/* طبقِ نیازمندی، کهربایی فقط برای خرید / افزودن به سبد / درخواستِ دمو */
+.btn--buy {
+  background: var(--accent); color: #3B2708; border: 1px solid transparent;
+  box-shadow: var(--sh-accent); font-weight: var(--fw-bold);
+}
+.btn--buy:hover:not(:disabled) {
+  background: #E28F09; color: #3B2708;
+  transform: translateY(-1px); box-shadow: 0 14px 30px -10px rgba(245, 158, 11, .52);
+}
+.btn--buy:active:not(:disabled) { transform: translateY(0); }
+.btn--buy:focus-visible { box-shadow: 0 0 0 3.5px rgba(245, 158, 11, .32), var(--sh-accent); }
+:root[data-theme="dark"] .btn--buy { color: #221703; }
+
+/* ======================= پوستهٔ سرمه‌ای: هدر و نوارِ بالا ================= */
+.site-header {
+  background: var(--navy-900);
+  border-bottom-color: transparent;
+}
+.site-header .brand__name { color: #fff; }
+.site-header .brand__name em { color: var(--accent); }
+.site-header .nav__link { color: rgba(255, 255, 255, .78); }
+.site-header .nav__link:hover { color: #fff; background: rgba(255, 255, 255, .10); }
+.site-header .nav__link.is-active { color: #fff; background: rgba(255, 255, 255, .14); font-weight: var(--fw-semi); }
+.site-header .cart-btn {
+  background: rgba(255, 255, 255, .10); border-color: rgba(255, 255, 255, .18); color: #fff;
+}
+.site-header .cart-btn:hover { background: rgba(255, 255, 255, .18); border-color: rgba(255, 255, 255, .3); color: #fff; }
+.site-header .icon-btn { color: rgba(255, 255, 255, .78); }
+.site-header .icon-btn:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.site-header.is-stuck { background: var(--navy-900); box-shadow: 0 6px 24px -12px rgba(11, 31, 58, .7); }
+.site-header .burger { color: rgba(255, 255, 255, .82); }
+.site-header .burger:hover { background: rgba(255, 255, 255, .12); }
+
+.topbar { background: var(--navy-900); border-bottom-color: rgba(255, 255, 255, .10); }
+.topbar .icon-btn { color: rgba(255, 255, 255, .8); }
+.topbar .icon-btn:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.topbar .burger { color: rgba(255, 255, 255, .82); }
+.topbar .burger:hover { background: rgba(255, 255, 255, .12); }
+.topbar .input { background: rgba(255, 255, 255, .10); border-color: rgba(255, 255, 255, .16); color: #fff; }
+.topbar .input::placeholder { color: rgba(255, 255, 255, .55); }
+.topbar .input:focus { border-color: var(--accent); background: rgba(255, 255, 255, .14); }
+.topbar .search__icon, .topbar .input-group__icon { color: rgba(255, 255, 255, .6); }
+
+/* ========================= سایدبارِ سرمه‌ای (پورتال) ====================== */
+.side {
+  background: var(--navy-900);
+  border-left-color: rgba(255, 255, 255, .08);
+}
+.side__head { border-bottom-color: rgba(255, 255, 255, .10); }
+.side__head .brand__name { color: #fff; }
+.side__label { color: rgba(255, 255, 255, .45); }
+.side__link { color: rgba(255, 255, 255, .76); }
+.side__link:hover { background: rgba(255, 255, 255, .09); color: #fff; }
+.side__link.is-active { background: rgba(255, 255, 255, .14); color: #fff; font-weight: var(--fw-semi); }
+.side__link.is-active::before { background: var(--accent); }
+.side__count { background: rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .82); }
+.side__link.is-active .side__count { background: var(--accent); color: #3B2708; }
+.side__foot { border-top-color: rgba(255, 255, 255, .10); }
+.side__user:hover { background: rgba(255, 255, 255, .09); }
+.side__user-name { color: #fff; }
+.side__user-mail { color: rgba(255, 255, 255, .5); }
+
+/* ============================== فوترِ سرمه‌ای ============================ */
+.site-footer { background: var(--navy-900); }
+.site-footer, .site-footer h4, .site-footer .site-footer__title { color: #fff; }
+.site-footer a { color: rgba(255, 255, 255, .74); }
+.site-footer a:hover { color: #fff; }
+
+/* دکمهٔ «درخواست دمو» روی قهرمانِ سرمه‌ای: کادرِ سفید */
+.btn--outline-light {
+  background: transparent; color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, .55);
+}
+.btn--outline-light:hover:not(:disabled) {
+  background: rgba(255, 255, 255, .12); border-color: #fff; color: #fff;
+  transform: translateY(-1px);
+}
+
+/* انتخابگرِ کوچک برای ستونِ عملیاتِ جدول */
+.select--sm {
+  padding: 5px 26px 5px 8px;
+  font-size: 12px;
+  min-height: 30px;
+  border-radius: var(--r-md, 8px);
+}
+
+/* =====================================================================
+   بخش‌های تازهٔ صفحهٔ اصلی
+   ===================================================================== */
+
+/* --- نشانِ لوگو در نوبار --- */
+.brand__mark--logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  font-size: 0;
+  overflow: visible;
+}
+.brand__mark--logo svg { display: block; border-radius: 9px; }
+
+/* --- بخشِ مقایسه --- */
+.compare-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-6, 24px);
+  padding: clamp(20px, 3vw, 32px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg, 16px);
+  background: var(--surface, #fff);
+  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, .05);
+}
+.compare-cta__side { display: grid; gap: 10px; }
+.compare-cta__row { display: flex; align-items: center; gap: 10px; font-size: var(--fs-sm); }
+.compare-cta__actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* --- چهار مزیت --- */
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-4, 16px);
+}
+@media (max-width: 1024px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px)  { .grid-4 { grid-template-columns: 1fr; } }
+
+.benefit {
+  padding: var(--sp-5, 20px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg, 16px);
+  background: var(--surface, #fff);
+  text-align: center;
+  transition: transform .35s cubic-bezier(.16,.84,.44,1), box-shadow .35s cubic-bezier(.16,.84,.44,1);
+}
+.benefit:hover { transform: translateY(-4px); box-shadow: 0 12px 30px -12px rgba(11, 31, 58, .18); }
+.benefit__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 52px; height: 52px; border-radius: 16px;
+  background: var(--bg-soft, #EFF4FB); color: var(--navy-700, #1E3A8A);
+}
+.benefit__title { display: block; margin: 14px 0 6px; font-size: var(--fs-md); }
+.benefit__text { margin: 0; font-size: var(--fs-sm); color: var(--text-muted, #475569); line-height: 1.85; }
+
+/* --- کارت‌های بستهٔ اشتراک --- */
+.bundle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  gap: var(--sp-4, 16px);
+  align-items: start;
+}
+.bundle {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4, 16px);
+  padding: var(--sp-5, 20px);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg, 16px);
+  background: var(--surface, #fff);
+  box-shadow: 0 4px 20px -4px rgba(15, 23, 42, .05);
+  overflow: hidden;
+  transition: transform .35s cubic-bezier(.16,.84,.44,1), box-shadow .35s cubic-bezier(.16,.84,.44,1);
+}
+.bundle:hover { transform: translateY(-4px); box-shadow: 0 14px 34px -14px rgba(11, 31, 58, .22); }
+.bundle__stripe { position: absolute; inset-block-start: 0; inset-inline: 0; height: 4px; }
+.bundle__head { padding-top: 6px; }
+.bundle__name { font-size: var(--fs-lg); display: block; }
+.bundle__tagline { margin: 6px 0 0; font-size: var(--fs-sm); color: var(--text-muted, #475569); line-height: 1.8; }
+
+/* minmax(0,…) لازم است: خانه‌هایِ شبکه به‌طور پیش‌فرض کوچک‌تر از محتوایشان
+   نمی‌شوند و جعبهٔ قیمت از کارت بیرون می‌زد. */
+.bundle__prices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.bundle__price {
+  display: grid; gap: 4px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  text-align: center;
+  font: inherit;
+  transition: border-color .25s ease, background .25s ease, transform .25s ease;
+}
+.bundle__price:hover { border-color: var(--blue-600, #2563EB); transform: translateY(-1px); }
+.bundle__price.is-active {
+  border-color: var(--accent, #F59E0B);
+  background: rgba(245, 158, 11, .08);
+}
+.bundle__period { font-size: var(--fs-xs, 12px); color: var(--text-muted, #475569); }
+/* ‏.num سراسری nowrap است تا عدد وسطِ خط نشکند. اینجا اجازهٔ شکستن می‌دهیم:
+   خودِ رقم فاصله ندارد پس سالم می‌ماند و فقط «تومان» به خطِ بعد می‌رود. */
+.bundle__amount {
+  font-size: var(--fs-md); font-weight: 700;
+  white-space: normal;
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.bundle__feats { display: grid; gap: 8px; }
+.bundle__actions { display: grid; gap: 8px; margin-top: auto; }
+
+.bundle-note {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-top: var(--sp-5, 20px);
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bg-soft, #EFF4FB);
+  color: var(--text-muted, #475569);
+  font-size: var(--fs-sm);
+  line-height: 1.85;
+}
+
+/* هشدارِ «ارتباط با سرور برقرار نیست» — جایگزینِ صفحهٔ سفید */
+.api-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: var(--fs-sm, 13px);
+  line-height: 1.8;
+}
+[data-theme="dark"] .api-warn {
+  background: rgba(217, 119, 6, .16);
+  border-bottom-color: rgba(252, 211, 77, .35);
+  color: #fcd34d;
+}
+.api-warn b { display: block; }
+.api-warn .icon-btn { color: inherit; flex: none; }

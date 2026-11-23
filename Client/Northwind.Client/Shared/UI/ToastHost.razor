@@ -1,0 +1,32 @@
+@* میزبانِ اعلان‌ها *@
+@inject Services.ToastService Toasts
+@implements IDisposable
+
+@if (Toasts.Items.Count > 0)
+{
+    <div class="toast-host" role="status" aria-live="polite">
+        @foreach (var t in Toasts.Items)
+        {
+            <div class="toast">
+                <span class="toast__icon toast__icon--@t.Tone.ToString().ToLowerInvariant()">
+                    <Icon Name="@(t.Tone switch { ToastTone.Ok => "check", ToastTone.Warn => "alert", ToastTone.Bad => "alert", _ => "info" })" Size="13" />
+                </span>
+                <div class="grow">
+                    <div class="toast__title">@t.Title</div>
+                    @if (!string.IsNullOrWhiteSpace(t.Message))
+                    {
+                        <div class="toast__msg">@t.Message</div>
+                    }
+                </div>
+                <button class="icon-btn" style="width:26px;height:26px" @onclick="() => Toasts.Dismiss(t.Id)" aria-label="بستن">
+                    <Icon Name="x" Size="13" />
+                </button>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    protected override void OnInitialized() => Toasts.OnChange += StateHasChanged;
+    public void Dispose() => Toasts.OnChange -= StateHasChanged;
+}

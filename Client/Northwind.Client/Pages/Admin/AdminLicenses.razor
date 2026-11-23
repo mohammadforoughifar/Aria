@@ -1,0 +1,232 @@
+@page "/dashboard/admin/licenses"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+
+<PageTitle>مدیریت لایسنس‌ها — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">لایسنس‌ها</h1>
+        <p class="page-sub">@(paged is null ? "…" : Helpers.Fa.Num(paged.Meta.TotalCount) + " کلید صادرشده")</p>
+    </div>
+    <button class="btn btn--primary btn--sm" @onclick="New">
+        <Icon Name="plus" Size="15" /> صدور لایسنس
+    </button>
+</div>
+
+<div class="toolbar">
+    <div class="search" style="flex:1;max-width:320px">
+        <span class="search__icon"><Icon Name="search" Size="16" /></span>
+        <input class="input" placeholder="کلید، مشتری یا محصول…" @bind="search" @bind:event="oninput" @onkeyup="OnSearch" />
+    </div>
+    <Segmented TValue="string" Size="sm" Items="@statusTabs" Value="@status" ValueChanged="OnStatusChanged" />
+</div>
+
+<div class="card table-wrap" style="margin-top:var(--sp-4)">
+    @if (paged is null)
+    {
+        <div style="padding:var(--sp-4)">
+            @for (var i = 0; i < 6; i++) { <Skeleton Kind="row" /> }
+        </div>
+    }
+    else if (paged.Items.Count == 0)
+    {
+        <EmptyState Icon="key" Title="لایسنسی یافت نشد" />
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table class="table">
+                <thead>
+                    <tr><th>محصول</th><th>دارنده</th><th>کلید</th><th>فعال‌سازی</th><th>انقضا</th><th>وضعیت</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in paged.Items)
+                    {
+                        <tr>
+                            <td>
+                                <div class="strong">@l.ProductName</div>
+                                <div class="tiny muted">@(l.PlanName ?? "—")</div>
+                            </td>
+                            <td>
+                                <div class="small">@(l.UserName ?? "—")</div>
+                                <div class="tiny muted num--lat">@l.UserEmail</div>
+                            </td>
+                            <td><CopyButton Value="@l.LicenseKey" /></td>
+                            <td style="min-width:120px">
+                                <div class="tiny num muted">@Helpers.Fa.Num(l.ActivationsUsed) از @Helpers.Fa.Num(l.Seats)</div>
+                                <Meter Value="@l.ActivationsUsed" Max="@l.Seats" />
+                            </td>
+                            <td class="num small muted">@(l.ExpiresAt is null ? "نامحدود" : Helpers.Fa.Date(l.ExpiresAt))</td>
+                            <td><StatusBadge Status="@l.Status.ToString()" Kind="license" Small="true" /></td>
+                            <td>
+                                <div class="table__actions">
+                                    <button class="btn btn--ghost btn--xs" @onclick="() => Extend(l)">تمدید ۹۰ روز</button>
+                                    @if (l.Status == LicenseStatus.Active)
+                                    {
+                                        <button class="btn btn--ghost btn--xs" style="color:var(--bad-600)" @onclick="() => Revoke(l)">ابطال</button>
+                                    }
+                                    else if (l.Status == LicenseStatus.Revoked)
+                                    {
+                                        <button class="btn btn--ghost btn--xs" style="color:var(--ok-600)" @onclick="() => Reinstate(l)">بازگردانی</button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (paged is { Meta.TotalPages: > 1 })
+{
+    <Pager Meta="@paged.Meta" OnPage="Go" />
+}
+
+<Modal IsOpen="@open" Title="صدور لایسنس جدید" Subtitle="کلید برای یکی از مشتریان صادر می‌شود."
+       OnClose="@(() => open = false)">
+    <ChildContent>
+        <div class="stack-4">
+            <label class="field">
+                <span class="field__label">مشتری <span class="field__req">*</span></span>
+                <select class="select" value="@userId" @onchange="OnUserPicked">
+                    <option value="">انتخاب کنید…</option>
+                    @foreach (var c in customers)
+                    {
+                        <option value="@c.Id">@c.FullName — @c.Email</option>
+                    }
+                </select>
+            </label>
+            <label class="field">
+                <span class="field__label">محصول <span class="field__req">*</span></span>
+                <select class="select" value="@productId" @onchange="OnProductPicked">
+                    <option value="">انتخاب کنید…</option>
+                    @foreach (var p in products)
+                    {
+                        <option value="@p.Id">@p.Name</option>
+                    }
+                </select>
+            </label>
+            <label class="field">
+                <span class="field__label">طرحِ قیمت</span>
+                <select class="select" @bind="planId">
+                    <option value="">بدون طرحِ مشخص</option>
+                    @foreach (var pl in plans)
+                    {
+                        <option value="@pl.Id">@pl.Name</option>
+                    }
+                </select>
+            </label>
+            <div class="grid-2" style="gap:var(--sp-4)">
+                <label class="field">
+                    <span class="field__label">تعداد صندلی</span>
+                    <input class="input input--ltr" style="text-align:left" type="number" min="1" @bind="seats" />
+                </label>
+                <label class="field">
+                    <span class="field__label">اعتبار (روز)</span>
+                    <input class="input input--ltr" style="text-align:left" type="number" min="30" @bind="days" />
+                </label>
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn--secondary" @onclick="() => open = false">انصراف</button>
+        <button class="btn btn--primary" @onclick="Issue">صدور</button>
+    </Footer>
+</Modal>
+
+@code {
+    private Paged<LicenseDto>? paged;
+    private IReadOnlyList<CustomerDto> customers = Array.Empty<CustomerDto>();
+    private IReadOnlyList<ProductListItemDto> products = Array.Empty<ProductListItemDto>();
+    private IReadOnlyList<PlanDto> plans = Array.Empty<PlanDto>();
+
+    private string search = "", status = "all";
+    private int current = 1;
+
+    private bool open;
+    private string userId = "", productId = "", planId = "";
+    private int seats = 5, days = 365;
+
+    private IReadOnlyList<SegItem<string>> statusTabs => new[]
+    {
+        new SegItem<string>("همه", "all"),
+        new SegItem<string>("فعال", "Active"),
+        new SegItem<string>("منقضی", "Expired"),
+        new SegItem<string>("باطل", "Revoked"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        customers = (await Api.GetCustomersAsync(1, 100)).Items;
+        products = (await Api.GetProductsAsync(new ProductQuery { PageSize = 100, IncludeInactive = true })).Items;
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        paged = await Api.GetLicensesAsync(current, 12, status == "all" ? null : status,
+            string.IsNullOrWhiteSpace(search) ? null : search.Trim());
+    }
+
+    private Task Go(int p) { current = p; return Load(); }
+    private Task OnStatusChanged(string? v) { status = v ?? "all"; current = 1; return Load(); }
+    private Task OnSearch(KeyboardEventArgs e) => e.Key == "Enter" ? Go(1) : Task.CompletedTask;
+
+    private void New()
+    {
+        userId = ""; productId = ""; planId = "";
+        seats = 5; days = 365;
+        plans = Array.Empty<PlanDto>();
+        open = true;
+    }
+
+    private void OnUserPicked(ChangeEventArgs e) => userId = e.Value?.ToString() ?? "";
+
+    private async Task OnProductPicked(ChangeEventArgs e)
+    {
+        productId = e.Value?.ToString() ?? "";
+        planId = "";
+        plans = productId.Length == 0
+            ? Array.Empty<PlanDto>()
+            : (await Api.GetProductByIdAsync(productId))?.Plans ?? Array.Empty<PlanDto>();
+    }
+
+    private async Task Extend(LicenseDto l)
+    {
+        await Api.LicenseActionAsync(l.Id, "extend", 90);
+        Toast.Push("تمدید شد", $"{l.ProductName} — ۹۰ روز", ToastTone.Ok);
+        await Load();
+    }
+
+    private async Task Revoke(LicenseDto l)
+    {
+        await Api.LicenseActionAsync(l.Id, "revoke");
+        Toast.Push("لایسنس باطل شد", l.LicenseKey, ToastTone.Info);
+        await Load();
+    }
+
+    private async Task Reinstate(LicenseDto l)
+    {
+        await Api.LicenseActionAsync(l.Id, "activate");
+        Toast.Push("لایسنس بازگردانده شد", l.LicenseKey, ToastTone.Ok);
+        await Load();
+    }
+
+    private async Task Issue()
+    {
+        if (userId.Length == 0 || productId.Length == 0)
+        {
+            Toast.Push("انتخاب ناقص است", "مشتری و محصول را انتخاب کنید.", ToastTone.Warn);
+            return;
+        }
+
+        await Api.GenerateLicenseAsync(userId, productId, planId.Length == 0 ? null : planId, seats, days);
+        open = false;
+        Toast.Push("لایسنس صادر شد", $"{Helpers.Fa.Num(seats)} صندلی · {Helpers.Fa.Num(days)} روز", ToastTone.Ok);
+        await Load();
+    }
+}

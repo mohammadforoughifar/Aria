@@ -1,0 +1,44 @@
+# ── خروجیِ ساخت ──
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+*.dll
+*.pdb
+*.cache
+
+# ── پایگاه‌داده و خروجیِ اجرا ──
+*.db
+*.db-shm
+*.db-wal
+*.mdf
+*.ldf
+App_Data/
+publish/
+*.log
+
+# ── وابستگی‌ها ──
+node_modules/
+package-lock.json.bak
+
+# ── بایگانی ──
+*.zip
+*.rar
+*.7z
+*.tar.gz
+
+# ── سیستم‌عامل ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── گزارش‌هایِ آزمون ──
+*-test.txt
+*-test-output.txt
+tools/*.png

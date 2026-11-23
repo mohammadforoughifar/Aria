@@ -1,0 +1,46 @@
+@* نمودار حلقه‌ای *@
+<div class="row-4" style="align-items:center;gap:20px">
+    <svg viewBox="0 0 120 120" style="width:@(Size)px;height:@(Size)px;flex:none">
+        <circle cx="60" cy="60" r="46" fill="none" stroke="var(--ink-100)" stroke-width="16" />
+        @{
+            var offset = 0.0;
+            var circumference = 2 * Math.PI * 46;
+        }
+        @foreach (var seg in Data)
+        {
+            var fraction = Total == 0 ? 0 : (double)seg.Value / Total;
+            var dash = fraction * circumference;
+            <circle class="chart__ring" cx="60" cy="60" r="46" fill="none"
+                    stroke="@seg.Color" stroke-width="16" stroke-linecap="butt"
+                    stroke-dasharray="@(dash.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)) @(circumference.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))"
+                    stroke-dashoffset="@((-offset).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))"
+                    transform="rotate(-90 60 60)" />
+            offset += dash;
+        }
+        @if (!string.IsNullOrWhiteSpace(CenterValue))
+        {
+            @((MarkupString)$"<text class='chart__donut-value' x='60' y='58' text-anchor='middle' font-size='19'>{CenterValue}</text>")
+            @((MarkupString)$"<text class='chart__donut-label' x='60' y='74' text-anchor='middle'>{CenterLabel}</text>")
+        }
+    </svg>
+
+    <div class="stack-3 grow">
+        @foreach (var seg in Data)
+        {
+            <div class="row-2" style="font-size:var(--fs-sm)">
+                <span style="width:9px;height:9px;border-radius:3px;background:@seg.Color;flex:none"></span>
+                <span class="grow" style="color:var(--text-2)">@seg.Label</span>
+                <span class="heavy num" style="color:var(--ink-800)">@Helpers.Fa.Num(seg.Value)</span>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<DonutSegment> Data { get; set; } = Array.Empty<DonutSegment>();
+    [Parameter] public int Size { get; set; } = 132;
+    [Parameter] public string CenterValue { get; set; } = "";
+    [Parameter] public string CenterLabel { get; set; } = "";
+
+    private long Total => Data.Sum(d => d.Value);
+}

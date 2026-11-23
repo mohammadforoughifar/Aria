@@ -1,0 +1,156 @@
+@page "/solutions"
+@inject Services.IStoreApi Api
+
+<PageTitle>راهکارِ سازمانی — فروغ آریا پارسیان</PageTitle>
+
+<!-- ============ Hero ============ -->
+<section class="hero">
+    <div class="wrap hero__inner">
+        <span class="hero__eyebrow"><b>ویژهٔ سازمان‌ها</b> استقرارِ ابری یا درون‌سازمانی</span>
+
+        <h1 class="hero__title">یک سامانهٔ یکپارچه، <span>برای کلِ سازمان</span></h1>
+
+        <p class="hero__sub">
+            از انبار و خرید تا مالی، فروش و منابعِ انسانی؛ همه روی یک پایگاه‌دادهٔ واحد.
+            با مدیرِ حسابِ اختصاصی و قراردادِ سطحِ خدمات.
+        </p>
+
+        <div class="hero__cta">
+            <a class="btn btn--buy btn--lg" href="/contact"><Icon Name="play" Size="18" /> درخواست دمو</a>
+            <a class="btn btn--outline-light btn--lg" href="/compare"><Icon Name="sliders" Size="18" /> مقایسهٔ طرح‌ها</a>
+        </div>
+
+        <div class="hero__stats">
+            <div class="hero__stat"><b class="num">@Helpers.Fa.Num(480)</b><span>سازمانِ مشتری</span></div>
+            <div class="hero__stat"><b class="num">@Helpers.Fa.Num(98)</b><span>درصد نرخ تمدید</span></div>
+            <div class="hero__stat"><b class="num">@Helpers.Fa.Num(14)</b><span>روز نسخهٔ آزمایشی</span></div>
+            <div class="hero__stat"><b class="num">@Helpers.Fa.Num(24)</b><span>ساعت زمانِ پاسخ‌گویی</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ چرا فروغ آریا پارسیان ============ -->
+<section class="section section--tight">
+    <div class="wrap">
+        <div class="section__head">
+            <div class="section__eyebrow">چرا فروغ آریا پارسیان</div>
+            <h2 class="section__title">آنچه یک سازمان واقعاً نیاز دارد</h2>
+            <p class="section__sub">نه فقط نرم‌افزار؛ بلکه استقرار، آموزش و پاسخ‌گویی.</p>
+        </div>
+
+        <div class="grid-3">
+            <div class="card card--pad card--hover">
+                <span class="stat__icon" style="background:#eff6ff;color:#2563eb"><Icon Name="database" Size="20" /></span>
+                <h3 style="margin:var(--sp-3) 0 var(--sp-2)">پایگاه‌دادهٔ واحد</h3>
+                <p class="small muted" style="line-height:1.9;margin:0">
+                    یک منبعِ حقیقت. انبار، مالی و فروش همگی یک عدد را می‌بینند و
+                    گزارش‌های تجمیعی در لحظه به‌روز می‌شوند.
+                </p>
+            </div>
+            <div class="card card--pad card--hover">
+                <span class="stat__icon" style="background:#ecfdf5;color:#059669"><Icon Name="shield" Size="20" /></span>
+                <h3 style="margin:var(--sp-3) 0 var(--sp-2)">امنیت و دسترسیِ لایه‌ای</h3>
+                <p class="small muted" style="line-height:1.9;margin:0">
+                    نقش‌ها و سطوحِ دسترسیِ قابلِ تنظیم، ثبتِ رویدادهای حساس،
+                    و استقرارِ کامل درون‌سازمانی برای سازمان‌های دارای ملاحظاتِ حاکمیتی.
+                </p>
+            </div>
+            <div class="card card--pad card--hover">
+                <span class="stat__icon" style="background:#fff7ed;color:#ea580c"><Icon Name="headphones" Size="20" /></span>
+                <h3 style="margin:var(--sp-3) 0 var(--sp-2)">پشتیبانیِ اختصاصی</h3>
+                <p class="small muted" style="line-height:1.9;margin:0">
+                    مدیرِ حسابِ اختصاصی، کانالِ پاسخ‌گوییِ سریع و قراردادِ سطحِ خدمات
+                    با زمانِ پاسخِ تضمین‌شده.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ مسیرِ همکاری ============ -->
+<section class="section section--sunk">
+    <div class="wrap">
+        <div class="section__head">
+            <div class="section__eyebrow">مسیرِ همکاری</div>
+            <h2 class="section__title">از جلسهٔ آشنایی تا استقرار</h2>
+        </div>
+
+        <ol class="progress-steps">
+            <li class="progress-steps__item"><span class="progress-steps__dot">۱</span><span class="progress-steps__label">نیازسنجی</span></li>
+            <li class="progress-steps__sep"></li>
+            <li class="progress-steps__item"><span class="progress-steps__dot">۲</span><span class="progress-steps__label">نمایشِ اختصاصی</span></li>
+            <li class="progress-steps__sep"></li>
+            <li class="progress-steps__item"><span class="progress-steps__dot">۳</span><span class="progress-steps__label">پایلوتِ ۳۰ روزه</span></li>
+            <li class="progress-steps__sep"></li>
+            <li class="progress-steps__item"><span class="progress-steps__dot">۴</span><span class="progress-steps__label">استقرار و آموزش</span></li>
+        </ol>
+
+        <div class="grid-3" style="margin-top:var(--sp-6)">
+            <div class="card card--pad">
+                <div class="tiny muted">مرحلهٔ ۱</div>
+                <b style="display:block;margin:var(--sp-2) 0">جلسهٔ نیازسنجی</b>
+                <p class="small muted" style="margin:0;line-height:1.85">فرآیندهای فعلیِ شما بررسی و شکاف‌ها مشخص می‌شود.</p>
+            </div>
+            <div class="card card--pad">
+                <div class="tiny muted">مرحلهٔ ۲</div>
+                <b style="display:block;margin:var(--sp-2) 0">نمایشِ اختصاصی</b>
+                <p class="small muted" style="margin:0;line-height:1.85">سامانه با دادهٔ نمونهٔ نزدیک به کسب‌وکارِ شما نمایش داده می‌شود.</p>
+            </div>
+            <div class="card card--pad">
+                <div class="tiny muted">مراحلِ ۳ و ۴</div>
+                <b style="display:block;margin:var(--sp-2) 0">پایلوت، سپس استقرار</b>
+                <p class="small muted" style="margin:0;line-height:1.85">یک واحد به‌مدتِ ۳۰ روز روی سامانه می‌رود؛ بعد انتقالِ داده و آموزش.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ ماژول‌های پیشنهادی ============ -->
+<section class="section">
+    <div class="wrap">
+        <div class="section__head section__head--split">
+            <div>
+                <div class="section__eyebrow">سبدِ پیشنهادی</div>
+                <h2 class="section__title">پرکاربردترین ماژول‌ها برای سازمان‌ها</h2>
+            </div>
+            <a class="btn btn--ghost btn--sm" href="/catalog">همهٔ محصولات <Icon Name="arrow-left" Size="15" /></a>
+        </div>
+
+        @if (products is null)
+        {
+            <div class="prod-grid">@for (var i = 0; i < 3; i++) { <Skeleton Kind="card" /> }</div>
+        }
+        else
+        {
+            <div class="prod-grid">
+                @foreach (var p in products) { <ProductCard Product="p" /> }
+            </div>
+        }
+    </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="section" id="demo">
+    <div class="wrap">
+        <div class="card card--pad-lg" style="background:linear-gradient(135deg,var(--navy-900),var(--navy-700));border:0;color:#fff;text-align:center">
+            <h2 style="color:#fff;font-size:var(--fs-3xl)">یک جلسهٔ ۴۵ دقیقه‌ای کافی است</h2>
+            <p style="color:rgba(255,255,255,.82);margin-top:12px;max-width:60ch;margin-inline:auto;line-height:var(--lh-relax)">
+                برآوردِ هزینه و زمانِ استقرار را همان جلسه تحویل می‌گیرید.
+            </p>
+            <div class="row-3" style="justify-content:center;margin-top:24px;flex-wrap:wrap">
+                <a class="btn btn--buy btn--lg" href="/contact"><Icon Name="calendar" Size="18" /> رزرو دمو</a>
+                <a class="btn btn--outline-light btn--lg" href="/compare">دیدنِ قیمت‌ها</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private IReadOnlyList<ProductListItemDto>? products;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var res = await Api.GetProductsAsync(new ProductQuery { PageSize = 3, SortBy = "popular" });
+        products = res.Items;
+    }
+}

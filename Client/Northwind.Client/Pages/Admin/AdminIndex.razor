@@ -1,0 +1,153 @@
+@page "/dashboard/admin"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+
+<PageTitle>نمای کلی مدیریت — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">نمای کلی</h1>
+        <p class="page-sub">شاخص‌های کلیدیِ فروش، لایسنس و پشتیبانی در یک نگاه.</p>
+    </div>
+    <div class="row-2">
+        <a class="btn btn--secondary btn--sm" href="/dashboard/admin/products"><Icon Name="package" Size="15" /> محصولات</a>
+        <a class="btn btn--primary btn--sm" href="/dashboard/admin/orders"><Icon Name="truck" Size="15" /> سفارش‌ها</a>
+    </div>
+</div>
+
+@if (data is null)
+{
+    <div class="stack-5">
+        <div class="stat-grid">@for (var i = 0; i < 4; i++) { <Skeleton Kind="stat" /> }</div>
+        <Skeleton Kind="card" />
+    </div>
+}
+else
+{
+    <!-- ===== KPIs ===== -->
+    <div class="stat-grid" style="margin-bottom:var(--sp-5)">
+        <StatCard Label="درآمدِ این ماه" Value="@Helpers.Fa.MoneyCompact(data.RevenueThisMonthToman)" Icon="trending-up"
+                  Tone="ok" Delta="@RevenueDelta" Hint="نسبت به ماه قبل" />
+        <StatCard Label="لایسنس‌های فعال" Value="@Helpers.Fa.Num(data.ActiveLicenses)" Icon="key" Tone="violet"
+                  Hint="@($"{Helpers.Fa.Num(data.ExpiringLicenses)} مورد تا ۴۵ روز آینده")" />
+        <StatCard Label="تیکت‌های باز" Value="@Helpers.Fa.Num(data.OpenTickets)" Icon="ticket" Tone="warn" Hint="نیازمند رسیدگی" />
+        <StatCard Label="نقدهای در صف" Value="@Helpers.Fa.Num(data.PendingReviews)" Icon="message" Tone="bad" Hint="منتظر تأیید" />
+    </div>
+
+    <div class="grid-2-1">
+        <div class="stack-4">
+            <!-- ===== Revenue chart ===== -->
+            <div class="card card--pad">
+                <div class="between" style="margin-bottom:var(--sp-4)">
+                    <div>
+                        <span class="card__title" style="display:block">درآمدِ ۱۲ ماه گذشته</span>
+                        <span class="tiny muted">سفارش‌های غیرِمرجوعی</span>
+                    </div>
+                    <span class="badge badge--ok"><Icon Name="trending-up" Size="11" /> @Helpers.Fa.SignedPercent(RevenueDelta)</span>
+                </div>
+                <BarChart Data="@Chart" Height="200" Formatter="@(v => Helpers.Fa.MoneyCompact((int)v))" />
+            </div>
+
+            <!-- ===== Recent orders ===== -->
+            <div class="card">
+                <div class="card__head">
+                    <span class="card__title">آخرین سفارش‌ها</span>
+                    <a class="small" href="/dashboard/admin/orders">مشاهدهٔ همه</a>
+                </div>
+                <div class="table-scroll">
+                    <table class="table">
+                        <thead>
+                            <tr><th>شماره</th><th>مشتری</th><th>مبلغ</th><th style="text-align:left">وضعیت</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var o in data.RecentOrders)
+                            {
+                                <tr>
+                                    <td class="small num--lat">@o.OrderNumber</td>
+                                    <td>
+                                        <div class="small heavy">@o.CustomerName</div>
+                                        <div class="tiny muted">@o.CustomerCompany</div>
+                                    </td>
+                                    <td class="num heavy">@Helpers.Fa.Money(o.TotalToman)</td>
+                                    <td style="text-align:left"><StatusBadge Status="@o.Status.ToString()" Kind="order" Small="true" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="stack-4">
+            <!-- ===== Top products ===== -->
+            <div class="card card--pad">
+                <span class="card__title" style="display:block;margin-bottom:var(--sp-4)">پرفروش‌ترین محصولات</span>
+                <DonutChart Data="@Donut" Size="128"
+                            CenterValue="@Helpers.Fa.Num(data.TopProducts.Sum(p => p.UnitsSold))"
+                            CenterLabel="واحد فروش" />
+            </div>
+
+            <!-- ===== Quick stats ===== -->
+            <div class="card card--pad">
+                <span class="card__title" style="display:block;margin-bottom:var(--sp-4)">وضعیتِ سیستم</span>
+                <div class="stack-4">
+                    <div class="between">
+                        <span class="row-2 small"><Icon Name="package" Size="15" /> محصولات</span>
+                        <span class="heavy num">@Helpers.Fa.Num(data.TotalProducts)</span>
+                    </div>
+                    <div class="between">
+                        <span class="row-2 small"><Icon Name="users" Size="15" /> مشتریان</span>
+                        <span class="heavy num">@Helpers.Fa.Num(data.TotalCustomers)</span>
+                    </div>
+                    <div class="between">
+                        <span class="row-2 small"><Icon Name="key" Size="15" /> لایسنسِ فعال</span>
+                        <span class="heavy num">@Helpers.Fa.Num(data.ActiveLicenses)</span>
+                    </div>
+                    <div class="between">
+                        <span class="row-2 small"><Icon Name="clock" Size="15" /> نزدیک‌به‌انقضا</span>
+                        <span class="heavy num" style="color:var(--warn-600)">@Helpers.Fa.Num(data.ExpiringLicenses)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== Recent tickets ===== -->
+            <div class="card">
+                <div class="card__head"><span class="card__title">آخرین تیکت‌ها</span></div>
+                <div class="stack-3 card__body">
+                    @foreach (var t in data.RecentTickets)
+                    {
+                        <div>
+                            <div class="between" style="align-items:flex-start;gap:8px">
+                                <a class="small heavy clamp-2" href="/dashboard/tickets/@t.Id" style="color:var(--ink-800)">@t.Subject</a>
+                                <StatusBadge Status="@t.Status.ToString()" Kind="ticket" Small="true" />
+                            </div>
+                            <div class="tiny muted" style="margin-top:2px">@t.UserName · @Helpers.Fa.TimeAgo(t.UpdatedAt)</div>
+                        </div>
+                    }
+                </div>
+                <div class="card__foot"><a class="small" href="/dashboard/admin/reviews">نقدهای در انتظار</a></div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private AdminOverviewDto? data;
+
+    protected override async Task OnInitializedAsync() => data = await Api.GetAdminOverviewAsync();
+
+    private decimal RevenueDelta => data is null || data.RevenueLastMonthToman == 0
+        ? 0
+        : (data.RevenueThisMonthToman - data.RevenueLastMonthToman) * 100m / data.RevenueLastMonthToman;
+
+    private IReadOnlyList<ChartPoint> Chart =>
+        (IReadOnlyList<ChartPoint>?)(data?.RevenueSeries.Select(r => new ChartPoint(r.Label, (long)r.TotalToman)).ToList())
+        ?? Array.Empty<ChartPoint>();
+
+    private IReadOnlyList<DonutSegment> Donut =>
+        (IReadOnlyList<DonutSegment>?)(data?.TopProducts.Select((p, i) => new DonutSegment(p.Name, p.UnitsSold, Palette[i % Palette.Length])).ToList())
+        ?? Array.Empty<DonutSegment>();
+
+    private static readonly string[] Palette =
+        { "#4f46e5", "#0ea5e9", "#10b981", "#f59e0b", "#f43f5e", "#8b5cf6" };
+}

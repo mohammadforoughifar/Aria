@@ -1,0 +1,41 @@
+@* نمودارِ جرقه‌ای (کوچک، درون کارت‌ها) *@
+<svg viewBox="0 0 100 30" preserveAspectRatio="none" style="width:100%;height:@(Height)px;display:block">
+    <defs>
+        <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="@Color" stop-opacity=".22" />
+            <stop offset="100%" stop-color="@Color" stop-opacity="0" />
+        </linearGradient>
+    </defs>
+    @if (Points.Count > 1)
+    {
+        <path d="@AreaPath" fill="url(#sparkFill)" />
+        <path d="@LinePath" fill="none" stroke="@Color" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" />
+    }
+</svg>
+
+@code {
+    [Parameter] public IReadOnlyList<long> Points { get; set; } = Array.Empty<long>();
+    [Parameter] public string Color { get; set; } = "#6366f1";
+    [Parameter] public int Height { get; set; } = 34;
+
+    private string LinePath => Build(false);
+    private string AreaPath => Build(true);
+
+    private string Build(bool close)
+    {
+        if (Points.Count < 2) return "";
+        var max = Math.Max(1, Points.Max());
+        var min = Math.Min(Points.Min(), max);
+        var span = Math.Max(1, max - min);
+        var step = 100.0 / (Points.Count - 1);
+
+        var pts = Points.Select((v, i) =>
+            (X: i * step, Y: 28 - ((double)(v - min) / span) * 26)).ToList();
+
+        var d = string.Join(" ", pts.Select((p, i) =>
+            $"{(i == 0 ? "M" : "L")}{p.X.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)} {p.Y.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}"));
+
+        return close ? $"{d} L100 30 L0 30 Z" : d;
+    }
+}

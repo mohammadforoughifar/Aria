@@ -1,0 +1,204 @@
+@page "/dashboard/admin/customers"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+@inject Services.AuthState Auth
+
+<PageTitle>مشتریان — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">مشتریان</h1>
+        <p class="page-sub">@(paged is null ? "…" : Helpers.Fa.Num(paged.Meta.TotalCount) + " حساب کاربری")</p>
+    </div>
+</div>
+
+<div class="toolbar">
+    <div class="search" style="flex:1;max-width:340px">
+        <span class="search__icon"><Icon Name="search" Size="16" /></span>
+        <input class="input" placeholder="نام، ایمیل یا شرکت…" @bind="search" @bind:event="oninput" @onkeyup="OnSearch" />
+    </div>
+    <Segmented TValue="string" Size="sm" Items="@roleTabs" Value="@role" ValueChanged="OnRoleChanged" />
+</div>
+
+<div class="card table-wrap" style="margin-top:var(--sp-4)">
+    @if (paged is null)
+    {
+        <div style="padding:var(--sp-4)">
+            @for (var i = 0; i < 6; i++) { <Skeleton Kind="row" /> }
+        </div>
+    }
+    else if (paged.Items.Count == 0)
+    {
+        <EmptyState Icon="users" Title="مشتری یافت نشد" Text="عبارتِ جست‌وجو را تغییر دهید." />
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table class="table">
+                <thead>
+                    <tr><th>مشتری</th><th>شرکت</th><th>کشور</th><th>سفارش‌ها</th><th>لایسنس</th><th>مبلغ کل</th><th>آخرین ورود</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in paged.Items)
+                    {
+                        <tr>
+                            <td>
+                                <div class="cell-user">
+                                    <span class="avatar avatar--sm cell-user__avatar">@Helpers.Fa.Initials(c.FullName)</span>
+                                    <div>
+                                        <div class="cell-user__name">@c.FullName</div>
+                                        <div class="cell-user__meta">@c.Email</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="small muted">@(c.Company ?? "—")</td>
+                            <td class="small muted">@(c.Country ?? "—")</td>
+                            <td class="num small">@Helpers.Fa.Num(c.OrderCount)</td>
+                            <td class="num small">@Helpers.Fa.Num(c.LicenseCount)</td>
+                            <td class="num strong">@Helpers.Fa.Money(c.TotalSpentToman)</td>
+                            <td class="num small muted">@(c.LastLoginAt is null ? "—" : Helpers.Fa.Date(c.LastLoginAt))</td>
+                            <td>
+                                <div class="table__actions">
+                                    <button class="btn btn--ghost btn--xs" @onclick="() => Open(c)">ویرایش</button>
+                                    <button class="btn btn--ghost btn--xs" disabled="@(c.Email == Auth.User?.Email)"
+                                            style="color:@(c.Role == Role.Admin ? "var(--warn-600)" : "var(--brand-600)")"
+                                            @onclick="() => ToggleRole(c)">
+                                        @(c.Role == Role.Admin ? "تنزل به مشتری" : "ارتقا به مدیر")
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (paged is { Meta.TotalPages: > 1 })
+{
+    <Pager Meta="@paged.Meta" OnPage="Go" />
+}
+
+<Modal IsOpen="@open" Title="ویرایش مشتری" Subtitle="@editing?.Email" OnClose="@(() => open = false)">
+    <ChildContent>
+        <div class="stack-4">
+            <label class="field">
+                <span class="field__label">نام کامل</span>
+                <input class="input" @bind="form.FullName" />
+            </label>
+            <label class="field">
+                <span class="field__label">شرکت</span>
+                <input class="input" @bind="form.Company" />
+            </label>
+            <div class="grid-2" style="gap:var(--sp-4)">
+                <label class="field">
+                    <span class="field__label">کشور</span>
+                    <input class="input" @bind="form.Country" />
+                </label>
+                <label class="field">
+                    <span class="field__label">تلفن</span>
+                    <input class="input input--ltr" style="text-align:left" @bind="form.Phone" />
+                </label>
+            </div>
+            <div class="grid-2" style="gap:var(--sp-4)">
+                <label class="field">
+                    <span class="field__label">نقش</span>
+                    <select class="select" @bind="form.Role">
+                        <option value="@Role.Customer">مشتری</option>
+                        <option value="@Role.Admin">مدیر</option>
+                    </select>
+                </label>
+                <div class="field">
+                    <span class="field__label">وضعیتِ حساب</span>
+                    <div class="field" style="padding-top:6px">
+                        <Switch @bind-Value="form.Locked" Text="قفل‌شده" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn--secondary" @onclick="() => open = false">انصراف</button>
+        <button class="btn btn--primary" @onclick="Save">ذخیره</button>
+    </Footer>
+</Modal>
+
+@code {
+    private Paged<CustomerDto>? paged;
+    private string search = "", role = "all";
+    private int current = 1;
+    private bool open;
+    private CustomerDto? editing;
+    private CustomerForm form = new();
+
+    private sealed class CustomerForm
+    {
+        public string FullName { get; set; } = "";
+        public string? Company { get; set; }
+        public string? Country { get; set; }
+        public string? Phone { get; set; }
+        public Role Role { get; set; } = Role.Customer;
+        public bool Locked { get; set; }
+    }
+
+    private IReadOnlyList<SegItem<string>> roleTabs => new[]
+    {
+        new SegItem<string>("همه", "all"),
+        new SegItem<string>("مشتری", "Customer"),
+        new SegItem<string>("مدیر", "Admin"),
+    };
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load()
+    {
+        paged = await Api.GetCustomersAsync(current, 12,
+            string.IsNullOrWhiteSpace(search) ? null : search.Trim());
+    }
+
+    private Task Go(int p) { current = p; return Load(); }
+    private Task OnRoleChanged(string? v) { role = v ?? "all"; current = 1; return Load(); }
+    private Task OnSearch(KeyboardEventArgs e) => e.Key == "Enter" ? Go(1) : Task.CompletedTask;
+
+    private void Open(CustomerDto c)
+    {
+        editing = c;
+        form = new CustomerForm
+        {
+            FullName = c.FullName, Company = c.Company, Country = c.Country,
+            Phone = c.Phone, Role = c.Role,
+        };
+        open = true;
+    }
+
+    private async Task Save()
+    {
+        if (editing is null || form.FullName.Trim().Length < 2)
+        {
+            Toast.Push("نام نامعتبر است", "نام کامل الزامی است.", ToastTone.Warn);
+            return;
+        }
+
+        await Api.UpdateCustomerAsync(editing.Id, form.FullName.Trim(), form.Company, form.Role, form.Locked);
+        open = false;
+        editing = null;
+        Toast.Push("ذخیره شد", form.FullName, ToastTone.Ok);
+        await Load();
+    }
+
+    private async Task ToggleRole(CustomerDto c)
+    {
+        if (c.Email == Auth.User?.Email)
+        {
+            Toast.Push("محدودیت", "نمی‌توانید نقشِ حسابِ خود را تغییر دهید.", ToastTone.Warn);
+            return;
+        }
+
+        var next = c.Role == Role.Admin ? Role.Customer : Role.Admin;
+        await Api.UpdateCustomerAsync(c.Id, c.FullName, c.Company, next, false);
+        Toast.Push("نقش بروزرسانی شد", $"{c.FullName} → {(next == Role.Admin ? "مدیر" : "مشتری")}", ToastTone.Ok);
+        await Load();
+    }
+}

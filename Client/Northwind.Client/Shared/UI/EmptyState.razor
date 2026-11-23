@@ -1,0 +1,20 @@
+@* وضعیتِ خالی *@
+<div class="empty">
+    <div class="empty__icon"><Icon Name="@Icon" Size="26" /></div>
+    <div class="empty__title">@Title</div>
+    @if (!string.IsNullOrWhiteSpace(Text))
+    {
+        <p class="empty__text">@Text</p>
+    }
+    @if (ChildContent is not null)
+    {
+        <div style="margin-top:8px">@ChildContent</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Icon { get; set; } = "inbox";
+    [Parameter] public string Title { get; set; } = "موردی یافت نشد";
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

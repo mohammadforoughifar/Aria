@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Northwind.Api</RootNamespace>
+  </PropertyGroup>
+
+  <!-- کنترلرها و فیلترها به فریم‌ورکِ ASP.NET Core نیاز دارند،
+       اما این پروژه خودش اجرا نمی‌شود؛ میزبان Northwind.Server است. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Northwind.Domain\Northwind.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

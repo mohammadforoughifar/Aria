@@ -1,0 +1,198 @@
+@page "/dashboard/tickets"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>تیکت‌ها — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">تیکت‌های پشتیبانی</h1>
+        <p class="page-sub">رشتهٔ گفت‌وگوی شما با مهندسانِ هر ماژول.</p>
+    </div>
+    <button class="btn btn--primary btn--sm" @onclick="() => open = true">
+        <Icon Name="plus" Size="15" /> تیکت جدید
+    </button>
+</div>
+
+<div class="filters" style="margin-bottom:var(--sp-4)">
+    <div class="filters__search">
+        <div class="input-group">
+            <span class="input-group__icon"><Icon Name="search" Size="16" /></span>
+            <input class="input" placeholder="جست‌وجو در موضوع یا شمارهٔ تیکت…" @bind="q" />
+        </div>
+    </div>
+    <span class="filters__sep"></span>
+    <Segmented TValue="string" Items="@tabs" Value="@status" ValueChanged="OnTab" />
+</div>
+
+<div class="card">
+    @if (paged is null)
+    {
+        <div style="padding:var(--sp-4)">
+            @for (var i = 0; i < 4; i++) { <Skeleton Kind="row" /> }
+        </div>
+    }
+    else if (paged.Items.Count == 0)
+    {
+        <EmptyState Icon="ticket" Title="تیکتی ثبت نشده" Text="سؤال یا مشکلی دارید؟ یک تیکت باز کنید تا مهندسانِ همان ماژول پاسخ دهند.">
+            <button class="btn btn--primary btn--sm" @onclick="() => open = true">باز کردن تیکت</button>
+        </EmptyState>
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>شماره</th>
+                        <th>موضوع</th>
+                        <th>محصول</th>
+                        <th>اولویت</th>
+                        <th>به‌روزرسانی</th>
+                        <th style="text-align:left">وضعیت</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in paged.Items)
+                    {
+                        <tr style="cursor:pointer" @onclick="@(() => Nav.NavigateTo("/dashboard/tickets/" + t.Id))">
+                            <td class="small num--lat">@t.Reference</td>
+                            <td>
+                                <div class="heavy" style="font-size:var(--fs-sm)">@t.Subject</div>
+                                <div class="tiny muted">@Helpers.Fa.Num(t.MessageCount) پیام</div>
+                            </td>
+                            <td class="small muted">@(t.ProductName ?? "—")</td>
+                            <td><StatusBadge Status="@t.Priority.ToString()" Kind="priority" Small="true" /></td>
+                            <td class="small muted">@Helpers.Fa.TimeAgo(t.UpdatedAt)</td>
+                            <td style="text-align:left"><StatusBadge Status="@t.Status.ToString()" Kind="ticket" Small="true" /></td>
+                            <td><span style="color:var(--text-4)"><Icon Name="chevron-left" Size="16" /></span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (paged is { Meta.TotalPages: > 1 })
+{
+    <Pager Meta="@paged.Meta" OnPage="Go" />
+}
+
+<!-- ===== New ticket ===== -->
+<Modal IsOpen="@open" Title="تیکت جدید" Subtitle="جزئیات را دقیق بنویسید تا سریع‌تر پاسخ بگیرید"
+       OnClose="@(() => open = false)">
+    <ChildContent>
+        <div class="stack-4">
+            <label class="field">
+                <span class="field__label">موضوع <span class="field__req">*</span></span>
+                <input class="input" @bind="subject" placeholder="مثل: خطا در تجمیعِ پایانِ دوره" />
+            </label>
+
+            <div class="grid-2" style="gap:var(--sp-4)">
+                <label class="field">
+                    <span class="field__label">دسته‌بندی</span>
+                    <select class="select" @bind="category">
+                        <option>Technical</option>
+                        <option>Billing</option>
+                        <option>Licensing</option>
+                        <option>Feature Request</option>
+                        <option>General</option>
+                    </select>
+                </label>
+                <label class="field">
+                    <span class="field__label">اولویت</span>
+                    <select class="select" @bind="priority">
+                        <option value="Low">کم</option>
+                        <option value="Normal">عادی</option>
+                        <option value="High">زیاد</option>
+                        <option value="Critical">بحرانی</option>
+                    </select>
+                </label>
+                <label class="field">
+                    <span class="field__label">محصولِ مرتبط</span>
+                    <select class="select" @bind="productId">
+                        <option value="">— بدون محصول —</option>
+                        @foreach (var p in products)
+                        {
+                            <option value="@p.Id">@p.Name</option>
+                        }
+                    </select>
+                </label>
+                <label class="field">
+                    <span class="field__label">محیط</span>
+                    <input class="input" @bind="environment" placeholder="مثل: ویندوز سرور ۲۰۲۲" />
+                </label>
+            </div>
+
+            <label class="field">
+                <span class="field__label">شرحِ مشکل <span class="field__req">*</span></span>
+                <textarea class="textarea" @bind="message" placeholder="چه اتفاقی افتاد؟ چه انتظاری داشتید؟"></textarea>
+                <span class="field__hint">هرچه دقیق‌تر، پاسخِ سریع‌تر.</span>
+            </label>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn--secondary" @onclick="() => open = false">انصراف</button>
+        <button class="btn btn--primary" @onclick="Submit">ثبت تیکت</button>
+    </Footer>
+</Modal>
+
+@code {
+    private Paged<TicketDto>? paged;
+    private IReadOnlyList<ProductListItemDto> products = Array.Empty<ProductListItemDto>();
+    private string status = "all";
+    private string q = "";
+    private int current = 1;
+    private bool open;
+
+    private string subject = "";
+    private string category = "Technical";
+    private string priority = "Normal";
+    private string productId = "";
+    private string environment = "";
+    private string message = "";
+
+    private IReadOnlyList<SegItem<string>> tabs => new[]
+    {
+        new SegItem<string>("همه", "all"),
+        new SegItem<string>("باز", "Open"),
+        new SegItem<string>("در حال بررسی", "InProgress"),
+        new SegItem<string>("منتظر شما", "WaitingCustomer"),
+        new SegItem<string>("بسته‌شده", "Closed"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = (await Api.GetProductsAsync(new ProductQuery { PageSize = 100 })).Items;
+        await Load();
+    }
+
+    private async Task Load() => paged = await Api.GetTicketsAsync(current, 10, status, string.IsNullOrWhiteSpace(q) ? null : q);
+    private async Task Go(int p) { current = p; await Load(); }
+    private async Task OnTab(string? v) { status = v ?? "all"; current = 1; await Load(); }
+
+    private async Task Submit()
+    {
+        if (subject.Trim().Length < 5 || message.Trim().Length < 10)
+        {
+            Toast.Push("اطلاعات ناقص است", "موضوع و شرحِ مشکل را کامل کنید.", ToastTone.Warn);
+            return;
+        }
+
+        var created = await Api.CreateTicketAsync(new NewTicketInput(
+            string.IsNullOrWhiteSpace(productId) ? null : productId,
+            subject.Trim(), category,
+            Enum.Parse<TicketPriority>(priority),
+            string.IsNullOrWhiteSpace(environment) ? null : environment,
+            message.Trim()));
+
+        open = false;
+        subject = ""; message = "";
+        Toast.Push("تیکت ثبت شد", $"شمارهٔ پیگیری: {created.Reference}", ToastTone.Ok);
+        await Load();
+    }
+}

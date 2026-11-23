@@ -1,0 +1,178 @@
+@page "/dashboard/admin/blog"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+
+<PageTitle>وبلاگ و مقالات — مدیریت</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">وبلاگ و مقالات</h1>
+        <p class="page-sub">نوشتن، ویرایش و انتشارِ مطالبِ مرکزِ راهنما.</p>
+    </div>
+    <button class="btn btn--primary btn--sm" @onclick="New"><Icon Name="plus" Size="15" /> مقالهٔ جدید</button>
+</div>
+
+<div class="card table-wrap">
+    @if (paged is null)
+    {
+        <div style="padding:var(--sp-4)">@for (var i = 0; i < 5; i++) { <Skeleton Kind="row" /> }</div>
+    }
+    else if (paged.Items.Count == 0)
+    {
+        <EmptyState Icon="book" Title="مقاله‌ای ثبت نشده است" Text="نخستین مطلبِ وبلاگ را بسازید." />
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table class="table">
+                <thead>
+                    <tr><th>عنوان</th><th>دسته</th><th>زمانِ مطالعه</th><th>تاریخِ انتشار</th><th>وضعیت</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in paged.Items)
+                    {
+                        <tr>
+                            <td>
+                                <a href="/blog/@a.Slug" style="font-weight:600;color:inherit;text-decoration:none">@a.Title</a>
+                                <div class="tiny muted clamp-2" style="margin-top:3px">@a.Excerpt</div>
+                            </td>
+                            <td class="small">@(a.Category ?? "—")</td>
+                            <td class="num small">@Helpers.Fa.Num(a.ReadMinutes) دقیقه</td>
+                            <td class="small muted num">@Helpers.Fa.Date(a.PublishedAt)</td>
+                            <td>
+                                @if (a.IsPublished)
+                                { <span class="badge badge--ok badge--sm">منتشرشده</span> }
+                                else
+                                { <span class="badge badge--neutral badge--sm">پیش‌نویس</span> }
+                            </td>
+                            <td>
+                                <div class="table__actions">
+                                    <button class="icon-btn" style="width:30px;height:30px" title="ویرایش" @onclick="() => Edit(a)"><Icon Name="edit" Size="14" /></button>
+                                    <button class="icon-btn" style="width:30px;height:30px;color:var(--bad-600)" title="حذف" @onclick="() => Remove(a)"><Icon Name="trash" Size="14" /></button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <Pager Meta="paged.Meta" OnPage="Go" />
+    }
+</div>
+
+<Modal IsOpen="editorOpen" Title="@(editing is null ? "مقالهٔ جدید" : "ویرایشِ مقاله")" Wide="true" OnClose="Close">
+    <div class="stack-4">
+        <label class="field">
+            <span class="field__label">عنوان <span class="field__req">*</span></span>
+            <input class="input" @bind="form.Title" placeholder="مثلاً چگونه طرحِ مناسب را انتخاب کنیم؟" />
+        </label>
+
+        <div class="grid-2" style="gap:var(--sp-4)">
+            <label class="field">
+                <span class="field__label">نشانیِ یکتا (Slug)</span>
+                <input class="input input--ltr" style="text-align:left" @bind="form.Slug" placeholder="choosing-a-plan" />
+                <span class="field__hint">اگر خالی بماند، از روی عنوان ساخته می‌شود.</span>
+            </label>
+            <label class="field">
+                <span class="field__label">دسته‌بندی</span>
+                <input class="input" @bind="form.Category" placeholder="راهنما" />
+            </label>
+        </div>
+
+        <label class="field">
+            <span class="field__label">چکیده <span class="field__req">*</span></span>
+            <input class="input" @bind="form.Excerpt" placeholder="یک یا دو جمله که در فهرست نمایش داده می‌شود." />
+        </label>
+
+        <label class="field">
+            <span class="field__label">متنِ مقاله</span>
+            <textarea class="textarea" rows="10" @bind="form.Body" placeholder="هر پاراگراف را در یک خطِ جداگانه بنویسید."></textarea>
+        </label>
+
+        <div class="grid-2" style="gap:var(--sp-4);align-items:end">
+            <label class="field">
+                <span class="field__label">زمانِ مطالعه (دقیقه)</span>
+                <input class="input input--ltr" style="text-align:left" type="number" min="1" max="60" @bind="form.ReadMinutes" />
+            </label>
+            <Switch @bind-Value="form.IsPublished" Text="منتشر شود" />
+        </div>
+
+        <div class="row-2">
+            <button class="btn btn--primary" style="flex:1" @onclick="Save">ذخیره</button>
+            <button class="btn btn--secondary" @onclick="Close">انصراف</button>
+        </div>
+    </div>
+</Modal>
+
+@code {
+    private Paged<ArticleDto>? paged;
+    private ArticleDto? editing;
+    private bool editorOpen;
+    private int page = 1;
+
+    private ArticleForm form = new();
+
+    private sealed class ArticleForm
+    {
+        public string? Id { get; set; }
+        public string Title { get; set; } = "";
+        public string Slug { get; set; } = "";
+        public string Excerpt { get; set; } = "";
+        public string Body { get; set; } = "";
+        public string? Category { get; set; }
+        public int ReadMinutes { get; set; } = 5;
+        public bool IsPublished { get; set; } = true;
+    }
+
+    protected override async Task OnInitializedAsync() => await Reload();
+
+    private async Task Reload() => paged = await Api.GetArticlesAsync(page, 12, publishedOnly: false);
+
+    private void New() { editing = null; form = new ArticleForm(); editorOpen = true; }
+
+    private void Edit(ArticleDto a)
+    {
+        editing = a;
+        form = new ArticleForm
+        {
+            Id = a.Id, Title = a.Title, Slug = a.Slug, Excerpt = a.Excerpt, Body = a.Body,
+            Category = a.Category, ReadMinutes = a.ReadMinutes, IsPublished = a.IsPublished,
+        };
+        editorOpen = true;
+    }
+
+    private void Close() { editorOpen = false; }
+
+    private async Task Save()
+    {
+        if (string.IsNullOrWhiteSpace(form.Title))
+        {
+            Toast.Push("عنوان لازم است", "لطفاً عنوانِ مقاله را بنویسید.", ToastTone.Warn);
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(form.Excerpt))
+        {
+            Toast.Push("چکیده لازم است", "چکیده در فهرستِ وبلاگ نمایش داده می‌شود.", ToastTone.Warn);
+            return;
+        }
+
+        await Api.UpsertArticleAsync(new ArticleInput(
+            editing?.Id, form.Title.Trim(), form.Slug.Trim(), form.Excerpt.Trim(),
+            form.Body ?? "", string.IsNullOrWhiteSpace(form.Category) ? null : form.Category.Trim(),
+            form.IsPublished, form.ReadMinutes <= 0 ? 4 : form.ReadMinutes));
+
+        Toast.Push(editing is null ? "منتشر شد" : "ویرایش شد", form.Title, ToastTone.Ok);
+        editorOpen = false;
+        await Reload();
+    }
+
+    private async Task Remove(ArticleDto a)
+    {
+        await Api.DeleteArticleAsync(a.Id);
+        Toast.Push("حذف شد", a.Title, ToastTone.Info);
+        await Reload();
+    }
+
+    private async Task Go(int p) { page = p; await Reload(); }
+}

@@ -1,0 +1,151 @@
+@page "/dashboard/admin/categories"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+
+<PageTitle>دسته‌بندی‌ها — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">دسته‌بندی‌ها</h1>
+        <p class="page-sub">ساختارِ کاتالوگ و تعدادِ محصولاتِ هر گروه.</p>
+    </div>
+    <button class="btn btn--primary btn--sm" @onclick="New">
+        <Icon Name="plus" Size="15" /> دستهٔ جدید
+    </button>
+</div>
+
+@if (items is null)
+{
+    <div class="cat-grid">
+        @for (var i = 0; i < 6; i++) { <Skeleton Kind="card" /> }
+    </div>
+}
+else
+{
+    <div class="cat-grid">
+        @foreach (var c in items)
+        {
+            <div class="card card--pad card--hover">
+                <div class="between" style="align-items:flex-start">
+                    <span class="cat-tile__icon"><Icon Name="@c.Icon" Size="19" /></span>
+                    <div class="row-2">
+                        <button class="icon-btn" style="width:30px;height:30px" title="ویرایش" @onclick="() => Edit(c)">
+                            <Icon Name="edit" Size="14" />
+                        </button>
+                        <button class="icon-btn" style="width:30px;height:30px;color:var(--bad-600)" title="حذف" @onclick="() => Remove(c)">
+                            <Icon Name="trash" Size="14" />
+                        </button>
+                    </div>
+                </div>
+                <div class="cat-tile__name" style="margin-top:var(--sp-3)">@c.Name</div>
+                <p class="cat-tile__desc">@c.Description</p>
+                <div class="row-2 tiny muted" style="margin-top:var(--sp-3)">
+                    <span class="flag flag--brand">@Helpers.Fa.Num(c.ProductCount) محصول</span>
+                    <code class="num--lat">@c.Slug</code>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<Modal IsOpen="@open" Title="@(editing is null ? "دستهٔ جدید" : "ویرایش دسته")" OnClose="@(() => open = false)">
+    <ChildContent>
+        <div class="stack-4">
+            <label class="field">
+                <span class="field__label">نام <span class="field__req">*</span></span>
+                <input class="input" @bind="form.Name" />
+            </label>
+            <label class="field">
+                <span class="field__label">شناسه (slug) <span class="field__req">*</span></span>
+                <input class="input input--ltr" style="text-align:left" @bind="form.Slug" />
+                <span class="field__hint">در نشانی اینترنتی می‌آید: /catalog?cat=@form.Slug</span>
+            </label>
+            <label class="field">
+                <span class="field__label">توضیحات</span>
+                <textarea class="textarea" style="min-height:84px" @bind="form.Description"></textarea>
+            </label>
+            <label class="field">
+                <span class="field__label">آیکون</span>
+                <select class="select" @bind="form.Icon">
+                    <option value="package">package</option>
+                    <option value="layers">layers</option>
+                    <option value="calculator">calculator</option>
+                    <option value="boxes">boxes</option>
+                    <option value="monitor">monitor</option>
+                    <option value="cpu">cpu</option>
+                    <option value="puzzle">puzzle</option>
+                </select>
+            </label>
+        </div>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn--secondary" @onclick="() => open = false">انصراف</button>
+        <button class="btn btn--primary" @onclick="Save">ذخیره</button>
+    </Footer>
+</Modal>
+
+@code {
+    private IReadOnlyList<CategoryDto>? items;
+    private bool open;
+    private CategoryDto? editing;
+    private CategoryForm form = new();
+
+    private sealed class CategoryForm
+    {
+        public string Name { get; set; } = "";
+        public string Slug { get; set; } = "";
+        public string? Description { get; set; }
+        public string Icon { get; set; } = "package";
+    }
+
+    protected override async Task OnInitializedAsync() => await Reload();
+
+    private async Task Reload() => items = await Api.GetCategoriesAsync(true);
+
+    private void New()
+    {
+        editing = null;
+        form = new CategoryForm();
+        open = true;
+    }
+
+    private void Edit(CategoryDto c)
+    {
+        editing = c;
+        form = new CategoryForm { Name = c.Name, Slug = c.Slug, Description = c.Description, Icon = c.Icon };
+        open = true;
+    }
+
+    private async Task Remove(CategoryDto c)
+    {
+        if (c.ProductCount > 0)
+        {
+            Toast.Push("امکان حذف نیست", $"این دسته {Helpers.Fa.Num(c.ProductCount)} محصول دارد.", ToastTone.Warn);
+            return;
+        }
+        await Api.DeleteCategoryAsync(c.Id);
+        Toast.Push("دسته حذف شد", c.Name, ToastTone.Info);
+        await Reload();
+    }
+
+    private async Task Save()
+    {
+        if (form.Name.Trim().Length < 2 || form.Slug.Trim().Length < 2)
+        {
+            Toast.Push("اطلاعات ناقص است", "نام و شناسه الزامی‌اند.", ToastTone.Warn);
+            return;
+        }
+
+        var dto = new CategoryDto(
+            editing?.Id ?? "c-" + Guid.NewGuid().ToString("N")[..8],
+            form.Name.Trim(), form.Slug.Trim(), form.Description, form.Icon,
+            editing?.ProductCount ?? 0);
+
+        await Api.UpsertCategoryAsync(dto);
+        open = false;
+        editing = null;
+        Toast.Push("ذخیره شد", dto.Name, ToastTone.Ok);
+        await Reload();
+    }
+}

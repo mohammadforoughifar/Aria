@@ -1,0 +1,152 @@
+@page "/dashboard/admin/products"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+@inject NavigationManager Nav
+
+<PageTitle>مدیریت محصولات — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">محصولات</h1>
+        <p class="page-sub">ویرایشِ کاتالوگ، طرح‌های قیمت و نسخه‌ها.</p>
+    </div>
+    <a class="btn btn--primary btn--sm" href="/dashboard/admin/products/new">
+        <Icon Name="plus" Size="15" /> محصول جدید
+    </a>
+</div>
+
+<div class="filters" style="margin-bottom:var(--sp-4)">
+    <div class="filters__search">
+        <div class="input-group">
+            <span class="input-group__icon"><Icon Name="search" Size="16" /></span>
+            <input class="input" placeholder="جست‌وجو در محصولات…" @bind="q" @oninput="_ => Filter()" />
+        </div>
+    </div>
+    <span class="filters__sep"></span>
+    <Segmented TValue="string" Items="@tabs" Value="@type" ValueChanged="OnTab" />
+</div>
+
+<div class="table-wrap">
+    @if (paged is null)
+    {
+        <div style="padding:var(--sp-4)">@for (var i = 0; i < 6; i++) { <Skeleton Kind="row" /> }</div>
+    }
+    else if (paged.Items.Count == 0)
+    {
+        <EmptyState Icon="package" Title="محصولی یافت نشد" />
+    }
+    else
+    {
+        <div class="table-scroll">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>محصول</th>
+                        <th>دسته‌بندی</th>
+                        <th>نوع</th>
+                        <th>قیمتِ پایه</th>
+                        <th>امتیاز</th>
+                        <th>نصب</th>
+                        <th style="text-align:left">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in paged.Items)
+                    {
+                        <tr>
+                            <td>
+                                <div class="row-3">
+                                    <span class="prod-card__icon" style="width:34px;height:34px;background:@(p.AccentColor)1a;color:@p.AccentColor">
+                                        <Icon Name="package" Size="16" />
+                                    </span>
+                                    <div>
+                                        <a class="small heavy" href="/dashboard/admin/products/@p.Id" style="color:var(--ink-900)">@p.Name</a>
+                                        <div class="tiny muted num--lat">@p.Slug</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="small muted">@p.CategoryName</td>
+                            <td><StatusBadge Status="@p.Type.ToString()" Kind="type" Small="true" /></td>
+                            <td class="num">@Helpers.Fa.Money(p.BasePriceToman)</td>
+                            <td><Stars Value="@p.RatingAvg" Size="12" /></td>
+                            <td class="num">@Helpers.Fa.Num(p.Popularity)</td>
+                            <td>
+                                <div class="table__actions">
+                                    <a class="icon-btn" href="/products/@p.Slug" title="نمایش در فروشگاه"><Icon Name="eye" Size="15" /></a>
+                                    <a class="icon-btn" href="/dashboard/admin/products/@p.Id" title="ویرایش"><Icon Name="edit" Size="15" /></a>
+                                    <button class="icon-btn" @onclick="() => askDelete = p" title="حذف" style="color:var(--bad-600)">
+                                        <Icon Name="trash" Size="15" />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (paged is { Meta.TotalPages: > 1 })
+{
+    <Pager Meta="@paged.Meta" OnPage="Go" />
+}
+
+<Modal IsOpen="@(askDelete is not null)" Title="حذف محصول"
+       Subtitle="@askDelete?.Name" OnClose="@(() => askDelete = null)">
+    <ChildContent>
+        <p style="color:var(--text-2);line-height:var(--lh-relax)">
+            این محصول به‌همراهِ طرح‌ها و نسخه‌هایش حذف می‌شود. سفارش‌های ثبت‌شده و لایسنس‌های صادرشده دست‌نخورده باقی می‌مانند.
+            این عملیات قابل بازگشت نیست.
+        </p>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn--secondary" @onclick="() => askDelete = null">انصراف</button>
+        <button class="btn btn--danger" @onclick="ConfirmDelete">حذف کن</button>
+    </Footer>
+</Modal>
+
+@code {
+    private Paged<ProductListItemDto>? paged;
+    private ProductListItemDto? askDelete;
+    private string q = "";
+    private string type = "all";
+    private int current = 1;
+
+    private IReadOnlyList<SegItem<string>> tabs => new[]
+    {
+        new SegItem<string>("همه", "all"),
+        new SegItem<string>("ماژول", "Module"),
+        new SegItem<string>("دسکتاپ", "DesktopApp"),
+        new SegItem<string>("افزونه", "AddOn"),
+    };
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load()
+    {
+        paged = await Api.GetProductsAsync(new ProductQuery
+        {
+            Page = current,
+            PageSize = 12,
+            Search = string.IsNullOrWhiteSpace(q) ? null : q,
+            Type = type,
+            IncludeInactive = true,
+            SortBy = "popular",
+        });
+    }
+
+    private async Task Filter() { current = 1; await Load(); }
+    private async Task Go(int p) { current = p; await Load(); }
+    private async Task OnTab(string? v) { type = v ?? "all"; current = 1; await Load(); }
+
+    private async Task ConfirmDelete()
+    {
+        if (askDelete is null) return;
+        await Api.DeleteProductAsync(askDelete.Id);
+        Toast.Push("محصول حذف شد", askDelete.Name, ToastTone.Info);
+        askDelete = null;
+        await Load();
+    }
+}

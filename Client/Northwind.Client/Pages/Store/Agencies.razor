@@ -1,0 +1,117 @@
+@page "/agencies"
+@inject Services.IStoreApi Api
+
+<PageTitle>نمایندگی‌ها — فروغ آریا پارسیان</PageTitle>
+
+<section class="hero">
+    <div class="wrap hero__inner">
+        <span class="hero__eyebrow"><b>شبکهٔ نمایندگی</b> در سراسر کشور</span>
+        <h1 class="hero__title">نمایندگی‌های <span>فروغ آریا پارسیان</span></h1>
+        <p class="hero__sub">
+            فروش، استقرار و پشتیبانیِ نرم‌افزارهای فروغ آریا پارسیان از طریقِ شبکهٔ نمایندگانِ رسمی
+            در استان‌های مختلف انجام می‌شود؛ هر نماینده پاسخ‌گوی مشتریانِ همان منطقه است.
+        </p>
+        <div class="hero__cta">
+            <a class="btn btn--buy btn--lg" href="/contact"><Icon Name="building" Size="18" /> درخواستِ نمایندگی</a>
+            <a class="btn btn--outline-light btn--lg" href="#list"><Icon Name="search" Size="18" /> یافتنِ نماینده</a>
+        </div>
+    </div>
+</section>
+
+<section class="section section--tight" id="list">
+    <div class="wrap">
+        <div class="section__head">
+            <div class="section__eyebrow">فهرست</div>
+            <h2 class="section__title">نمایندگانِ فعال</h2>
+            <p class="section-sub">برای استقرار، آموزشِ حضوری و پشتیبانی با نمایندهٔ استانِ خود تماس بگیرید.</p>
+        </div>
+
+        <div class="grid-3">
+            @foreach (var a in agencies)
+            {
+                <div class="card card--pad card--hover">
+                    <div class="row-2" style="align-items:center;gap:var(--sp-3)">
+                        <span class="stat__icon" style="background:#eff6ff;color:#2563eb"><Icon Name="building" Size="19" /></span>
+                        <div>
+                            <b>@a.City</b>
+                            <div class="tiny muted">@a.Name</div>
+                        </div>
+                    </div>
+                    <div class="divider" style="margin:var(--sp-4) 0"></div>
+                    <div class="stack-2 tiny">
+                        <span class="row-2" style="gap:6px"><Icon Name="user" Size="13" /> @a.Manager</span>
+                        <span class="row-2" style="gap:6px" dir="ltr"><Icon Name="phone" Size="13" /> @a.Phone</span>
+                        <span class="row-2" style="gap:6px" dir="ltr"><Icon Name="mail" Size="13" /> @a.Email</span>
+                    </div>
+                    <div class="row-2" style="margin-top:var(--sp-4);gap:var(--sp-2);flex-wrap:wrap">
+                        @foreach (var s in a.Services)
+                        {
+                            <span class="badge badge--neutral badge--sm">@s</span>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="section section--sunk">
+    <div class="wrap">
+        <div class="section__head">
+            <div class="section__eyebrow">همکاری</div>
+            <h2 class="section__title">چرا نمایندهٔ فروغ آریا پارسیان شوید؟</h2>
+        </div>
+        <div class="grid-3">
+            <div class="card card--pad">
+                <span class="stat__icon" style="background:#ecfdf5;color:#059669"><Icon Name="percent" Size="19" /></span>
+                <b style="display:block;margin:var(--sp-3) 0 var(--sp-2)">حاشیهٔ سودِ ترجیحی</b>
+                <p class="small muted" style="margin:0;line-height:1.85">سهمِ نماینده از فروشِ لایسنس، استقرار و تمدیدِ سالانه.</p>
+            </div>
+            <div class="card card--pad">
+                <span class="stat__icon" style="background:#fff7ed;color:#ea580c"><Icon Name="headphones" Size="19" /></span>
+                <b style="display:block;margin:var(--sp-3) 0 var(--sp-2)">پشتیبانیِ فنیِ پشتِ خط</b>
+                <p class="small muted" style="margin:0;line-height:1.85">تیمِ فنیِ مرکزی در استقرار و رفعِ اشکال همراهِ شماست.</p>
+            </div>
+            <div class="card card--pad">
+                <span class="stat__icon" style="background:#f5f3ff;color:#7c3aed"><Icon Name="award" Size="19" /></span>
+                <b style="display:block;margin:var(--sp-3) 0 var(--sp-2)">آموزش و گواهی</b>
+                <p class="small muted" style="margin:0;line-height:1.85">دورهٔ آموزشیِ رایگان و گواهیِ نمایندگیِ رسمی.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section">
+    <div class="wrap">
+        <div class="card card--pad-lg" style="background:linear-gradient(135deg,var(--navy-900),var(--navy-700));border:0;color:#fff;text-align:center">
+            <h2 style="color:#fff;font-size:var(--fs-3xl)">علاقه‌مند به همکاری هستید؟</h2>
+            <p style="color:rgba(255,255,255,.82);margin-top:12px;max-width:60ch;margin-inline:auto;line-height:var(--lh-relax)">
+                شرایطِ واگذاریِ نمایندگی را در یک تماس بررسی کنید.
+            </p>
+            <div class="row-3" style="justify-content:center;margin-top:24px;flex-wrap:wrap">
+                <a class="btn btn--buy btn--lg" href="/contact"><Icon Name="mail" Size="18" /> ارسالِ درخواست</a>
+                <a class="btn btn--outline-light btn--lg" href="/about">دربارهٔ فروغ آریا پارسیان</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private static readonly Agency[] agencies =
+    {
+        new("تهران", "فروغ آریا پارسیان — دفترِ مرکزی", "مهندس احمدی", "۰۲۱-۹۱۰۰۰۰۰۰", "tehran@forougharia.example",
+            new[] { "فروش", "استقرار", "آموزش" }),
+        new("اصفهان", "نمایندگی اصفهان", "مهندس کریمی", "۰۳۱-۳۶۲۰۰۰۰۰", "isfahan@forougharia.example",
+            new[] { "فروش", "استقرار" }),
+        new("مشهد", "نمایندگی مشهد", "مهندس رضوی", "۰۵۱-۳۸۴۰۰۰۰۰", "mashhad@forougharia.example",
+            new[] { "فروش", "پشتیبانی" }),
+        new("شیراز", "نمایندگی شیراز", "مهندس زارع", "۰۷۱-۳۲۳۰۰۰۰۰", "shiraz@forougharia.example",
+            new[] { "فروش", "آموزش" }),
+        new("تبریز", "نمایندگی تبریز", "مهندس صادقی", "۰۴۱-۳۳۳۰۰۰۰۰", "tabriz@forougharia.example",
+            new[] { "فروش", "استقرار", "پشتیبانی" }),
+        new("اهواز", "نمایندگی اهواز", "مهندس عباسی", "۰۶۱-۳۳۳۰۰۰۰۰", "ahvaz@forougharia.example",
+            new[] { "فروش", "پشتیبانی" }),
+    };
+
+    private sealed record Agency(string City, string Name, string Manager, string Phone, string Email, string[] Services);
+}

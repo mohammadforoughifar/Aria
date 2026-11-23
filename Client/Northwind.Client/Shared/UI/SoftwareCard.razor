@@ -1,0 +1,141 @@
+@* کارتِ نرم‌افزار در صفحهٔ «نرم‌افزارها».
+   نسبت به کارتِ ساده، ویژگی‌هایِ کلیدی و طرح‌هایِ لایسنس را هم نشان می‌دهد. *@
+
+@inject Services.CartState Cart
+@inject Services.CompareState Compare
+@inject Services.ToastService Toast
+@inject NavigationManager Nav
+@implements IDisposable
+
+<article class="sw-card">
+    <div class="sw-card__stripe" style="background:linear-gradient(90deg,@Product.AccentColor,@(Product.AccentColor)66)"></div>
+
+    @if (Product.IsFeatured)
+    {
+        <span class="sw-card__flag badge badge--brand badge--plain">
+            <Icon Name="sparkles" Size="11" /> ویژه
+        </span>
+    }
+
+    <div class="sw-card__body">
+        <div class="sw-card__top">
+            <span class="sw-card__icon" style="background:@(Product.AccentColor)1a;color:@Product.AccentColor">
+                <Icon Name="@Icon" Size="20" />
+            </span>
+            <div class="grow">
+                <h3 class="sw-card__name">
+                    <a href="/products/@Product.Slug" style="color:inherit">@Product.Name</a>
+                </h3>
+                <div class="sw-card__cat">@Product.CategoryName</div>
+            </div>
+            <button class="icon-btn" style="width:30px;height:30px"
+                    title="@(Compare.Contains(Product.Id) ? "حذف از مقایسه" : "افزودن به مقایسه")"
+                    @onclick="ToggleCompare"
+                    disabled="@(!Compare.Contains(Product.Id) && Compare.IsFull)">
+                <span style="color:@(Compare.Contains(Product.Id) ? "var(--brand-600)" : "var(--ink-400)")">
+                    <Icon Name="@(Compare.Contains(Product.Id) ? "check" : "plus")" Size="15" />
+                </span>
+            </button>
+        </div>
+
+        <p class="sw-card__tagline clamp-2">@Product.Tagline</p>
+
+        @* ویژگی‌ها — فقط وقتی جزئیات رسیده باشد *@
+        @if (Detail is { Features.Count: > 0 })
+        {
+            <ul class="sw-card__feats">
+                @foreach (var f in Detail.Features.Take(3))
+                {
+                    <li><Icon Name="check" Size="13" /> <span class="clamp-1">@f</span></li>
+                }
+            </ul>
+        }
+        else
+        {
+            <div class="sw-card__feats sw-card__feats--loading">
+                @for (var i = 0; i < 3; i++) { <span class="sk sk--text" style="height:9px"></span> }
+            </div>
+        }
+
+        <div class="sw-card__meta">
+            <Stars Value="Product.RatingAvg" Count="Product.RatingCount" Size="13" />
+            <span class="tiny muted row-2"><Icon Name="download" Size="12" /> @Helpers.Fa.Num(Product.Popularity)</span>
+        </div>
+    </div>
+
+    <div class="sw-card__foot">
+        <div>
+            <div class="tiny muted">شروع از</div>
+            <div class="sw-card__price">@Helpers.Fa.Money(Product.BasePriceToman)</div>
+            @if (Detail is { Plans.Count: > 0 })
+            {
+                <div class="tiny muted">@Helpers.Fa.Num(Detail.Plans.Count) طرحِ لایسنس</div>
+            }
+        </div>
+        <div class="row-2">
+            <a class="btn btn--secondary btn--sm" href="/products/@Product.Slug">جزئیات</a>
+            <button class="btn btn--buy btn--sm" @onclick="Add" disabled="@busy">
+                @if (busy)
+                {
+                    <span class="btn--spinner"></span>
+                }
+                else
+                {
+                    <Icon Name="cart" Size="14" /> <text>افزودن</text>
+                }
+            </button>
+        </div>
+    </div>
+</article>
+
+@code {
+    [Parameter] public ProductListItemDto Product { get; set; } = default!;
+    [Parameter] public ProductDetailDto? Detail { get; set; }
+
+    private bool busy;
+
+    private string Icon => Product.CategorySlug switch
+    {
+        "erp-suite" => "layers",
+        "finance-accounting" => "calculator",
+        "operations-inventory" => "boxes",
+        "desktop-productivity" => "monitor",
+        "addons-integrations" => "puzzle",
+        _ => "package",
+    };
+
+    protected override void OnInitialized()
+    {
+        Compare.OnChange += Refresh;
+    }
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Compare.OnChange -= Refresh;
+
+    private void ToggleCompare()
+    {
+        var removed = Compare.Toggle(Product.Id);
+        Toast.Push(removed ? "از مقایسه حذف شد" : "به مقایسه اضافه شد",
+            Product.Name, removed ? ToastTone.Info : ToastTone.Ok);
+    }
+
+    private async Task Add()
+    {
+        if (Detail is { Plans.Count: > 0 })
+        {
+            // محبوب‌ترین یا کوتاه‌ترین طرح را پیش‌فرض می‌گیریم
+            var plan = Detail.Plans.FirstOrDefault(p => p.IsPopular) ?? Detail.Plans[0];
+            busy = true;
+            try
+            {
+                await Cart.AddAsync(plan.Id, 1);
+                Toast.Push("به سبد افزوده شد", Product.Name + " — " + plan.Name, ToastTone.Ok);
+                Nav.NavigateTo("/cart");
+            }
+            finally { busy = false; }
+            return;
+        }
+        Nav.NavigateTo("/products/" + Product.Slug);
+    }
+}

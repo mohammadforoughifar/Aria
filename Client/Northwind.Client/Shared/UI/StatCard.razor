@@ -1,0 +1,45 @@
+@* کارتِ شاخص (KPI) *@
+<div class="stat">
+    <div class="stat__top">
+        <span class="stat__label">@Label</span>
+        <span class="stat__icon" style="@IconStyle"><Icon Name="@Icon" Size="17" /></span>
+    </div>
+    <div class="stat__value num">@Value</div>
+    <div class="stat__meta">
+        @if (Delta is not null)
+        {
+            <span class="stat__delta @(Delta >= 0 ? "stat__delta--up" : "stat__delta--down")">
+                <Icon Name="@(Delta >= 0 ? "trending-up" : "trending-down")" Size="13" />
+                @Helpers.Fa.SignedPercent(Delta.Value)
+            </span>
+        }
+        @if (!string.IsNullOrWhiteSpace(Hint))
+        {
+            <span>@Hint</span>
+        }
+    </div>
+    @if (ChildContent is not null)
+    {
+        <div class="stat__spark">@ChildContent</div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Value { get; set; } = "—";
+    [Parameter] public string Icon { get; set; } = "chart";
+    [Parameter] public string Tone { get; set; } = "brand";   // brand|ok|warn|bad|violet|teal
+    [Parameter] public decimal? Delta { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string IconStyle => Tone switch
+    {
+        "ok"     => "background:var(--ok-50);color:var(--ok-600)",
+        "warn"   => "background:var(--warn-50);color:var(--warn-600)",
+        "bad"    => "background:var(--bad-50);color:var(--bad-600)",
+        "violet" => "background:var(--violet-50);color:var(--violet-600)",
+        "teal"   => "background:var(--teal-50);color:var(--teal-600)",
+        _        => "background:var(--brand-50);color:var(--brand-600)",
+    };
+}

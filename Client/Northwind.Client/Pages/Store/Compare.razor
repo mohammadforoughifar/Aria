@@ -1,0 +1,150 @@
+@page "/compare"
+@page "/pricing"
+@inject Services.IStoreApi Api
+@inject Services.CompareState CompareState
+@inject Services.ToastService Toast
+@implements IDisposable
+
+<PageTitle>مقایسهٔ محصولات — فروغ آریا پارسیان</PageTitle>
+
+<div class="wrap" style="padding-block:var(--sp-9)">
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">مقایسهٔ رو‌به‌رو</h1>
+            <p class="page-sub">تا ۴ محصول را کنار هم ببینید و تفاوت‌ها را دقیق مقایسه کنید.</p>
+        </div>
+        @if (items.Count > 0)
+        {
+            <button class="btn btn--ghost btn--sm" @onclick="() => CompareState.Clear()">
+                <Icon Name="trash" Size="14" /> پاک کردن فهرست
+            </button>
+        }
+    </div>
+
+    @if (items.Count == 0)
+    {
+        <div class="card">
+            <EmptyState Icon="sliders" Title="محصولی برای مقایسه انتخاب نشده"
+                        Text="از صفحهٔ محصولات، دکمهٔ «افزودن به مقایسه» را بزنید تا اینجا کنار هم ببینیدشان.">
+                <a class="btn btn--primary btn--sm" href="/catalog">رفتن به محصولات</a>
+            </EmptyState>
+        </div>
+    }
+    else
+    {
+        <div class="compare-wrap">
+            <table class="compare">
+                <thead>
+                    <tr>
+                        <th style="width:168px">ویژگی</th>
+                        @foreach (var p in items)
+                        {
+                            <th>
+                                <div class="stack-2">
+                                    <span class="prod-card__icon" style="background:@(p.AccentColor)1a;color:@p.AccentColor">
+                                        <Icon Name="@IconOf(p.CategorySlug)" Size="17" />
+                                    </span>
+                                    <a class="heavy" href="/products/@p.Slug" style="color:var(--ink-900)">@p.Name</a>
+                                    <button class="btn btn--ghost btn--sm" @onclick="() => CompareState.Remove(p.Id)">
+                                        <Icon Name="x" Size="13" /> حذف
+                                    </button>
+                                </div>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th>دسته‌بندی</th>
+                        @foreach (var p in items) { <td>@p.CategoryName</td> }
+                    </tr>
+                    <tr>
+                        <th>نوع</th>
+                        @foreach (var p in items) { <td><StatusBadge Status="@p.Type.ToString()" Kind="type" Small="true" /></td> }
+                    </tr>
+                    <tr>
+                        <th>امتیاز</th>
+                        @foreach (var p in items) { <td><Stars Value="@p.RatingAvg" Count="@p.RatingCount" Size="13" ShowValue="true" /></td> }
+                    </tr>
+                    <tr>
+                        <th>شروع قیمت</th>
+                        @foreach (var p in items) { <td class="num heavy">@Helpers.Fa.Money(p.BasePriceToman)</td> }
+                    </tr>
+                    <tr>
+                        <th>تعداد طرح‌ها</th>
+                        @foreach (var p in items) { <td class="num">@Helpers.Fa.Num(p.Plans.Count)</td> }
+                    </tr>
+                    <tr>
+                        <th>نسخهٔ فعلی</th>
+                        @foreach (var p in items) { <td class="num--lat">@p.Version</td> }
+                    </tr>
+                    <tr>
+                        <th>سکو</th>
+                        @foreach (var p in items) { <td style="font-size:var(--fs-sm)">@p.Platform</td> }
+                    </tr>
+                    <tr>
+                        <th>محبوبیت</th>
+                        @foreach (var p in items) { <td class="num">@Helpers.Fa.Num(p.Popularity) نصب</td> }
+                    </tr>
+                    <tr>
+                        <th>امکاناتِ شاخص</th>
+                        @foreach (var p in items)
+                        {
+                            <td>
+                                <div class="feat-list" style="gap:6px">
+                                    @foreach (var f in p.Features.Take(4))
+                                    {
+                                        <div class="feat" style="font-size:var(--fs-xs)">
+                                            <span class="feat__check"><Icon Name="check" Size="11" /></span>
+                                            <span>@f</span>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                        }
+                    </tr>
+                    <tr>
+                        <th></th>
+                        @foreach (var p in items)
+                        {
+                            <td><a class="btn btn--primary btn--sm btn--block" href="/products/@p.Slug">مشاهدهٔ محصول</a></td>
+                        }
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<ProductDetailDto> items = Array.Empty<ProductDetailDto>();
+
+    protected override void OnInitialized()
+    {
+        CompareState.OnChange += OnCompareChanged;
+        _ = Load();
+    }
+
+    private async Task Load()
+    {
+        var ids = CompareState.Ids.ToList();
+        items = ids.Count == 0
+            ? Array.Empty<ProductDetailDto>()
+            : await Api.GetProductsByIdsAsync(ids);
+        StateHasChanged();
+    }
+
+    private void OnCompareChanged() => _ = Load();
+
+    public void Dispose() => CompareState.OnChange -= OnCompareChanged;
+
+    private static string IconOf(string slug) => slug switch
+    {
+        "erp-suite" => "layers",
+        "finance-accounting" => "calculator",
+        "operations-inventory" => "boxes",
+        "desktop-productivity" => "monitor",
+        "addons-integrations" => "puzzle",
+        _ => "package",
+    };
+}

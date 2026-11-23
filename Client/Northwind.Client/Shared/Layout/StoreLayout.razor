@@ -1,0 +1,32 @@
+@inherits LayoutComponentBase
+@inject Services.IStoreApi Api
+
+    <ApiStatusBanner />
+<div class="site">
+    <SiteHeader SiteName="@(settings?.SiteName ?? "فروغ آریا پارسیان")" />
+
+    @if (!string.IsNullOrWhiteSpace(announcement))
+    {
+        <div class="announce">
+            <Icon Name="sparkles" Size="14" />
+            <span>@announcement</span>
+        </div>
+    }
+
+    <main>@Body</main>
+
+    <SiteFooter />
+</div>
+
+<ToastHost />
+
+@code {
+    private SiteSettingsDto? settings;
+    private string announcement = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        settings = await Api.GetSettingsAsync();
+        announcement = settings.Announcement;
+    }
+}

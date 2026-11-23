@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Northwind.Client</RootNamespace>
+    <AssemblyName>Northwind.Client</AssemblyName>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <!-- نکته: «حذفِ کدِ بلااستفاده» آزموده شد و برنامه را از کار انداخت
+         (سازندهٔ مؤلفه‌ها که بلیزور با reflection می‌سازد حذف می‌شود).
+         کاهشِ حجمِ اصلی از راهِ فشرده‌سازیِ Brotli به دست آمده است.        -->
+
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.22" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.22" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\Northwind.Shared\Northwind.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

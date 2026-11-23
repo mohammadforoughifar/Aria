@@ -1,0 +1,165 @@
+@page "/dashboard/downloads"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+
+<PageTitle>دانلودها — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">مرکز دانلود</h1>
+        <p class="page-sub">آخرین نصاب‌ها، وصله‌ها و دفترچه‌های راهنما.</p>
+    </div>
+    <Segmented TValue="string" Items="@tabs" Value="@tab" ValueChanged="OnTab" />
+</div>
+
+@if (loading)
+{
+    <div class="stack-3">
+        @for (var i = 0; i < 4; i++) { <Skeleton Kind="card" /> }
+    </div>
+}
+else if (tab == "available")
+{
+    @if (available.Count == 0)
+    {
+        <div class="card"><EmptyState Icon="download" Title="موردی برای دانلود نیست" /></div>
+    }
+    else
+    {
+        <div class="stack-4">
+            @foreach (var p in available)
+            {
+                <div class="card card--pad">
+                    <div class="between" style="margin-bottom:var(--sp-4);flex-wrap:wrap;gap:var(--sp-3)">
+                        <div class="row-3">
+                            <span class="prod-card__icon" style="background:@(p.AccentColor)1a;color:@p.AccentColor">
+                                <Icon Name="package" Size="18" />
+                            </span>
+                            <div>
+                                <a class="heavy" href="/products/@p.ProductSlug" style="color:var(--ink-900)">@p.ProductName</a>
+                                <div class="tiny muted">@Helpers.Fa.Num(p.Versions.Count) نسخهٔ قابل دریافت</div>
+                            </div>
+                        </div>
+                        @if (p.Licensed)
+                        {
+                            <span class="badge badge--ok"><Icon Name="check" Size="11" /> دارای لایسنس</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge--warn"><Icon Name="lock" Size="11" /> فقط نسخهٔ آزمایشی</span>
+                        }
+                    </div>
+
+                    <div class="table-wrap">
+                        <div class="table-scroll">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>نسخه</th>
+                                        <th>تاریخ انتشار</th>
+                                        <th>سکو</th>
+                                        <th>حجم</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var v in p.Versions)
+                                    {
+                                        <tr>
+                                            <td class="heavy num--lat">@v.Version</td>
+                                            <td class="small muted">@Helpers.Fa.Date(v.ReleasedAt)</td>
+                                            <td class="small">@v.Platform</td>
+                                            <td class="small num">@Helpers.Fa.Size(v.SizeMb)</td>
+                                            <td>
+                                                <div class="table__actions">
+                                                    <button class="btn btn--soft btn--sm" @onclick="() => Get(p, v)">
+                                                        <Icon Name="download" Size="14" /> دانلود
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+else
+{
+    <div class="card">
+        @if (history.Count == 0)
+        {
+            <EmptyState Icon="download" Title="دانلودی ثبت نشده" Text="هر فایلی که دریافت کنید، در این فهرست بایگانی می‌شود." />
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>فایل</th>
+                            <th>محصول</th>
+                            <th>نسخه</th>
+                            <th>حجم</th>
+                            <th>زمان</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in history)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="row-2">
+                                        <span style="color:var(--brand-600)"><Icon Name="file" Size="15" /></span>
+                                        <code class="small num--lat">@d.FileName</code>
+                                    </div>
+                                </td>
+                                <td class="small">@d.ProductName</td>
+                                <td class="small num--lat">@d.Version</td>
+                                <td class="small num">@Helpers.Fa.Size(d.SizeMb)</td>
+                                <td class="small muted">@Helpers.Fa.TimeAgo(d.DownloadedAt)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool loading = true;
+    private string tab = "available";
+    private IReadOnlyList<AvailableDownloadDto> available = Array.Empty<AvailableDownloadDto>();
+    private IReadOnlyList<DownloadDto> history = Array.Empty<DownloadDto>();
+
+    private IReadOnlyList<SegItem<string>> tabs => new[]
+    {
+        new SegItem<string>("در دسترس", "available"),
+        new SegItem<string>("تاریخچه", "history"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        available = await Api.GetAvailableDownloadsAsync();
+        history = await Api.GetDownloadHistoryAsync();
+        loading = false;
+    }
+
+    private void OnTab(string? v) => tab = v ?? "available";
+
+    private async Task Get(AvailableDownloadDto product, AvailableVersionDto version)
+    {
+        await Api.RecordDownloadAsync(product.ProductId, version.Id,
+            product.Licensed ? "installer" : "trial", version.FileName, version.SizeMb);
+
+        history = await Api.GetDownloadHistoryAsync();
+        Toast.Push(product.Licensed ? "دانلود آغاز شد" : "نسخهٔ آزمایشی دریافت شد",
+            $"{product.ProductName} · {version.Version}", product.Licensed ? ToastTone.Ok : ToastTone.Info);
+    }
+}

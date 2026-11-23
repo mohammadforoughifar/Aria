@@ -1,0 +1,22 @@
+import { chromium } from 'playwright-core';
+const b=await chromium.launch({args:['--no-sandbox']});
+const p=await b.newPage({viewport:{width:1440,height:900}});
+const errs=[];
+p.on('pageerror',e=>errs.push('PAGEERROR: '+e.message.slice(0,200)));
+p.on('console',m=>{if(m.type()==='error')errs.push('CONSOLE: '+m.text().slice(0,200));});
+p.on('requestfailed',r=>errs.push('REQFAIL: '+r.url().slice(-60)+' '+(r.failure()?.errorText||'')));
+await p.goto('http://localhost:5210/',{waitUntil:'domcontentloaded',timeout:120000});
+await p.waitForTimeout(12000);
+console.log('تعدادِ #ecosystem :', await p.locator('#ecosystem').count());
+console.log('تعدادِ .eco-card  :', await p.locator('.eco-card').count());
+console.log('تعدادِ .eco-tab   :', await p.locator('.eco-tab').count());
+console.log('طولِ بدنه         :', (await p.innerText('body')).length);
+const info = await p.evaluate(()=>{
+  const e=document.querySelector('#ecosystem');
+  if(!e) return 'null';
+  const r=e.getBoundingClientRect();
+  return {w:r.width,h:r.height,cls:e.className, html:e.innerHTML.slice(0,300)};
+});
+console.log('اطلاعاتِ بخش:', JSON.stringify(info).slice(0,400));
+console.log('\nخطاها:'); [...new Set(errs)].slice(0,8).forEach(x=>console.log('  '+x));
+await b.close();

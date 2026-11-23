@@ -1,0 +1,350 @@
+@page "/products/{slug}"
+@inject Services.IStoreApi Api
+@inject Services.CartState Cart
+@inject Services.CompareState Compare
+@inject Services.AuthState Auth
+@inject Services.ToastService Toast
+
+<PageTitle>@(product?.Name ?? "محصول") — فروغ آریا پارسیان</PageTitle>
+
+@if (product is null)
+{
+    <div class="wrap" style="padding-block:var(--sp-9)">
+        <div class="grid-2-1">
+            <div class="stack-4">
+                <Skeleton Kind="text" />
+                <div class="sk sk--title" style="width:48%;height:26px"></div>
+                <div class="sk sk--thumb" style="height:220px"></div>
+                <div class="sk sk--text" style="width:90%"></div>
+                <div class="sk sk--text" style="width:76%"></div>
+            </div>
+            <div>
+                <Skeleton Kind="card" />
+                <div style="height:16px"></div>
+                <Skeleton Kind="card" />
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="wrap" style="padding-block:var(--sp-7)">
+        <div class="breadcrumb" style="margin-bottom:var(--sp-4)">
+            <a href="/">خانه</a> <Icon Name="chevron-left" Size="13" />
+            <a href="/catalog">محصولات</a> <Icon Name="chevron-left" Size="13" />
+            <a href="/catalog?category=@product.CategorySlug">@product.CategoryName</a>
+            <Icon Name="chevron-left" Size="13" /> <span>@product.Name</span>
+        </div>
+
+        <!-- ======== Header ======== -->
+        <div class="card card--pad-lg" style="margin-bottom:var(--sp-5)">
+            <div class="row-top" style="gap:var(--sp-5);flex-wrap:wrap">
+                <span class="prod-card__icon" style="width:64px;height:64px;border-radius:var(--r-lg);font-size:22px;background:@(product.AccentColor)1a;color:@product.AccentColor">
+                    <Icon Name="@IconOf(product.CategorySlug)" Size="28" />
+                </span>
+
+                <div class="grow" style="min-width:260px">
+                    <div class="row-2" style="flex-wrap:wrap;margin-bottom:6px">
+                        <StatusBadge Status="@product.Type.ToString()" Kind="type" />
+                        <a class="badge badge--neutral badge--plain" href="/catalog?category=@product.CategorySlug">@product.CategoryName</a>
+                        @if (product.IsFeatured)
+                        {
+                            <span class="badge badge--brand"><Icon Name="sparkles" Size="11" /> ویژه</span>
+                        }
+                    </div>
+                    <h1 style="font-size:var(--fs-3xl)">@product.Name</h1>
+                    <p class="muted-2" style="margin-top:6px;font-size:var(--fs-lg)">@product.Tagline</p>
+                    <div class="row-4" style="margin-top:var(--sp-3);flex-wrap:wrap">
+                        <Stars Value="@product.RatingAvg" Count="@product.RatingCount" Size="15" ShowValue="true" />
+                        <span class="tiny muted row-2"><Icon Name="download" Size="13" /> @Helpers.Fa.Num(product.Popularity) نصب</span>
+                        <span class="tiny muted row-2"><Icon Name="tag" Size="13" /> نسخهٔ <span class="num--lat">@product.Version</span></span>
+                    </div>
+                </div>
+
+                <div class="stack-2" style="min-width:200px">
+                    <a class="btn btn--buy" href="#plans"><Icon Name="credit-card" Size="17" /> انتخاب طرح و خرید</a>
+                    <button class="btn btn--secondary" @onclick="ToggleCompare">
+                        <Icon Name="@(Compare.Contains(product.Id) ? "check" : "plus")" Size="16" />
+                        @(Compare.Contains(product.Id) ? "در فهرست مقایسه" : "افزودن به مقایسه")
+                    </button>
+                    <a class="btn btn--ghost" href="/contact?topic=demo">درخواست دمو</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2-1">
+            <div class="stack-5">
+                <!-- ======== Description ======== -->
+                <section class="card card--pad">
+                    <h2 style="font-size:var(--fs-lg);margin-bottom:var(--sp-3)">دربارهٔ این محصول</h2>
+                    @foreach (var para in product.Description.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        <p style="color:var(--text-2);line-height:var(--lh-relax);margin-bottom:var(--sp-3)">@para</p>
+                    }
+                </section>
+
+                <!-- ======== Features ======== -->
+                <section class="card card--pad">
+                    <h2 style="font-size:var(--fs-lg);margin-bottom:var(--sp-4)">امکاناتِ کلیدی</h2>
+                    <div class="feat-list">
+                        @foreach (var f in product.Features)
+                        {
+                            <div class="feat">
+                                <span class="feat__check"><Icon Name="check" Size="12" /></span>
+                                <span>@f</span>
+                            </div>
+                        }
+                    </div>
+                </section>
+
+                <!-- ======== Plans ======== -->
+                <section class="card card--pad" id="plans">
+                    <div class="between" style="margin-bottom:var(--sp-4)">
+                        <h2 style="font-size:var(--fs-lg)">طرح‌ها و قیمت‌گذاری</h2>
+                        <span class="tiny muted">قیمت‌ها بدون احتسابِ مالیات</span>
+                    </div>
+
+                    <div class="plan-grid">
+                        @foreach (var plan in product.Plans)
+                        {
+                            <div class="plan @(plan.IsPopular ? "plan--featured" : "") @(selectedPlanId == plan.Id ? "plan--selected" : "")"
+                                 style="@(selectedPlanId == plan.Id ? "border-color:var(--brand-500);box-shadow:0 0 0 2px var(--brand-100)" : "")">
+                                @if (plan.IsPopular) { <span class="plan__flag">پیشنهادِ ما</span> }
+
+                                <div class="between">
+                                    <span class="plan__name">@plan.Name</span>
+                                    <StatusBadge Status="@plan.Tier.ToString()" Kind="tier" Small="true" />
+                                </div>
+
+                                <div class="plan__price">
+                                    <b>@Helpers.Fa.Money(plan.PriceToman)</b>
+                                    <span>@(plan.BillingType == BillingType.Annual ? "هر سال" : "یک‌باره")</span>
+                                </div>
+
+                                <p class="plan__desc">@plan.Description</p>
+
+                                <div class="plan__meta">
+                                    <StatusBadge Status="@plan.BillingType.ToString()" Kind="billing" Small="true" />
+                                    <span class="badge badge--neutral badge--sm">@Helpers.Fa.Num(plan.Seats) صندلی</span>
+                                </div>
+
+                                <button class="btn @(plan.IsPopular ? "btn--buy" : "btn--secondary") btn--sm btn--block"
+                                        style="margin-top:var(--sp-3)"
+                                        @onclick="() => AddToCart(plan.Id)" disabled="@Cart.IsBusy">
+                                    <Icon Name="cart" Size="15" /> افزودن به سبد
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </section>
+
+                <!-- ======== Versions ======== -->
+                <section class="card card--pad">
+                    <h2 style="font-size:var(--fs-lg);margin-bottom:var(--sp-4)">تاریخچهٔ نسخه‌ها</h2>
+                    <div class="timeline">
+                        @foreach (var v in product.Versions)
+                        {
+                            <div class="timeline__item">
+                                <span class="timeline__dot timeline__dot--brand"><Icon Name="package" Size="12" /></span>
+                                <div class="timeline__body">
+                                    <div class="between">
+                                        <span class="timeline__title">نسخهٔ <span class="num--lat">@v.Version</span></span>
+                                        <span class="tiny muted">@Helpers.Fa.Date(v.ReleasedAt)</span>
+                                    </div>
+                                    <p class="small muted" style="margin-top:2px;line-height:var(--lh-snug)">@v.Notes</p>
+                                    <span class="tiny muted row-2" style="margin-top:4px">
+                                        <Icon Name="monitor" Size="12" /> @v.Platform · @Helpers.Fa.Size(v.SizeMb)
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </section>
+
+                <!-- ======== Reviews ======== -->
+                <section class="card card--pad">
+                    <div class="between" style="margin-bottom:var(--sp-4)">
+                        <h2 style="font-size:var(--fs-lg)">نظرات مشتریان</h2>
+                        <button class="btn btn--soft btn--sm" @onclick="() => reviewOpen = true">
+                            <Icon Name="edit" Size="14" /> ثبت نظر
+                        </button>
+                    </div>
+
+                    @if (product.Reviews.Count == 0)
+                    {
+                        <EmptyState Icon="message" Title="هنوز نظری ثبت نشده" Text="اولین نفری باشید که تجربهٔ خود را می‌نویسد." />
+                    }
+                    else
+                    {
+                        <div class="stack-4">
+                            @foreach (var r in product.Reviews)
+                            {
+                                <div style="padding-bottom:var(--sp-4);border-bottom:1px solid var(--line-soft)">
+                                    <div class="between" style="align-items:flex-start">
+                                        <div class="row-3">
+                                            <span class="avatar">@Helpers.Fa.Initials(r.AuthorName)</span>
+                                            <div>
+                                                <div class="heavy" style="font-size:var(--fs-sm)">@r.AuthorName</div>
+                                                <div class="tiny muted">@r.AuthorCompany · @Helpers.Fa.TimeAgo(r.CreatedAt)</div>
+                                            </div>
+                                        </div>
+                                        <Stars Value="@r.Rating" Size="13" />
+                                    </div>
+                                    <div class="heavy" style="margin-top:var(--sp-3);font-size:var(--fs-md)">@r.Title</div>
+                                    <p class="small muted-2" style="margin-top:4px;line-height:var(--lh-relax)">@r.Body</p>
+                                </div>
+                            }
+                        </div>
+                    }
+                </section>
+            </div>
+
+            <!-- ======== Sidebar ======== -->
+            <aside class="stack-4">
+                <div class="card card--pad">
+                    <div class="stack-3">
+                        <div class="kv">
+                            <div class="kv__item"><span class="kv__k">دسته‌بندی</span><span class="kv__v">@product.CategoryName</span></div>
+                            <div class="kv__item"><span class="kv__k">نوع</span><span class="kv__v">@TypeLabel</span></div>
+                            <div class="kv__item"><span class="kv__k">سکو</span><span class="kv__v" style="font-size:var(--fs-sm)">@product.Platform</span></div>
+                            <div class="kv__item"><span class="kv__k">دورهٔ آزمایشی</span><span class="kv__v">@Helpers.Fa.Num(product.TrialDays) روز</span></div>
+                        </div>
+                        <div class="divider"></div>
+                        <a class="btn btn--buy btn--block" href="#plans"><Icon Name="credit-card" Size="16" /> انتخاب طرح و خرید</a>
+                        <a class="btn btn--secondary btn--block" href="/support">سؤال دارم</a>
+                    </div>
+                </div>
+
+                <div class="card card--pad">
+                    <div class="row-2" style="margin-bottom:var(--sp-3)">
+                        <span style="color:var(--brand-600)"><Icon Name="server" Size="17" /></span>
+                        <span class="heavy">نیازمندی‌های سیستم</span>
+                    </div>
+                    <div class="feat-list">
+                        @foreach (var req in product.SystemRequirements)
+                        {
+                            <div class="feat" style="font-size:var(--fs-sm)">
+                                <span class="feat__check"><Icon Name="check" Size="11" /></span>
+                                <span>@req</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="card card--pad" style="background:linear-gradient(160deg,var(--ink-900),var(--ink-800));border:0;color:#fff">
+                    <div class="row-2" style="margin-bottom:var(--sp-2)">
+                        <span style="color:var(--brand-300)"><Icon Name="headphones" Size="17" /></span>
+                        <span class="heavy">نیاز به راهنمایی؟</span>
+                    </div>
+                    <p class="small" style="color:rgba(255,255,255,.72);line-height:var(--lh-relax)">
+                        مهندسانِ ما روی داده‌های واقعیِ شما یک دموی اختصاصی برگزار می‌کنند.
+                    </p>
+                    <a class="btn btn--block btn--sm" style="background:#fff;color:var(--ink-900);margin-top:var(--sp-3)" href="/contact?topic=demo">
+                        رزرو دمو
+                    </a>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- ======== Review modal ======== -->
+    <Modal IsOpen="@reviewOpen" Title="ثبت نظر" Subtitle="@product?.Name" OnClose="@(() => reviewOpen = false)">
+        <ChildContent>
+            <div class="stack-4">
+                <div class="field">
+                    <span class="field__label">امتیاز شما</span>
+                    <div class="row-2">
+                        @for (var i = 1; i <= 5; i++)
+                        {
+                            var star = i;
+                            <button @onclick="() => rating = star" style="padding:2px" title="@star">
+                                <span style="color:@(star <= rating ? "var(--warn-500)" : "var(--ink-200)")">
+                                    <Icon Name="star" Size="24" />
+                                </span>
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <label class="field">
+                    <span class="field__label">عنوان</span>
+                    <input class="input" @bind="reviewTitle" placeholder="یک جمله دربارهٔ تجربهٔ شما" />
+                </label>
+
+                <label class="field">
+                    <span class="field__label">متن نظر</span>
+                    <textarea class="textarea" @bind="reviewBody" placeholder="چه چیزی خوب کار کرد؟ چه چیزی نیاز به بهبود دارد؟"></textarea>
+                </label>
+            </div>
+        </ChildContent>
+        <Footer>
+            <button class="btn btn--secondary" @onclick="() => reviewOpen = false">انصراف</button>
+            <button class="btn btn--primary" @onclick="SubmitReview">ارسال برای بررسی</button>
+        </Footer>
+    </Modal>
+}
+
+@code {
+    [Parameter] public string Slug { get; set; } = "";
+
+    private ProductDetailDto? product;
+    private string? selectedPlanId;
+    private bool reviewOpen;
+    private int rating = 5;
+    private string reviewTitle = "";
+    private string reviewBody = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        product = await Api.GetProductBySlugAsync(Slug);
+        selectedPlanId = product?.Plans.FirstOrDefault(p => p.IsPopular)?.Id ?? product?.Plans.FirstOrDefault()?.Id;
+    }
+
+    private string TypeLabel => product?.Type switch
+    {
+        ProductType.Module => "ماژولِ ERP",
+        ProductType.DesktopApp => "برنامهٔ دسکتاپ",
+        _ => "افزونه",
+    };
+
+    private async Task AddToCart(string planId)
+    {
+        if (product is null) return;
+        selectedPlanId = planId;
+        await Cart.AddAsync(planId);
+        Toast.Push("به سبد خرید اضافه شد", product.Name, ToastTone.Ok);
+    }
+
+    private void ToggleCompare()
+    {
+        if (product is null) return;
+        var removed = Compare.Toggle(product.Id);
+        Toast.Push(removed ? "از مقایسه حذف شد" : "به مقایسه اضافه شد", product.Name,
+            removed ? ToastTone.Info : ToastTone.Ok);
+    }
+
+    private async Task SubmitReview()
+    {
+        if (product is null) return;
+        if (reviewTitle.Length < 3 || reviewBody.Length < 10)
+        {
+            Toast.Push("اطلاعات ناقص است", "عنوان و متن نظر را کامل کنید.", ToastTone.Warn);
+            return;
+        }
+
+        await Api.CreateReviewAsync(new NewReviewInput(product.Id, rating, reviewTitle, reviewBody));
+        reviewOpen = false;
+        reviewTitle = ""; reviewBody = ""; rating = 5;
+        Toast.Push("نظر شما ثبت شد", "پس از تأییدِ تیم پشتیبانی نمایش داده می‌شود.", ToastTone.Ok);
+    }
+
+    private static string IconOf(string slug) => slug switch
+    {
+        "erp-suite" => "layers",
+        "finance-accounting" => "calculator",
+        "operations-inventory" => "boxes",
+        "desktop-productivity" => "monitor",
+        "addons-integrations" => "puzzle",
+        _ => "package",
+    };
+}

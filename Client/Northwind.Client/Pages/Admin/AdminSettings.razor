@@ -1,0 +1,170 @@
+@page "/dashboard/admin/settings"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+
+<PageTitle>تنظیمات فروشگاه — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">تنظیمات فروشگاه</h1>
+        <p class="page-sub">نام و هویتِ برند، متنِ قهرمان، مالیات و پیامِ سراسری.</p>
+    </div>
+    <button class="btn btn--primary btn--sm" @onclick="Save" disabled="@busy">
+        @if (busy) { <span class="btn__spinner"></span> } else { <Icon Name="check" Size="15" /> }
+        ذخیرهٔ تغییرات
+    </button>
+</div>
+
+@if (f is null)
+{
+    <div class="grid-2" style="gap:var(--sp-5)">
+        <Skeleton Kind="card" />
+        <Skeleton Kind="card" />
+    </div>
+}
+else
+{
+    <div class="grid-2" style="gap:var(--sp-5);align-items:start">
+        <div class="stack-5">
+            <section class="card card--pad">
+                <div class="section-label">هویتِ برند</div>
+                <div class="stack-4" style="margin-top:var(--sp-2)">
+                    <label class="field">
+                        <span class="field__label">نام سایت <span class="field__req">*</span></span>
+                        <input class="input" @bind="f.SiteName" />
+                    </label>
+                    <div class="grid-2" style="gap:var(--sp-4)">
+                        <label class="field">
+                            <span class="field__label">ایمیل پشتیبانی</span>
+                            <input class="input input--ltr" style="text-align:left" @bind="f.SupportEmail" />
+                        </label>
+                        <label class="field">
+                            <span class="field__label">ایمیل فروش</span>
+                            <input class="input input--ltr" style="text-align:left" @bind="f.SalesEmail" />
+                        </label>
+                    </div>
+                    <label class="field">
+                        <span class="field__label">تلفن پشتیبانی</span>
+                        <input class="input input--ltr" style="text-align:left" @bind="f.SupportPhone" />
+                    </label>
+                </div>
+            </section>
+
+            <section class="card card--pad">
+                <div class="section-label">بخشِ قهرمان (صفحهٔ نخست)</div>
+                <div class="stack-4" style="margin-top:var(--sp-2)">
+                    <label class="field">
+                        <span class="field__label">تیتر</span>
+                        <input class="input" @bind="f.HeroHeadline" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">زیرتیتر</span>
+                        <textarea class="textarea" style="min-height:88px" @bind="f.HeroSubheading"></textarea>
+                    </label>
+                </div>
+            </section>
+        </div>
+
+        <div class="stack-5">
+            <section class="card card--pad">
+                <div class="section-label">مالیات و دورهٔ آزمایشی</div>
+                <div class="stack-4" style="margin-top:var(--sp-2)">
+                    <label class="field">
+                        <span class="field__label">نرخ مالیات (درصد)</span>
+                        <input class="input input--ltr" style="text-align:left" type="number" min="0" max="100" step="0.25" @bind="TaxPercent" />
+                        <span class="field__hint">در پایگاه‌داده به‌صورت bps ذخیره می‌شود: @Helpers.Fa.Num(f.TaxRateBps) bps</span>
+                    </label>
+                    <label class="field">
+                        <span class="field__label">روزهای دورهٔ آزمایشی</span>
+                        <input class="input input--ltr" style="text-align:left" type="number" min="0" max="90" @bind="f.TrialDays" />
+                    </label>
+                </div>
+            </section>
+
+            <section class="card card--pad">
+                <div class="section-label">وضعیتِ عملیاتی</div>
+                <div class="stack-4" style="margin-top:var(--sp-2)">
+                    <Switch @bind-Value="f.MaintenanceMode" Text="حالتِ تعمیر و نگهداری" />
+                    <label class="field">
+                        <span class="field__label">اعلامیهٔ سراسری</span>
+                        <textarea class="textarea" style="min-height:84px" @bind="f.Announcement"
+                                  placeholder="متنی که در نوارِ بالای همهٔ صفحات نمایش داده می‌شود."></textarea>
+                    </label>
+                </div>
+            </section>
+
+            <section class="card card--pad">
+                <div class="section-label">پیش‌نمایشِ اعلامیه</div>
+                @if (string.IsNullOrWhiteSpace(f.Announcement))
+                {
+                    <p class="small muted" style="margin:var(--sp-2) 0 0">متنی وارد نشده است؛ نوار نمایش داده نمی‌شود.</p>
+                }
+                else
+                {
+                    <div class="announce" style="border-radius:var(--r-md);margin-top:var(--sp-2)">
+                        <Icon Name="bell" Size="15" /> @f.Announcement
+                    </div>
+                }
+            </section>
+        </div>
+    </div>
+}
+
+@code {
+    private SettingsForm? f;
+    private bool busy;
+
+    private sealed class SettingsForm
+    {
+        public string SiteName { get; set; } = "";
+        public string SupportEmail { get; set; } = "";
+        public string SalesEmail { get; set; } = "";
+        public string SupportPhone { get; set; } = "";
+        public string HeroHeadline { get; set; } = "";
+        public string HeroSubheading { get; set; } = "";
+        public int TaxRateBps { get; set; }
+        public int TrialDays { get; set; }
+        public bool MaintenanceMode { get; set; }
+        public string Announcement { get; set; } = "";
+    }
+
+    private decimal TaxPercent
+    {
+        get => (f?.TaxRateBps ?? 0) / 100m;
+        set { if (f is not null) f.TaxRateBps = (int)Math.Round(value * 100m); }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var s = await Api.GetSettingsAsync();
+        f = new SettingsForm
+        {
+            SiteName = s.SiteName, SupportEmail = s.SupportEmail, SalesEmail = s.SalesEmail,
+            SupportPhone = s.SupportPhone, HeroHeadline = s.HeroHeadline, HeroSubheading = s.HeroSubheading,
+            TaxRateBps = s.TaxRateBps, TrialDays = s.TrialDays,
+            MaintenanceMode = s.MaintenanceMode, Announcement = s.Announcement ?? "",
+        };
+    }
+
+    private async Task Save()
+    {
+        if (f is null) return;
+        if (f.SiteName.Trim().Length < 2)
+        {
+            Toast.Push("نام نامعتبر است", "نام سایت الزامی است.", ToastTone.Warn);
+            return;
+        }
+
+        busy = true;
+        await Task.Delay(350);
+
+        await Api.UpdateSettingsAsync(new SiteSettingsDto(
+            f.SiteName.Trim(), f.SupportEmail.Trim(), f.SalesEmail.Trim(), f.SupportPhone.Trim(),
+            f.HeroHeadline, f.HeroSubheading, f.TaxRateBps, f.TrialDays,
+            f.MaintenanceMode, f.Announcement));
+
+        busy = false;
+        Toast.Push("تنظیمات ذخیره شد", "تغییرات بلافاصله در رابط اعمال می‌شود.", ToastTone.Ok);
+    }
+}

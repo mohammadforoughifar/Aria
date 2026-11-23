@@ -1,0 +1,146 @@
+@page "/support"
+@inject Services.IStoreApi Api
+@inject Services.AuthState Auth
+
+<PageTitle>مرکز پشتیبانی — فروغ آریا پارسیان</PageTitle>
+
+<!-- ===== Hero ===== -->
+<section class="hero" style="padding-block:var(--sp-11) var(--sp-9)">
+    <div class="wrap hero__inner">
+        <span class="hero__eyebrow"><b>پاسخِ اولیه</b> زیر ۴ ساعت در روزهای کاری</span>
+        <h1 class="hero__title">چه کمکی می‌توانیم بکنیم؟</h1>
+        <p class="hero__sub">راهنماها را بخوانید، یا اگر پاسختان را نگرفتید یک تیکت باز کنید.</p>
+
+        <div style="width:100%;max-width:520px;margin-top:var(--sp-3)">
+            <div class="input-group">
+                <span class="input-group__icon"><Icon Name="search" Size="16" /></span>
+                <input class="input" style="height:50px;border-radius:var(--r-lg)"
+                       placeholder="جست‌وجو در پرسش‌های پرتکرار…" @bind="q" @oninput="Filter" />
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== Channels ===== -->
+<section class="section section--tight">
+    <div class="wrap">
+        <div class="grid-3">
+            @foreach (var c in channels)
+            {
+                <a class="cat-tile" href="@c.Href">
+                    <span class="cat-tile__icon" style="background:@c.Bg;color:@c.Fg"><Icon Name="@c.Icon" Size="19" /></span>
+                    <div>
+                        <div class="cat-tile__name">@c.Title</div>
+                        <p class="cat-tile__desc">@c.Desc</p>
+                    </div>
+                    <span class="cat-tile__count" style="color:var(--brand-600)">@c.Action <Icon Name="arrow-left" Size="12" /></span>
+                </a>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="section">
+    <div class="wrap">
+        <div class="section__head">
+            <div class="section__eyebrow">پرسش‌های پرتکرار</div>
+            <h2 class="section__title">راهنمای کوتاه</h2>
+        </div>
+
+        @if (filtered.Count == 0)
+        {
+            <EmptyState Icon="search" Title="نتیجه‌ای یافت نشد" Text="عبارتِ دیگری را امتحان کنید یا مستقیماً تیکت باز کنید." />
+        }
+        else
+        {
+            <div class="faq">
+                @foreach (var f in filtered)
+                {
+                    <div class="faq__item @(open == f.Id ? "is-open" : "")">
+                        <button class="faq__q" @onclick="() => open = open == f.Id ? null : f.Id">
+                            <span>@f.Question</span>
+                            <span class="faq__chev"><Icon Name="chevron-down" Size="18" /></span>
+                        </button>
+                        @if (open == f.Id)
+                        {
+                            <div class="faq__a animate-in">@f.Answer</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</section>
+
+<!-- ===== Ticket CTA ===== -->
+<section class="section section--sunk">
+    <div class="wrap grid-2" style="align-items:center">
+        <div>
+            <div class="section__eyebrow">پشتیبانیِ اختصاصی</div>
+            <h2 class="section__title" style="margin-top:8px">پاسخ را از مهندسِ همان ماژول بگیرید</h2>
+            <p class="section__sub" style="margin-top:var(--sp-3)">
+                تیکت‌ها در سیستمِ داخلیِ ما ثبت می‌شوند و تا بسته شدن، رشتهٔ گفت‌وگو در پورتال شما می‌ماند.
+            </p>
+            <div class="row-2" style="margin-top:var(--sp-5);flex-wrap:wrap">
+                <a class="btn btn--primary" href="/dashboard/tickets"><Icon Name="ticket" Size="16" /> باز کردن تیکت</a>
+                <a class="btn btn--secondary" href="/contact">تماس با فروش</a>
+            </div>
+        </div>
+
+        <div class="card card--pad">
+            <div class="stack-4">
+                @foreach (var s in sla)
+                {
+                    <div class="row-3">
+                        <span class="stat__icon" style="width:32px;height:32px"><Icon Name="@s.Icon" Size="15" /></span>
+                        <div>
+                            <div class="heavy" style="font-size:var(--fs-sm)">@s.Title</div>
+                            <div class="tiny muted">@s.Text</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private IReadOnlyList<FaqDto> all = Array.Empty<FaqDto>();
+    private IReadOnlyList<FaqDto> filtered = Array.Empty<FaqDto>();
+    private string q = "";
+    private string? open;
+
+    protected override async Task OnInitializedAsync()
+    {
+        all = await Api.GetFaqsAsync();
+        filtered = all;
+        open = all.FirstOrDefault()?.Id;
+    }
+
+    private void Filter()
+    {
+        filtered = string.IsNullOrWhiteSpace(q)
+            ? all
+            : all.Where(f => f.Question.Contains(q, StringComparison.OrdinalIgnoreCase) ||
+                             f.Answer.Contains(q, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private static readonly IReadOnlyList<(string Icon, string Title, string Desc, string Action, string Href, string Bg, string Fg)> channels = new[]
+    {
+        ("bookmark", "راهنمای شروع", "نصب، راه‌اندازی و مهاجرتِ داده در اولین روز.", "خواندن", "#", "var(--brand-50)", "var(--brand-600)"),
+        ("key", "لایسنس و فعال‌سازی", "صدور، افزایشِ صندلی، انتقال به دستگاهِ دیگر.", "خواندن", "#", "var(--violet-50)", "var(--violet-600)"),
+        ("credit-card", "صورتحساب و فاکتور", "دانلودِ فاکتور، روش‌های پرداخت و بازگشت وجه.", "خواندن", "#", "var(--teal-50)", "var(--teal-600)"),
+        ("code", "مستنداتِ API", "احراز هویت، مسیرها و مدلِ داده برای یکپارچه‌سازی.", "دیدن", "/api-docs", "var(--info-50)", "var(--info-600)"),
+        ("download", "دانلودها", "آخرین نصاب‌ها، وصله‌ها و دفترچه‌های راهنما.", "رفتن", "/dashboard/downloads", "var(--ok-50)", "var(--ok-600)"),
+        ("message", "تیکتِ پشتیبانی", "گزارشِ مشکلِ فنی با رشتهٔ گفت‌وگوی پیوسته.", "باز کردن", "/dashboard/tickets", "var(--warn-50)", "var(--warn-600)"),
+    };
+
+    private static readonly IReadOnlyList<(string Icon, string Title, string Text)> sla = new[]
+    {
+        ("clock", "پاسخِ اولیه", "زیر ۴ ساعت در روزهای کاری"),
+        ("alert", "مواردِ بحرانی", "زیر ۱ ساعت — توقفِ کاملِ عملیات"),
+        ("headphones", "تماسِ مستقیم", "برای مشتریانِ سازمانی"),
+        ("database", "دسترسیِ داده", "فقط با اجازهٔ کتبیِ شما"),
+    };
+}

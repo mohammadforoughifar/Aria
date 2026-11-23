@@ -1,0 +1,19 @@
+<!--
+  این فایل فقط وقتی اثر می‌کند که متغیرِ محیطی ARIA_SANDBOX=true باشد
+  (که فقط اسکریپت‌های اجرای پیش‌نمایش آن را ست می‌کنند).
+
+  هدف: خروجیِ بیلد (bin/obj) به بیرون از workspace منتقل شود تا حجمِ آن بالا نرود.
+  روی سیستمِ خودتان این متغیر ست نیست، بنابراین بیلد دقیقاً مثل همیشه
+  در همان bin/ و obj/ کنارِ هر پروژه انجام می‌شود.
+
+  مسیرها برای هر پروژه جداگانه هستند تا تداخلی پیش نیاید.
+-->
+<Project>
+
+  <PropertyGroup Condition="'$(ARIA_SANDBOX)' == 'true'">
+    <ARIA_BUILD_DIR Condition="'$(ARIA_BUILD_DIR)' == ''">/tmp/aria-build/</ARIA_BUILD_DIR>
+    <BaseIntermediateOutputPath>$(ARIA_BUILD_DIR)obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(ARIA_BUILD_DIR)bin/$(MSBuildProjectName)/</BaseOutputPath>
+  </PropertyGroup>
+
+</Project>

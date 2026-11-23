@@ -1,0 +1,37 @@
+@* کلیدِ تغییرِ تم — وضعیت در localStorage می‌ماند و با رفرش از دست نمی‌رود *@
+@inject Services.JsInterop Js
+
+<button class="theme-toggle" type="button"
+        @onclick="Toggle"
+        title="@(dark ? "تغییر به حالتِ روشن" : "تغییر به حالتِ تاریک")"
+        aria-label="@(dark ? "تغییر به حالتِ روشن" : "تغییر به حالتِ تاریک")">
+    <span class="theme-toggle__track">
+        <span class="theme-toggle__thumb">
+            @if (dark)
+            {
+                <Icon Name="moon" Size="12" />
+            }
+            else
+            {
+                <Icon Name="sun" Size="12" />
+            }
+        </span>
+    </span>
+</button>
+
+@code {
+    private bool dark;
+
+    protected override async Task OnAfterRenderAsync(bool first)
+    {
+        if (!first) return;
+        dark = await Js.GetThemeAsync();
+        StateHasChanged();
+    }
+
+    private async Task Toggle()
+    {
+        dark = !dark;
+        await Js.SetThemeAsync(dark ? "dark" : "light");
+    }
+}

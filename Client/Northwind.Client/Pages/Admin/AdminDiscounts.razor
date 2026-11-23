@@ -1,0 +1,180 @@
+@page "/dashboard/admin/discounts"
+@layout Shared.Layout.DashboardLayout
+@inject Services.IStoreApi Api
+@inject Services.ToastService Toast
+
+<PageTitle>کدهای تخفیف — فروغ آریا پارسیان</PageTitle>
+
+<div class="page-head">
+    <div>
+        <h1 class="page-title">کدهای تخفیف</h1>
+        <p class="page-sub">تعریف، محدودسازی و پایشِ مصرفِ کدها.</p>
+    </div>
+    <button class="btn btn--primary btn--sm" @onclick="New">
+        <Icon Name="plus" Size="15" /> کد جدید
+    </button>
+</div>
+
+<div class="grid-2" style="gap:var(--sp-5);align-items:start">
+    <div class="card table-wrap">
+        @if (items is null)
+        {
+            <div style="padding:var(--sp-4)">
+                @for (var i = 0; i < 4; i++) { <Skeleton Kind="row" /> }
+            </div>
+        }
+        else if (items.Count == 0)
+        {
+            <EmptyState Icon="tag" Title="کدی تعریف نشده است" Text="نخستین کدِ تخفیف را از فرمِ کناری بسازید." />
+        }
+        else
+        {
+            <div class="table-scroll">
+                <table class="table">
+                    <thead>
+                        <tr><th>کد</th><th>درصد</th><th>مصرف</th><th>انقضا</th><th>وضعیت</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in items)
+                        {
+                            <tr>
+                                <td>
+                                    <code class="order-code">@d.Code</code>
+                                    @if (d.Description is not null)
+                                    {
+                                        <div class="tiny muted" style="margin-top:3px">@d.Description</div>
+                                    }
+                                </td>
+                                <td class="num strong">@Helpers.Fa.Percent(d.PercentOff)</td>
+                                <td style="min-width:120px">
+                                    <div class="tiny num muted">@Helpers.Fa.Num(d.TimesRedeemed) از @Helpers.Fa.Num(d.MaxRedemptions)</div>
+                                    <Meter Value="@d.TimesRedeemed" Max="@d.MaxRedemptions" />
+                                </td>
+                                <td class="num small muted">@(d.ExpiresAt is null ? "نامحدود" : Helpers.Fa.Date(d.ExpiresAt))</td>
+                                <td><StatusBadge Status="@(d.IsActive ? "Active" : "Revoked")" Kind="license" Small="true" /></td>
+                                <td>
+                                    <div class="table__actions">
+                                        <button class="icon-btn" style="width:30px;height:30px" title="ویرایش" @onclick="() => Edit(d)">
+                                            <Icon Name="edit" Size="14" />
+                                        </button>
+                                        <button class="icon-btn" style="width:30px;height:30px;color:var(--bad-600)" title="حذف" @onclick="() => Remove(d)">
+                                            <Icon Name="trash" Size="14" />
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="card card--pad" style="position:sticky;top:100px">
+        <div class="section-label">@(editing is null ? "تعریف کد جدید" : "ویرایشِ " + editing.Code)</div>
+        <div class="stack-4" style="margin-top:var(--sp-2)">
+            <label class="field">
+                <span class="field__label">کد <span class="field__req">*</span></span>
+                <input class="input input--ltr" style="text-align:left;text-transform:uppercase" @bind="form.Code" placeholder="WINTER20" />
+            </label>
+            <div class="grid-2" style="gap:var(--sp-4)">
+                <label class="field">
+                    <span class="field__label">درصد تخفیف <span class="field__req">*</span></span>
+                    <input class="input input--ltr" style="text-align:left" type="number" min="1" max="100" @bind="form.PercentOff" />
+                    <span class="field__hint">بازهٔ مجاز: ۱ تا ۱۰۰</span>
+                </label>
+                <label class="field">
+                    <span class="field__label">سقفِ استفاده</span>
+                    <input class="input input--ltr" style="text-align:left" type="number" min="1" @bind="form.MaxRedemptions" />
+                </label>
+            </div>
+            <label class="field">
+                <span class="field__label">تاریخ انقضا</span>
+                <input class="input input--ltr" style="text-align:left" type="date" @bind="form.ExpiresAt" />
+                <span class="field__hint">خالی = بدون محدودیتِ زمانی</span>
+            </label>
+            <label class="field">
+                <span class="field__label">توضیحات</span>
+                <input class="input" @bind="form.Description" placeholder="مثلاً کمپینِ زمستانی" />
+            </label>
+            <Switch @bind-Value="form.IsActive" Text="کد فعال باشد" />
+            <div class="row-2">
+                <button class="btn btn--primary" style="flex:1" @onclick="Save">ذخیره</button>
+                @if (editing is not null)
+                {
+                    <button class="btn btn--secondary" @onclick="New">جدید</button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private IReadOnlyList<DiscountCodeDto>? items;
+    private DiscountCodeDto? editing;
+    private DiscountForm form = new();
+
+    private sealed class DiscountForm
+    {
+        public string Code { get; set; } = "";
+        public int PercentOff { get; set; } = 10;
+        public int MaxRedemptions { get; set; } = 100;
+        public DateTime? ExpiresAt { get; set; }
+        public string? Description { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    protected override async Task OnInitializedAsync() => await Reload();
+
+    private async Task Reload() => items = await Api.GetDiscountCodesAsync();
+
+    private void New()
+    {
+        editing = null;
+        form = new DiscountForm();
+    }
+
+    private void Edit(DiscountCodeDto d)
+    {
+        editing = d;
+        form = new DiscountForm
+        {
+            Code = d.Code, PercentOff = d.PercentOff, MaxRedemptions = d.MaxRedemptions,
+            ExpiresAt = d.ExpiresAt, Description = d.Description, IsActive = d.IsActive,
+        };
+    }
+
+    private async Task Save()
+    {
+        var code = form.Code.Trim().ToUpperInvariant();
+        if (code.Length < 3)
+        {
+            Toast.Push("کد نامعتبر است", "حداقل ۳ نویسه لازم است.", ToastTone.Warn);
+            return;
+        }
+        if (form.PercentOff is < 1 or > 100)
+        {
+            Toast.Push("درصد نامعتبر", "بازهٔ مجاز ۱ تا ۱۰۰ است.", ToastTone.Warn);
+            return;
+        }
+
+        var dto = new DiscountCodeDto(
+            editing?.Id ?? "d-" + Guid.NewGuid().ToString("N")[..8],
+            code, form.Description, form.PercentOff, form.MaxRedemptions,
+            editing?.TimesRedeemed ?? 0, form.ExpiresAt, form.IsActive,
+            editing?.CreatedAt ?? DateTime.UtcNow);
+
+        await Api.UpsertDiscountAsync(dto);
+        Toast.Push("ذخیره شد", code, ToastTone.Ok);
+        New();
+        await Reload();
+    }
+
+    private async Task Remove(DiscountCodeDto d)
+    {
+        await Api.DeleteDiscountAsync(d.Id);
+        if (editing?.Id == d.Id) New();
+        Toast.Push("حذف شد", d.Code, ToastTone.Info);
+        await Reload();
+    }
+}

@@ -1,0 +1,41 @@
+@inject Services.AuthState Auth
+@inject Services.CartState Cart
+@inject Services.CompareState Compare
+
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Shared.Layout.StoreLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>صفحه یافت نشد — فروغ آریا پارسیان</PageTitle>
+        <LayoutView Layout="@typeof(Shared.Layout.StoreLayout)">
+            <div class="wrap" style="padding:96px 0">
+                <EmptyState Icon="search" Title="این صفحه وجود ندارد"
+                                      Text="آدرسی که وارد کرده‌اید پیدا نشد. شاید محصول تغییر نام داده باشد.">
+                    <div class="row-2">
+                        <a class="btn btn--primary btn--sm" href="/">بازگشت به خانه</a>
+                        <a class="btn btn--secondary btn--sm" href="/catalog">مشاهدهٔ محصولات</a>
+                    </div>
+                </EmptyState>
+            </div>
+        </LayoutView>
+    </NotFound>
+</Router>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // این سه فراخوانی به API وابسته‌اند؛ اگر سرور در دسترس نباشد
+        // نباید کلِ برنامه از کار بیفتد — خطا مهار و بعداً پیام داده می‌شود.
+        await Safe(() => Auth.InitializeAsync());
+        await Safe(() => Cart.InitializeAsync());
+        await Safe(() => Compare.InitializeAsync());
+    }
+
+    private static async Task Safe(Func<Task> action)
+    {
+        try { await action(); }
+        catch (Exception ex) { Console.WriteLine("[startup] " + ex.Message); }
+    }
+}

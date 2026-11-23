@@ -1,0 +1,374 @@
+/* =====================================================================
+   سرصفحهٔ دوقسمتیِ «نرم‌افزارها» + گرافیکِ متحرکِ «منظومهٔ ماژول‌ها»
+   ---------------------------------------------------------------------
+   · چیدمان با ویژگی‌هایِ منطقی (margin-inline / inset-inline) نوشته شده،
+     پس در راست‌چین و چپ‌چین یکسان کار می‌کند.
+   · رنگ‌ها از نشانه‌هایِ سایت می‌آیند و با کلیدِ تغییرِ تم همراه می‌شوند.
+   · حالتِ پایه همان حالتِ پایانی است؛ انیمیشنِ ورود با fill-modeِ
+     backwards اجرا می‌شود تا اگر هرگز اجرا نشد، همه‌چیز پیدا باشد.
+   ===================================================================== */
+
+/* ------------------------------ نشانه‌ها ------------------------------ */
+.hero--split {
+  --orb-line: #DCE3F1;
+  --orb-glow: #60A5FA;
+  --orb-chip-bg: rgba(255, 255, 255, .88);
+  --orb-shadow: rgba(11, 31, 58, .32);
+  --orb-db-a: #3B6BEA;
+  --orb-db-b: #12306B;
+  --orb-ink: var(--ink-900);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .hero--split {
+    --orb-line: #26365A;
+    --orb-glow: #7DB3FF;
+    --orb-chip-bg: rgba(20, 33, 61, .86);
+    --orb-shadow: rgba(0, 0, 0, .6);
+    --orb-db-a: #4C7BF0;
+    --orb-db-b: #1B3C86;
+  }
+}
+:root[data-theme="dark"] .hero--split {
+  --orb-line: #26365A;
+  --orb-glow: #7DB3FF;
+  --orb-chip-bg: rgba(20, 33, 61, .86);
+  --orb-shadow: rgba(0, 0, 0, .6);
+  --orb-db-a: #4C7BF0;
+  --orb-db-b: #1B3C86;
+}
+
+/* --------------------- چیدمانِ دوقسمتیِ سرصفحه --------------------- */
+.hero--split .hero__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: center;
+  justify-items: start;
+  text-align: start;
+}
+
+/* ستونِ متن: قرصِ بالانویس بالاتر از تیتر می‌نشیند، نه درونِ دایره */
+.hero--split .hero__copy {
+  display: grid;
+  gap: var(--sp-5);
+  justify-items: start;
+  min-width: 0;
+}
+.hero--split .hero__eyebrow { justify-self: start; }
+.hero--split .hero__title { max-width: 18ch; }
+.hero--split .hero__sub { max-width: 34em; }
+.hero--split .hero__cta { justify-content: flex-start; }
+
+/* ستونِ آمار تمامِ پهنا را می‌گیرد و زیرِ هر دو ستون می‌نشیند */
+/* ستونِ گرافیک باید ستونِ شبکه را پُر کند.
+   با justify-items: start آیتم‌ها به اندازهٔ محتوا جمع می‌شوند و چون محتوایِ
+   این ستون خودش width:100% است، یک دورِ باطل ساخته می‌شد و پهنا صفر می‌شد؛
+   در نتیجه clientWidthِ صحنه صفر می‌شد و کلِ انیمیشن از کار می‌افتاد. */
+.hero--split .hero__visual {
+  width: 100%;
+  min-width: 0;
+  justify-self: stretch;
+}
+
+.hero--split .hero__stats {
+  grid-column: 1 / -1;
+  justify-self: center;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* ------------- دکمهٔ «مشاورهٔ رایگان» — خوانا در هر دو تم -------------
+   پیش از این دکمه برای قهرمانِ سرمه‌ای طراحی شده بود (متنِ سفید) و روی
+   پس‌زمینهٔ روشنِ این سرصفحه دیده نمی‌شد.                              */
+.hero--split .btn--outline-light,
+.hero--split .hero__cta .btn--ghost {
+  background: var(--surface);
+  color: var(--brand-700);
+  border: 1.5px solid var(--brand-700);
+  box-shadow: var(--sh-sm);
+}
+.hero--split .btn--outline-light:hover:not(:disabled),
+.hero--split .hero__cta .btn--ghost:hover:not(:disabled) {
+  background: var(--brand-50);
+  color: var(--brand-700);
+  border-color: var(--brand-700);
+  transform: translateY(-1px);
+}
+:root[data-theme="dark"] .hero--split .btn--outline-light,
+:root[data-theme="dark"] .hero--split .hero__cta .btn--ghost {
+  background: transparent;
+  color: #C7D2FE;
+  border-color: #A5B4FC;
+}
+:root[data-theme="dark"] .hero--split .btn--outline-light:hover:not(:disabled),
+:root[data-theme="dark"] .hero--split .hero__cta .btn--ghost:hover:not(:disabled) {
+  background: rgba(99, 102, 241, .16);
+  color: #EEF2FA;
+  border-color: #C7D2FE;
+}
+.hero--split .hero__cta .btn:focus-visible {
+  outline: 3px solid var(--brand-600);
+  outline-offset: 3px;
+}
+
+/* --------------------------- صحنهٔ گرافیک --------------------------- */
+.orb {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  aspect-ratio: 5 / 4;
+  margin-inline: auto;
+}
+/* هالهٔ آبیِ ملایم */
+.orb::before {
+  content: "";
+  position: absolute;
+  inset: 8% 6%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(96, 165, 250, .22), transparent 72%);
+  pointer-events: none;
+}
+/* سایهٔ زمین */
+.orb::after {
+  content: "";
+  position: absolute;
+  inset-inline: 22%;
+  bottom: 7%;
+  height: 9%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--orb-shadow), transparent 75%);
+  opacity: .5;
+  pointer-events: none;
+}
+
+.orb__fx {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  z-index: 1;
+  pointer-events: none;
+}
+.orb__orbit {
+  fill: none;
+  stroke: var(--orb-line);
+  stroke-width: 1.4;
+  stroke-dasharray: 3 8;
+}
+.orb__link {
+  fill: none;
+  stroke: var(--brand-600);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  filter: drop-shadow(0 0 4px var(--orb-glow));
+}
+.orb__dot {
+  fill: #fff;
+  stroke: var(--orb-glow);
+  stroke-width: 2.4;
+  filter: drop-shadow(0 0 6px var(--orb-glow));
+}
+
+/* پایگاهِ داده */
+/* top: 49% یعنی مرکزِ آیکون دقیقاً بر cyِ موتور (H/2 - H*0.01) منطبق است. */
+.orb__db {
+  position: absolute;
+  left: 50%;
+  top: 49%;
+  width: 22%;
+  z-index: 5;
+  translate: -50% -50%;
+  text-align: center;
+  transform-origin: center;
+}
+.orb__db svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  display: block;
+  filter: drop-shadow(0 22px 22px var(--orb-shadow));
+}
+.orb__halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  translate: -50% -50%;
+  border: 2px solid var(--orb-glow);
+  opacity: 0;
+  pointer-events: none;
+}
+.orb__db.is-live .orb__halo { animation: orbHalo 2.6s ease-out infinite; }
+@keyframes orbHalo {
+  0%   { transform: scale(.55); opacity: .8; }
+  100% { transform: scale(1.15); opacity: 0; }
+}
+.orb__db small {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  translate: -50% 0;
+  margin-top: 6px;
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+/* چیپ‌هایِ ماژول */
+/* موتور مختصات را فیزیکی حساب می‌کند (مبدأ = گوشهٔ چپِ صحنه، درست مانندِ
+   viewBoxِ SVG). برای همین این عناصرِ درونِ صحنه با left/top لنگر می‌شوند،
+   نه با ویژگی‌هایِ منطقی — وگرنه در راست‌چین همه روی هم می‌افتادند.
+   چیدمانِ بیرونی (ستون‌هایِ سرصفحه) همچنان منطقی است. */
+.orb__chip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+  padding: 6px 14px 6px 8px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: .86rem;
+  color: var(--orb-ink);
+  background: var(--orb-chip-bg);
+  border: 1px solid var(--orb-line);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 14px 24px -14px var(--orb-shadow);
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+.orb__chip.is-front { z-index: 7; }
+.orb__ic {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--c);
+  flex: none;
+}
+.orb__ic svg { width: 16px; height: 16px; }
+
+/* زیرنویس */
+.orb__cap {
+  position: absolute;
+  left: 50%;
+  bottom: -2%;
+  translate: -50% 0;
+  z-index: 8;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: var(--navy-900, #0B1F3A);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: opacity .22s ease;
+  pointer-events: none;
+}
+.orb__cap.is-fade { opacity: 0; }
+:root[data-theme="dark"] .orb__cap { background: var(--brand-700); color: #0A1128; }
+
+/* --------------------------- انیمیشنِ ورود --------------------------- */
+@keyframes orbUp { from { opacity: 0; transform: translateY(22px); } }
+.hero--split .hero__copy > * { animation: orbUp .7s cubic-bezier(.22, 1, .36, 1) backwards; }
+.hero--split .hero__copy > :nth-child(1) { animation-delay: 0ms; }
+.hero--split .hero__copy > :nth-child(2) { animation-delay: 100ms; }
+.hero--split .hero__copy > :nth-child(3) { animation-delay: 200ms; }
+.hero--split .hero__copy > :nth-child(4) { animation-delay: 300ms; }
+.hero--split .hero__stats { animation: orbUp .7s 450ms cubic-bezier(.22, 1, .36, 1) backwards; }
+.hero--split .hero__visual { animation: orbUp .7s 250ms cubic-bezier(.22, 1, .36, 1) backwards; }
+
+/* -------------------------------- تاریک -------------------------------- */
+/* background-color را جدا می‌نویسیم تا اندازه‌گیریِ تضاد (و مرورگرها)
+   بتوانند رنگِ پایه را بخوانند؛ کوتاه‌نوشتِ background آن را پاک می‌کرد. */
+:root[data-theme="dark"] .hero--split {
+  background-color: #0A1128;
+  background-image:
+    radial-gradient(900px 420px at 88% -8%, rgba(99, 102, 241, .16), transparent 60%),
+    radial-gradient(700px 380px at 6% 12%, rgba(139, 92, 246, .12), transparent 62%),
+    linear-gradient(180deg, #0A1128 0%, #0E1730 100%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .hero--split {
+    background-color: #0A1128;
+    background-image:
+      radial-gradient(900px 420px at 88% -8%, rgba(99, 102, 241, .16), transparent 60%),
+      radial-gradient(700px 380px at 6% 12%, rgba(139, 92, 246, .12), transparent 62%),
+      linear-gradient(180deg, #0A1128 0%, #0E1730 100%);
+  }
+}
+:root[data-theme="dark"] .hero--split::before {
+  background-image:
+    linear-gradient(rgba(226, 232, 240, .05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(226, 232, 240, .05) 1px, transparent 1px);
+}
+:root[data-theme="dark"] .hero--split .hero__stats {
+  background: rgba(20, 33, 61, .72);
+  border-color: var(--line);
+}
+:root[data-theme="dark"] .hero--split .hero__eyebrow {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink-700);
+}
+:root[data-theme="dark"] .hero--split .hero__eyebrow b {
+  background: var(--brand-50);
+  color: var(--brand-800);
+}
+:root[data-theme="dark"] .hero--split .hero__title span {
+  background: linear-gradient(100deg, var(--brand-700), var(--violet-600));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ------------------------------ واکنش‌گرا ------------------------------ */
+@media (max-width: 900px) {
+  .hero--split .hero__inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-7);
+    justify-items: center;
+    text-align: center;
+  }
+  .hero--split .hero__copy { justify-items: center; }
+  .hero--split .hero__title { max-width: 22ch; }
+  .hero--split .hero__cta { justify-content: center; }
+  /* موبایل: متن، سپس گرافیک، سپس آمار */
+  .hero--split .hero__copy   { order: 1; }
+  .hero--split .hero__visual { order: 2; max-width: 440px; margin-inline: auto; }
+  .hero--split .hero__stats  { order: 3; }
+  .orb { max-width: 440px; }
+  .hero--split .hero__stats { margin-top: var(--sp-2); }
+}
+
+@media (max-width: 560px) {
+  .orb { max-width: 100%; }
+  .orb__chip { font-size: .78rem; padding: 5px 11px 5px 6px; gap: 7px; }
+  .orb__ic { width: 24px; height: 24px; border-radius: 8px; }
+  .orb__ic svg { width: 14px; height: 14px; }
+  .orb__db { width: 26%; }
+  .orb__db small { font-size: .66rem; }
+  .orb__cap { font-size: .74rem; padding: 5px 12px; }
+}
+
+/* ------------------------ کاهشِ حرکت ------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  .hero--split .hero__copy > *,
+  .hero--split .hero__stats,
+  .hero--split .hero__visual,
+  .orb__db.is-live .orb__halo {
+    animation: none !important;
+  }
+  .orb__cap { transition: none !important; }
+}
