@@ -80,8 +80,8 @@ public sealed class OrderService : IOrderService
                 throw new BusinessRuleException("ظرفیتِ کدِ تخفیف پر شده است.", "discount_exhausted");
         }
 
-        var discountToman = discount is null ? 0 : (int)Math.Round(subtotal * (discount.PercentOff / 100m));
-        var tax = (int)Math.Round((subtotal - discountToman) * (taxBps / 10_000m));
+        var discountToman = discount is null ? 0m : Money.Round(subtotal * (discount.PercentOff / 100m));
+        var tax = Money.Round((subtotal - discountToman) * (taxBps / 10_000m));
         var total = subtotal - discountToman + tax;
 
         await using var tx = await _db.Database.BeginTransactionAsync(ct);

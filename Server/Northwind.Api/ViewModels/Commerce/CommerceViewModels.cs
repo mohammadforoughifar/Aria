@@ -8,11 +8,11 @@ namespace Northwind.Api.ViewModels.Commerce;
 public sealed record CartItemViewModel(
     Guid Id, Guid PlanId, int Quantity, Guid ProductId, string ProductName,
     string ProductSlug, string PlanName, PlanTier Tier, BillingType BillingType,
-    string AccentColor, int UnitPriceToman, int LineTotalToman);
+    string AccentColor, decimal UnitPriceToman, decimal LineTotalToman);
 
 public sealed record CartViewModel(
     Guid Id, IReadOnlyList<CartItemViewModel> Items, int ItemCount,
-    int SubtotalToman, int DiscountToman, int TaxToman, int TotalToman,
+    decimal SubtotalToman, decimal DiscountToman, decimal TaxToman, decimal TotalToman,
     string? DiscountCode, string Currency);
 
 public sealed class AddToCartInput
@@ -88,12 +88,12 @@ public sealed record CheckoutResultViewModel(
 
 public sealed record OrderItemViewModel(
     Guid Id, Guid ProductId, Guid PlanId, string ProductName, string PlanName,
-    BillingType BillingType, int UnitPriceToman, int Quantity, int LineTotalToman);
+    BillingType BillingType, decimal UnitPriceToman, int Quantity, decimal LineTotalToman);
 
 public sealed record OrderViewModel(
     Guid Id, string OrderNumber, Guid UserId, string? CustomerName, string? CustomerEmail,
-    string? CustomerCompany, OrderStatus Status, int SubtotalToman, int DiscountToman,
-    int TaxToman, int TotalToman, string Currency, string? DiscountCode, DateTime PlacedAt,
+    string? CustomerCompany, OrderStatus Status, decimal SubtotalToman, decimal DiscountToman,
+    decimal TaxToman, decimal TotalToman, string Currency, string? DiscountCode, DateTime PlacedAt,
     string? BillingName, string? BillingCompany, string? BillingEmail, string? BillingCountry,
     string? Notes, IReadOnlyList<OrderItemViewModel> Items,
     PaymentViewModel? Payment, InvoiceViewModel? Invoice);
@@ -107,14 +107,14 @@ public sealed class UpdateOrderStatusInput
 /* =============================== پرداخت =============================== */
 
 public sealed record PaymentViewModel(
-    Guid Id, Guid OrderId, string Provider, string Method, int AmountToman,
+    Guid Id, Guid OrderId, string Provider, string Method, decimal AmountToman,
     PaymentStatus Status, string? TransactionRef, DateTime? PaidAt);
 
 /* =============================== فاکتور =============================== */
 
 public sealed record InvoiceViewModel(
     Guid Id, string InvoiceNumber, Guid OrderId, InvoiceStatus Status,
-    DateTime IssuedAt, DateTime? DueAt, int TotalToman, int TaxToman,
+    DateTime IssuedAt, DateTime? DueAt, decimal TotalToman, decimal TaxToman,
     OrderViewModel? Order = null);
 
 /* =============================== لایسنس =============================== */

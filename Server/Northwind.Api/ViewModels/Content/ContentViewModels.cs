@@ -78,16 +78,16 @@ public sealed class SiteSettingsInput
 
 /* ============================== داشبورد ============================== */
 
-public sealed record RevenuePointViewModel(string Label, int TotalToman);
+public sealed record RevenuePointViewModel(string Label, decimal TotalToman);
 
 public sealed record TopProductViewModel(
-    Guid ProductId, string Name, string Slug, int UnitsSold, int RevenueToman, string AccentColor);
+    Guid ProductId, string Name, string Slug, int UnitsSold, decimal RevenueToman, string AccentColor);
 
 /// <summary>خلاصهٔ پنلِ مدیر — <c>GET /api/admin/overview</c>.</summary>
 public sealed record AdminOverviewViewModel(
     int TotalProducts, int TotalCustomers, int OpenTickets, int PendingReviews,
     int ActiveLicenses, int ExpiringLicenses,
-    int RevenueThisMonthToman, int RevenueLastMonthToman,
+    decimal RevenueThisMonthToman, decimal RevenueLastMonthToman,
     IReadOnlyList<RevenuePointViewModel> RevenueSeries,
     IReadOnlyList<TopProductViewModel> TopProducts,
     IReadOnlyList<OrderViewModel> RecentOrders,
@@ -96,7 +96,7 @@ public sealed record AdminOverviewViewModel(
 /// <summary>خلاصهٔ پورتالِ مشتری — <c>GET /api/account/overview</c>.</summary>
 public sealed record CustomerOverviewViewModel(
     int OrderCount, int ActiveLicenses, int ExpiringLicenses, int OpenTickets,
-    int TotalSpentToman, int AvailableDownloads, int OutstandingInvoicesToman,
+    decimal TotalSpentToman, int AvailableDownloads, decimal OutstandingInvoicesToman,
     IReadOnlyList<OrderViewModel> RecentOrders,
     IReadOnlyList<LicenseViewModel> ExpiringLicensesList,
     IReadOnlyList<RevenuePointViewModel> SpendSeries);

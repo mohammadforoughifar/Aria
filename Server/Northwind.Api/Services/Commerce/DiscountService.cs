@@ -16,7 +16,7 @@ public interface IDiscountService
     Task DeleteAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>بررسیِ کد و برگرداندنِ درصدِ تخفیف برایِ مبلغی مشخص.</summary>
-    Task<(string Code, int PercentOff, int DiscountToman)> ValidateAsync(string code, int subtotalToman, CancellationToken ct = default);
+    Task<(string Code, int PercentOff, decimal DiscountToman)> ValidateAsync(string code, decimal subtotalToman, CancellationToken ct = default);
 }
 
 public sealed class DiscountService : IDiscountService
@@ -82,7 +82,7 @@ public sealed class DiscountService : IDiscountService
         await _db.SaveChangesAsync(ct);
     }
 
-    public async Task<(string Code, int PercentOff, int DiscountToman)> ValidateAsync(string code, int subtotalToman, CancellationToken ct = default)
+    public async Task<(string Code, int PercentOff, decimal DiscountToman)> ValidateAsync(string code, decimal subtotalToman, CancellationToken ct = default)
     {
         var normalized = code.Trim().ToUpperInvariant();
 
@@ -99,7 +99,7 @@ public sealed class DiscountService : IDiscountService
         if (discount.MaxRedemptions > 0 && discount.TimesRedeemed >= discount.MaxRedemptions)
             throw new BusinessRuleException("ظرفیتِ این کد پر شده است.", "discount_exhausted");
 
-        var amount = (int)Math.Round(subtotalToman * (discount.PercentOff / 100m));
+        var amount = Money.Round(subtotalToman * (discount.PercentOff / 100m));
         return (discount.Code, discount.PercentOff, amount);
     }
 }

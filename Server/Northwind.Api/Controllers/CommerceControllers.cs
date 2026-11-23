@@ -232,7 +232,7 @@ public sealed class DiscountCodesController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType<ApiErrorViewModel>(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<ActionResult<object>> Validate([FromBody] ApplyDiscountInput input, [FromQuery] int subtotal = 0, CancellationToken ct = default)
+    public async Task<ActionResult<object>> Validate([FromBody] ApplyDiscountInput input, [FromQuery] decimal subtotal = 0, CancellationToken ct = default)
     {
         var (code, percent, amount) = await _discounts.ValidateAsync(input.Code, subtotal, ct);
         return Ok(new { code, percentOff = percent, discountToman = amount });

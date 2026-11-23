@@ -19,7 +19,7 @@ public class OrderItem : EntityBase
     public string PlanName { get; set; } = "";
 
     public BillingType BillingType { get; set; }
-    public int UnitPriceToman { get; set; }
+    public decimal UnitPriceToman { get; set; }
     public int Quantity { get; set; } = 1;
-    public int LineTotalToman { get; set; }
+    public decimal LineTotalToman { get; set; }
 }

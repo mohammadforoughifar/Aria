@@ -146,7 +146,7 @@ public static class Mappers
     public static UserViewModel ToViewModel(this User u) =>
         new(u.Id, u.Email, u.FullName, u.Role, u.Company, u.Phone, u.Country, u.CreatedAt, u.LastLoginAt);
 
-    public static CustomerViewModel ToCustomer(this User u, int orderCount, int totalSpent, int licenseCount) =>
+    public static CustomerViewModel ToCustomer(this User u, int orderCount, decimal totalSpent, int licenseCount) =>
         new(u.Id, u.Email, u.FullName, u.Role, u.Company, u.Phone, u.Country, u.CreatedAt, u.LastLoginAt,
             orderCount, totalSpent, licenseCount);
 }

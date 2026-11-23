@@ -39,12 +39,12 @@ public sealed class AdminService : IAdminService
 
         var revenueThisMonth = await _db.Orders
             .Where(o => o.PlacedAt >= monthStart && (o.Status == OrderStatus.Paid || o.Status == OrderStatus.Completed))
-            .SumAsync(o => (int?)o.TotalToman, ct) ?? 0;
+            .SumAsync(o => (decimal?)o.TotalToman, ct) ?? 0m;
 
         var revenueLastMonth = await _db.Orders
             .Where(o => o.PlacedAt >= lastMonthStart && o.PlacedAt < monthStart
                      && (o.Status == OrderStatus.Paid || o.Status == OrderStatus.Completed))
-            .SumAsync(o => (int?)o.TotalToman, ct) ?? 0;
+            .SumAsync(o => (decimal?)o.TotalToman, ct) ?? 0m;
 
         // ---- سریِ درآمدِ ۱۲ ماه ----
         var since = monthStart.AddMonths(-11);

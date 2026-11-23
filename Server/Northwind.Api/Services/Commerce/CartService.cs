@@ -108,7 +108,7 @@ public sealed class CartService : ICartService
 
         var discount = await ValidateDiscountAsync(code, cart.SubtotalToman, ct);
 
-        var discountToman = discount is null ? 0 : (int)Math.Round(cart.SubtotalToman * (discount.PercentOff / 100m));
+        var discountToman = discount is null ? 0m : Money.Round(cart.SubtotalToman * (discount.PercentOff / 100m));
         var tax = await TaxAsync(cart.SubtotalToman - discountToman, ct);
 
         return cart with
@@ -157,7 +157,7 @@ public sealed class CartService : ICartService
         if (!string.IsNullOrWhiteSpace(discountCode))
             discount = await ValidateDiscountAsync(discountCode, subtotal, ct);
 
-        var discountToman = discount is null ? 0 : (int)Math.Round(subtotal * (discount.PercentOff / 100m));
+        var discountToman = discount is null ? 0m : Money.Round(subtotal * (discount.PercentOff / 100m));
         var tax = await TaxAsync(subtotal - discountToman, ct);
 
         return new CartViewModel(
@@ -172,7 +172,7 @@ public sealed class CartService : ICartService
             "IRT");
     }
 
-    private async Task<DiscountCode?> ValidateDiscountAsync(string code, int subtotal, CancellationToken ct)
+    private async Task<DiscountCode?> ValidateDiscountAsync(string code, decimal subtotal, CancellationToken ct)
     {
         var normalized = code.Trim().ToUpperInvariant();
 
@@ -195,11 +195,11 @@ public sealed class CartService : ICartService
         return discount;
     }
 
-    private async Task<int> TaxAsync(int taxableToman, CancellationToken ct)
+    private async Task<decimal> TaxAsync(decimal taxableToman, CancellationToken ct)
     {
         var settings = await _db.SiteSettings.AsNoTracking().FirstOrDefaultAsync(ct);
         var bps = settings?.TaxRateBps ?? 0;
-        return (int)Math.Round(taxableToman * (bps / 10_000m));
+        return Money.Round(taxableToman * (bps / 10_000m));
     }
 
     /// <summary>شناسهٔ نمایشیِ سبد — سبد موجودیتِ پایدار نیست، پس شناسه از کلیدِ نشست ساخته می‌شود.</summary>

@@ -18,7 +18,7 @@ public class Product : EntityBase
     public string Version { get; set; } = "1.0.0";
 
     /// <summary>قیمتِ پایه به تومان — عددِ صحیح، چون تومان واحدِ خرد ندارد.</summary>
-    public int BasePriceToman { get; set; }
+    public decimal BasePriceToman { get; set; }
 
     public string AccentColor { get; set; } = "#1E3A8A";
     public string? HeroImage { get; set; }

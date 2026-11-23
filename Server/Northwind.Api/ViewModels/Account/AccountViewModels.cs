@@ -14,7 +14,7 @@ public sealed record UserViewModel(
 public sealed record CustomerViewModel(
     Guid Id, string Email, string FullName, Role Role, string? Company, string? Phone,
     string? Country, DateTime CreatedAt, DateTime? LastLoginAt,
-    int OrderCount, int TotalSpentToman, int LicenseCount);
+    int OrderCount, decimal TotalSpentToman, int LicenseCount);
 
 /* ============================== احراز هویت ============================== */
 

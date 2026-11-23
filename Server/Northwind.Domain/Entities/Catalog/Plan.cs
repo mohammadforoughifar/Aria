@@ -13,7 +13,7 @@ public class Plan : EntityBase
     public PlanTier Tier { get; set; } = PlanTier.SingleUser;
     public BillingType BillingType { get; set; } = BillingType.OneTime;
 
-    public int PriceToman { get; set; }
+    public decimal PriceToman { get; set; }
     public int Seats { get; set; } = 1;
     public string? Description { get; set; }
     public bool IsPopular { get; set; }

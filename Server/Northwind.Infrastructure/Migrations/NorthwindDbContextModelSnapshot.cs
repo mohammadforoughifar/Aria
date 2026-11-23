@@ -150,8 +150,9 @@ namespace Northwind.Infrastructure.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
-                    b.Property<int>("PriceToman")
-                        .HasColumnType("int");
+                    b.Property<decimal>("PriceToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
@@ -194,8 +195,9 @@ namespace Northwind.Infrastructure.Migrations
                     b.Property<int>("Audience")
                         .HasColumnType("int");
 
-                    b.Property<int>("BasePriceToman")
-                        .HasColumnType("int");
+                    b.Property<decimal>("BasePriceToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uniqueidentifier");
@@ -541,11 +543,13 @@ namespace Northwind.Infrastructure.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<int>("TaxToman")
-                        .HasColumnType("int");
+                    b.Property<decimal>("TaxToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("TotalToman")
-                        .HasColumnType("int");
+                    b.Property<decimal>("TotalToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -664,8 +668,9 @@ namespace Northwind.Infrastructure.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
-                    b.Property<int>("DiscountToman")
-                        .HasColumnType("int");
+                    b.Property<decimal>("DiscountToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("EconomicCode")
                         .HasMaxLength(32)
@@ -695,14 +700,17 @@ namespace Northwind.Infrastructure.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<int>("SubtotalToman")
-                        .HasColumnType("int");
+                    b.Property<decimal>("SubtotalToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("TaxToman")
-                        .HasColumnType("int");
+                    b.Property<decimal>("TaxToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<int>("TotalToman")
-                        .HasColumnType("int");
+                    b.Property<decimal>("TotalToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2(3)");
@@ -736,8 +744,9 @@ namespace Northwind.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2(3)");
 
-                    b.Property<int>("LineTotalToman")
-                        .HasColumnType("int");
+                    b.Property<decimal>("LineTotalToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uniqueidentifier");
@@ -766,8 +775,9 @@ namespace Northwind.Infrastructure.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
-                    b.Property<int>("UnitPriceToman")
-                        .HasColumnType("int");
+                    b.Property<decimal>("UnitPriceToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -785,8 +795,9 @@ namespace Northwind.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("AmountToman")
-                        .HasColumnType("int");
+                    b.Property<decimal>("AmountToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2(3)");

@@ -16,4 +16,18 @@
     <BaseOutputPath>$(ARIA_BUILD_DIR)bin/$(MSBuildProjectName)/</BaseOutputPath>
   </PropertyGroup>
 
+  <!--
+    وقتی مسیرِ obj بیرون از پروژه است، پوشهٔ obj محلی دیگر به‌طورِ خودکار از
+    کامپایل کنار گذاشته نمی‌شود و اگر بیلدی بدونِ ARIA_SANDBOX اجرا شود،
+    فایل‌های تولیدیِ دو مسیر با هم کامپایل می‌شوند و خطایِ
+    «Duplicate AssemblyInfo attribute» می‌دهند.
+    این دو سطر همیشه پوشه‌های محلی را از کامپایل بیرون می‌گذارند.
+  -->
+  <ItemGroup>
+    <Compile Remove="obj/**/*.cs" />
+    <Compile Remove="bin/**/*.cs" />
+    <None Remove="obj/**" />
+    <None Remove="bin/**" />
+  </ItemGroup>
+
 </Project>

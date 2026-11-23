@@ -224,3 +224,28 @@ dotnet ef database update --project Server/Northwind.Infrastructure
 2. بازنشسته‌کردنِ کنترلرها و `DbContext` و `Seed`/`DemoData` قدیمی.
 3. Refresh Token و خروجِ سمتِ سرور.
 4. آزمونِ واحد برایِ سرویس‌ها و آزمونِ یکپارچگی با `WebApplicationFactory`.
+
+---
+
+## ۱۰) مبالغ پولی: `decimal(18,2)`
+
+همهٔ مبلغ‌ها **`decimal`** هستند، نه `int`. دلیل: سقفِ `int` حدودِ ۲٫۱ میلیارد است و
+برایِ قراردادهایِ سازمانی (میلیاردی) کم می‌آید. با `decimal(18,2)` تا حدودِ ۱۰^۱۶ تومان
+جا دارد و دو رقمِ اعشار هم برایِ محاسبهٔ درصدِ تخفیف و مالیات لازم است.
+
+| لایه | جزئیات |
+|---|---|
+| دامنه | `Plan.PriceToman`, `Product.BasePriceToman`, `Order.Subtotal/Discount/Tax/TotalToman`, `OrderItem.UnitPrice/LineTotalToman`, `Invoice.Tax/TotalToman`, `Payment.AmountToman` — همه `decimal` |
+| پایگاه‌داده (SQL Server) | قاعده‌ای یک‌جا در `NorthwindDbContext.OnModelCreating`: هر ستونِ `decimal` با `HasPrecision(18, 2)` |
+| پایگاه‌داده (SQLite) | برایِ اینکه مرتب‌سازی و `SUM` رویِ مبلغ کار کند، به `double` نگاشت می‌شود (`SetProviderClrType`) |
+| گرد کردن | فقط در یک جا: `Services/Common/Money.cs` → `Math.Round(x, 2, AwayFromZero)` |
+| مالیات | `TaxRateBps` هنوز `int` است (۹۰۰ = ۹٪)؛ محاسبه `taxable * bps / 10_000m` و بعد گرد |
+| اعتبارسنجی | `[Range(typeof(decimal), "0", "9999999999999999.99")]` — `[Range(0, int.MaxValue)]` رویِ فیلدِ decimal خودش `OverflowException` می‌دهد |
+| قراردادِ JSON | همان عدد (بدونِ رشته)، پس کلاینت‌ها چیزی نمی‌فهمند |
+
+مهاجرت: `Migrations/*_MoneyToDecimal.cs` (۲۲ `ALTER COLUMN`)؛ اسکریپتِ SQL Server:
+`Server/Scripts/002-MoneyToDecimal.sql` (idempotent، ۱۶۷ خط).
+
+> **توجه:** پشتهٔ قدیمی (`AppDbContext` + قراردادهایِ `Northwind.Shared` + BFF) هنوز
+> مبلغ‌ها را `int` نگه می‌دارد؛ چون رابطِ فعلی رویِ همان کار می‌کند و تا مهاجرتِ کلاینت
+> به `/api/v1` دست نمی‌خورد. با مهاجرتِ صفحه‌ها، آن لایه هم `decimal` می‌شود.

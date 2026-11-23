@@ -157,7 +157,7 @@ public sealed class AccountService : IAccountService
         var outstanding = await _db.Invoices.AsNoTracking()
             .Include(i => i.Order)
             .Where(i => i.Order!.UserId == userId && i.Status == InvoiceStatus.Issued)
-            .SumAsync(i => (int?)i.TotalToman, ct) ?? 0;
+            .SumAsync(i => (decimal?)i.TotalToman, ct) ?? 0m;
 
         var activeLicenses = licenses.Where(l => l.Status == LicenseStatus.Active).ToList();
         var expiring = activeLicenses

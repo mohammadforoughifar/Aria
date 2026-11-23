@@ -16,10 +16,10 @@ public class Order : EntityBase
     public OrderStatus Status { get; set; } = OrderStatus.Pending;
 
     // مبالغ به تومان
-    public int SubtotalToman { get; set; }
-    public int DiscountToman { get; set; }
-    public int TaxToman { get; set; }
-    public int TotalToman { get; set; }
+    public decimal SubtotalToman { get; set; }
+    public decimal DiscountToman { get; set; }
+    public decimal TaxToman { get; set; }
+    public decimal TotalToman { get; set; }
 
     /// <summary>کدِ ارز؛ پیش‌فرض تومانِ ایران.</summary>
     public string Currency { get; set; } = "IRT";

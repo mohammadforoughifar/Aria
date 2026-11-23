@@ -33,14 +33,14 @@ public sealed class CategoryInput
 /// <summary>سطرِ فهرست — سبک، برایِ صفحهٔ کاتالوگ.</summary>
 public sealed record ProductListItemViewModel(
     Guid Id, string Slug, string Name, string Tagline, ProductType Type,
-    string Platform, string Version, int BasePriceToman, decimal RatingAvg, int RatingCount,
+    string Platform, string Version, decimal BasePriceToman, decimal RatingAvg, int RatingCount,
     int Popularity, string? HeroImage, string AccentColor, bool IsFeatured, bool IsActive,
     DateTime CreatedAt, string? CategoryName, string? CategorySlug, int PlanCount);
 
 /// <summary>صفحهٔ جزئیات — همه‌چیز، بدونِ درخواستِ دوم.</summary>
 public sealed record ProductDetailViewModel(
     Guid Id, string Slug, string Name, string Tagline, string Description,
-    ProductType Type, Audience Audience, string Platform, string Version, int BasePriceToman,
+    ProductType Type, Audience Audience, string Platform, string Version, decimal BasePriceToman,
     decimal RatingAvg, int RatingCount, int Popularity, string AccentColor,
     string? HeroImage, bool IsActive, bool IsFeatured, int TrialDays, DateTime CreatedAt,
     Guid CategoryId, string CategoryName, string CategorySlug,
@@ -71,8 +71,8 @@ public sealed class ProductInput
     [MaxLength(40)] public string Platform { get; set; } = "Windows";
     [MaxLength(32)] public string Version { get; set; } = "1.0.0";
 
-    [Range(0, int.MaxValue, ErrorMessage = "قیمت نمی‌تواند منفی باشد.")]
-    public int BasePriceToman { get; set; }
+    [Range(typeof(decimal), "0", "9999999999999999.99", ErrorMessage = "قیمت باید بینِ صفر و ۱۰^۱۶ تومان باشد.")]
+    public decimal BasePriceToman { get; set; }
 
     [MaxLength(16)] public string AccentColor { get; set; } = "#1E3A8A";
     [MaxLength(400)] public string? HeroImage { get; set; }
@@ -97,12 +97,12 @@ public sealed class ProductInput
 
 public sealed record PlanViewModel(
     Guid Id, string Name, PlanTier Tier, BillingType BillingType,
-    int PriceToman, int Seats, string? Description, bool IsPopular, int LicenseMonths);
+    decimal PriceToman, int Seats, string? Description, bool IsPopular, int LicenseMonths);
 
 /// <summary>طرحِ کامل با ویژگی‌ها — برایِ صفحهٔ مقایسه.</summary>
 public sealed record PlanDetailViewModel(
     Guid Id, Guid ProductId, string Name, PlanTier Tier, BillingType BillingType,
-    int PriceToman, int Seats, string? Description, bool IsPopular,
+    decimal PriceToman, int Seats, string? Description, bool IsPopular,
     int LicenseMonths, IReadOnlyList<string> Features);
 
 public sealed class PlanInput
@@ -114,8 +114,8 @@ public sealed class PlanInput
     public PlanTier Tier { get; set; } = PlanTier.SingleUser;
     public BillingType BillingType { get; set; } = BillingType.OneTime;
 
-    [Range(0, int.MaxValue, ErrorMessage = "قیمت نمی‌تواند منفی باشد.")]
-    public int PriceToman { get; set; }
+    [Range(typeof(decimal), "0", "9999999999999999.99", ErrorMessage = "قیمت باید بینِ صفر و ۱۰^۱۶ تومان باشد.")]
+    public decimal PriceToman { get; set; }
 
     [Range(1, 10000)] public int Seats { get; set; } = 1;
 

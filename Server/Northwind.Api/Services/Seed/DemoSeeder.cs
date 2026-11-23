@@ -65,7 +65,7 @@ public static class DemoSeeder
 
             /* ------------------------------ محصولات ------------------------------ */
             // (نام، اسلاگ، شعار، دسته، قیمتِ پایه، نوع، رنگ)
-            var productSpecs = new (string Name, string Slug, string Tagline, int Cat, int Price, ProductType Type, string Color, bool Featured, int Trial)[]
+            var productSpecs = new (string Name, string Slug, string Tagline, int Cat, decimal Price, ProductType Type, string Color, bool Featured, int Trial)[]
             {
                 ("سپیدار", "sepidaar", "حسابداریِ یکپارچه با دفترِ روزنامه و ترازنامه", 0, 24_500_000, ProductType.DesktopApp, "#1E3A8A", true, 14),
                 ("مهراز", "mehraz", "حقوق و دستمزد با محاسبهٔ خودکارِ بیمه و مالیات", 0, 18_900_000, ProductType.Module, "#0F766E", true, 14),
@@ -126,7 +126,7 @@ public static class DemoSeeder
                 product.Plans.Add(new Plan
                 {
                     Name = "چندکاربره", Tier = PlanTier.MultiUser, BillingType = BillingType.OneTime,
-                    PriceToman = (int)(spec.Price * 2.4), Seats = 5, SortOrder = 2, IsPopular = true, LicenseMonths = 12,
+                    PriceToman = spec.Price * 2.4m, Seats = 5, SortOrder = 2, IsPopular = true, LicenseMonths = 12,
                     Description = "پرفروش‌ترین گزینه برایِ دفترهایِ متوسط",
                     Features = new List<string> { "پنج کاربر", "پشتیبانیِ تلفنی", "آموزشِ آنلاین", "به‌روزرسانیِ دائمی" }
                 });
@@ -134,7 +134,7 @@ public static class DemoSeeder
                 product.Plans.Add(new Plan
                 {
                     Name = "سازمانی", Tier = PlanTier.Enterprise, BillingType = BillingType.Annual,
-                    PriceToman = (int)(spec.Price * 6.5), Seats = 25, SortOrder = 3, LicenseMonths = 12,
+                    PriceToman = spec.Price * 6.5m, Seats = 25, SortOrder = 3, LicenseMonths = 12,
                     Description = "برایِ سازمان‌هایِ چند شعبه",
                     Features = new List<string> { "۲۵ کاربر", "پشتیبانیِ اختصاصی", "استقرارِ رویِ سرورِ شما", "شخصی‌سازیِ گزارش‌ها" }
                 });
@@ -217,7 +217,7 @@ public static class DemoSeeder
                 var placedAt = now.AddMonths(-seed.MonthsAgo).AddDays(-seed.Customer * 2);
 
                 var subtotal = plan.PriceToman;
-                var tax = (int)Math.Round(subtotal * 0.09m);
+                var tax = Math.Round(subtotal * 0.09m, 2, MidpointRounding.AwayFromZero);
 
                 var order = new Order
                 {

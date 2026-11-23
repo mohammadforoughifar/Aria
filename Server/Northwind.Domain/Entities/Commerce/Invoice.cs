@@ -15,6 +15,6 @@ public class Invoice : EntityBase
     public DateTime IssuedAt { get; set; } = DateTime.UtcNow;
     public DateTime? DueAt { get; set; }
 
-    public int TotalToman { get; set; }
-    public int TaxToman { get; set; }
+    public decimal TotalToman { get; set; }
+    public decimal TaxToman { get; set; }
 }

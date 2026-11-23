@@ -66,6 +66,19 @@ public class NorthwindDbContext : DbContext
 
         var isSqlServer = Database.IsSqlServer();
 
+        // همهٔ ستون‌هایِ decimal در این مدل مبلغِ پولی‌اند. یک قاعده برایِ همه:
+        // decimal(18,2) یعنی تا ۱۶ رقمِ صحیح — حدودِ ۱۰^۱۶ تومان، که از سقفِ int
+        // (۲٫۱ میلیارد) بسیار فراتر است و برایِ مبالغِ سنگینِ سازمانی کافی است.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var prop in entityType.GetProperties())
+            {
+                if (prop.ClrType != typeof(decimal)) continue;
+                prop.SetPrecision(18);
+                prop.SetScale(2);
+            }
+        }
+
         // SQLite نه شِما دارد و نه نوع‌هایِ datetime2؛ پس هرچه مخصوصِ SQL Server است
         // در حالتِ فالبک کنار گذاشته می‌شود تا همان مدل با نوع‌هایِ خودِ SQLite ساخته شود.
         if (!isSqlServer) ResetProviderSpecificMappings(modelBuilder);
@@ -103,6 +116,14 @@ public class NorthwindDbContext : DbContext
             {
                 if (prop.GetColumnType() is not null)
                     prop.SetColumnType(null);
+                prop.SetPrecision(null);
+                prop.SetScale(null);
+
+                // SQLite نوعِ decimal را TEXT ذخیره می‌کند و آن‌وقت «مرتب‌سازی بر اساسِ
+                // قیمت» و جمع‌زدنِ مبالغ کار نمی‌کند. در حالتِ نمایشی به double نگاشت
+                // می‌شود که هم مرتب‌شدنی است هم جمع‌شدنی.
+                if (prop.ClrType == typeof(decimal))
+                    prop.SetProviderClrType(typeof(double));
             }
         }
     }
