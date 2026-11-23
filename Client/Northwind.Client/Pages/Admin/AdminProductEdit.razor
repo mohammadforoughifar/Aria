@@ -15,6 +15,7 @@
             <span>@(isNew ? "جدید" : "ویرایش")</span>
         </div>
         <h1 class="page-title">@(isNew ? "محصول جدید" : product?.Name)</h1>
+        <p class="page-sub">قیمت‌ها را با <b>ریال</b> وارد کنید؛ معادلِ تومان همان‌جا نشان داده می‌شود.</p>
     </div>
     <div class="row-2">
         <a class="btn btn--ghost btn--sm" href="/dashboard/admin/products">انصراف</a>
@@ -35,120 +36,289 @@ else
 {
     <div class="grid-2-1">
         <div class="stack-4">
-            <!-- ===== Basic ===== -->
+            <!-- ===== اطلاعاتِ پایه ===== -->
             <section class="card card--pad">
                 <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-4)">اطلاعاتِ پایه</h2>
                 <div class="stack-4">
                     <div class="grid-2" style="gap:var(--sp-4)">
                         <label class="field">
                             <span class="field__label">نام محصول <span class="field__req">*</span></span>
-                            <input class="input" @bind="draft.Name" />
+                            <input class="input" @bind="draft.Name" placeholder="مثل: سپیدار" />
                         </label>
                         <label class="field">
                             <span class="field__label">شناسه (slug) <span class="field__req">*</span></span>
-                            <input class="input input--ltr" style="text-align:left" @bind="draft.Slug" />
+                            <input class="input input--ltr" style="text-align:left" @bind="draft.Slug" placeholder="sepidaar" />
+                            <span class="field__hint">در آدرسِ صفحهٔ محصول می‌آید: /product/<b>sepidaar</b></span>
                         </label>
                     </div>
 
                     <label class="field">
                         <span class="field__label">شعارِ کوتاه</span>
-                        <input class="input" @bind="draft.Tagline" />
+                        <input class="input" @bind="draft.Tagline" placeholder="یک جمله که در کارتِ محصول دیده می‌شود" />
                     </label>
 
                     <label class="field">
-                        <span class="field__label">توضیحات</span>
+                        <span class="field__label">توضیحات <span class="field__req">*</span></span>
                         <textarea class="textarea" style="min-height:140px" @bind="draft.Description"></textarea>
                         <span class="field__hint">با خطِ جدید می‌توانید پاراگراف‌بندی کنید.</span>
                     </label>
+                </div>
+            </section>
 
-                    <div class="grid-2" style="gap:var(--sp-4)">
-                        <label class="field">
-                            <span class="field__label">دسته‌بندی</span>
-                            <select class="select" @bind="draft.CategoryId">
+            <!-- ===== دسته‌بندی و نوع ===== -->
+            <section class="card card--pad">
+                <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-4)">دسته‌بندی و نوع</h2>
+                <div class="grid-2" style="gap:var(--sp-4)">
+                    <!-- دسته‌بندی: از دیتابیس می‌آید و همین‌جا می‌شود دستهٔ تازه ساخت -->
+                    <div class="field">
+                        <span class="field__label">دسته‌بندی</span>
+                        <div class="row-2" style="flex-wrap:nowrap">
+                            <select class="select" @bind="draft.CategoryId" style="flex:1">
                                 @foreach (var c in categories)
                                 {
                                     <option value="@c.Id">@c.Name</option>
                                 }
                             </select>
-                        </label>
-                        <label class="field">
-                            <span class="field__label">نوع</span>
-                            <select class="select" @bind="typeValue">
+                            <button class="btn btn--soft btn--sm" @onclick="() => showNewCat = !showNewCat"
+                                    title="ساختِ دستهٔ تازه" style="white-space:nowrap">
+                                <Icon Name="@(showNewCat ? "x" : "plus")" Size="15" />
+                            </button>
+                        </div>
+
+                        @if (showNewCat)
+                        {
+                            <div class="card" style="margin-top:8px;padding:10px;box-shadow:none;background:var(--surface-sunk)">
+                                <div class="row-2" style="gap:8px">
+                                    <input class="input" @bind="newCatName" @bind:event="oninput"
+                                           placeholder="نامِ دستهٔ تازه" style="flex:1" />
+                                    <button class="btn btn--primary btn--sm" @onclick="CreateCategory" disabled="@catBusy">
+                                        <Icon Name="check" Size="14" /> بساز
+                                    </button>
+                                </div>
+                                <span class="field__hint">شناسهٔ آدرس خودکار ساخته می‌شود.</span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- نوع: سه مقدارِ ثابتِ سیستم -->
+                    <div class="field">
+                        <span class="field__label">نوعِ محصول</span>
+                        <div class="row-2" style="flex-wrap:nowrap">
+                            <select class="select" @bind="typeValue" style="flex:1">
                                 <option value="Module">ماژول</option>
                                 <option value="DesktopApp">برنامهٔ دسکتاپ</option>
                                 <option value="AddOn">افزونه</option>
                             </select>
-                        </label>
-                        <label class="field">
-                            <span class="field__label">سکو</span>
-                            <input class="input" @bind="draft.Platform" />
-                        </label>
-                        <label class="field">
-                            <span class="field__label">نسخه</span>
-                            <input class="input input--ltr" style="text-align:left" @bind="draft.Version" />
-                        </label>
-                        <label class="field">
-                            <span class="field__label">قیمتِ پایه (دلار)</span>
-                            <input class="input input--ltr" style="text-align:left" type="number" @bind="basePriceDollars" />
-                        </label>
-                        <label class="field">
-                            <span class="field__label">روزهای آزمایشی</span>
-                            <input class="input input--ltr" style="text-align:left" type="number" @bind="draft.TrialDays" />
-                        </label>
+                            <button class="btn btn--soft btn--sm" @onclick="() => showTypeHelp = !showTypeHelp"
+                                    title="این نوع‌ها یعنی چه؟" style="white-space:nowrap">
+                                <Icon Name="info" Size="15" />
+                            </button>
+                        </div>
+                        <span class="field__hint">@TypeLabel(typeValue) — @TypeHint(typeValue)</span>
                     </div>
 
+                    @if (showTypeHelp)
+                    {
+                        <div class="card" style="grid-column:1/-1;padding:var(--sp-3);box-shadow:none;background:var(--surface-sunk)">
+                            <div class="stack-2">
+                                <div class="small"><b>ماژول</b> — بخشی از نرم‌افزارِ اصلیِ ما (مثلِ حسابداریِ سپیدار) که جدا نصب نمی‌شود.</div>
+                                <div class="small"><b>برنامهٔ دسکتاپ</b> — برنامه‌ای مستقل که مشتری رویِ ویندوز نصب می‌کند.</div>
+                                <div class="small"><b>افزونه</b> — قابلیتِ جانبی برایِ محصولِ دیگر (مثلِ گزارش‌ساز) که به‌تنهایی معنا ندارد.</div>
+                                <div class="tiny muted">
+                                    این سه نوع، بخشی از منطقِ سیستم‌اند (رویِ برچسبَ‌ها و فیلترهایِ فروشگاه اثر دارند)
+                                    و از پنل مقدارِ دلخواه نمی‌گیرند. دسته‌بندی کامل آزاد است و همین‌جا قابلِ ساخت است.
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <label class="field">
+                        <span class="field__label">سکو</span>
+                        <input class="input" @bind="draft.Platform" placeholder="ویندوز ۱۰/۱۱" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">نسخه</span>
+                        <input class="input input--ltr" style="text-align:left" @bind="draft.Version" />
+                    </label>
+                </div>
+            </section>
+
+            <!-- ===== قیمت و فروش ===== -->
+            <section class="card card--pad">
+                <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-4)">قیمت و فروش</h2>
+                <div class="grid-2" style="gap:var(--sp-4)">
+                    <label class="field">
+                        <span class="field__label">قیمتِ پایه (ریال)</span>
+                        <input class="input input--ltr" style="text-align:left" type="number" min="0" step="1000"
+                               @bind="basePriceRial" @bind:event="oninput" />
+                        <span class="field__hint">معادل: <b>@Helpers.Fa.Money(RialToToman(basePriceRial))</b></span>
+                    </label>
+                    <label class="field">
+                        <span class="field__label">روزهای آزمایشی</span>
+                        <input class="input input--ltr" style="text-align:left" type="number" min="0" max="365" @bind="draft.TrialDays" />
+                        <span class="field__hint">۰ یعنی نسخهٔ آزمایشی ندارد.</span>
+                    </label>
+                </div>
+
+                <div class="grid-2" style="gap:var(--sp-4);margin-top:var(--sp-4)">
                     <label class="field">
                         <span class="field__label">رنگِ شاخص</span>
                         <div class="row-2">
                             <input type="color" @bind="draft.AccentColor" style="width:52px;height:42px;padding:2px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface)" />
                             <input class="input input--ltr" style="text-align:left" @bind="draft.AccentColor" />
                         </div>
+                        <span class="field__hint">رنگِ کارت و دکمه‌هایِ محصول در فروشگاه.</span>
                     </label>
-
-                    <div class="row-4" style="flex-wrap:wrap">
-                        <label class="switch">
-                            <input type="checkbox" @bind="draft.IsFeatured" />
-                            <span class="switch__track"></span>
-                            <span class="small">محصولِ ویژه</span>
-                        </label>
-                        <label class="switch">
-                            <input type="checkbox" @bind="draft.IsActive" />
-                            <span class="switch__track"></span>
-                            <span class="small">فعال در فروشگاه</span>
-                        </label>
-                    </div>
                 </div>
             </section>
 
-            <!-- ===== Features ===== -->
+            <!-- ===== نمایش در فروشگاه: ویژه و فعال ===== -->
             <section class="card card--pad">
-                <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-2)">امکانات</h2>
-                <p class="tiny muted" style="margin-bottom:var(--sp-3)">هر خط یک مورد.</p>
-                <textarea class="textarea" style="min-height:150px" @bind="featuresText"></textarea>
+                <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-4)">نمایش در فروشگاه</h2>
+
+                <div class="stack-4">
+                    <div class="between" style="align-items:flex-start;gap:var(--sp-4)">
+                        <div style="max-width:70%">
+                            <div class="heavy" style="font-size:var(--fs-sm)">محصولِ ویژه</div>
+                            <p class="tiny muted" style="margin-top:4px;line-height:var(--lh-relax)">
+                                اگر روشن باشد، این محصول در بخشِ «محصولاتِ منتخب» صفحهٔ نخست و بالایِ فهرستِ
+                                محصولات نشان داده می‌شود و برچسبِ «ویژه» می‌گیرد. مناسبِ محصولی که می‌خواهی
+                                بیشتر دیده شود — نه همهٔ محصولات.
+                            </p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" @bind="draft.IsFeatured" />
+                            <span class="switch__track"></span>
+                        </label>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="between" style="align-items:flex-start;gap:var(--sp-4)">
+                        <div style="max-width:70%">
+                            <div class="heavy" style="font-size:var(--fs-sm)">فعال در فروشگاه</div>
+                            <p class="tiny muted" style="margin-top:4px;line-height:var(--lh-relax)">
+                                اگر روشن باشد، محصول در فروشگاه دیده می‌شود و قابلِ خرید است. اگر خاموشش کنی،
+                                از فروشگاه پنهان می‌شود (خرید تازه ممکن نیست) اما سفارش‌ها و لایسنس‌هایِ قبلی
+                                دست‌نخورده می‌مانند — برایِ توقفِ فروش یا آماده‌سازیِ محصولِ نیمه‌کاره.
+                            </p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" @bind="draft.IsActive" />
+                            <span class="switch__track"></span>
+                        </label>
+                    </div>
+
+                    @if (!draft.IsActive)
+                    {
+                        <div class="tiny" style="color:var(--warn);background:var(--warn-soft,#fff4e5);padding:8px 10px;border-radius:var(--r-md)">
+                            این محصول الان در فروشگاه دیده نمی‌شود.
+                        </div>
+                    }
+                </div>
             </section>
 
-            <!-- ===== Requirements ===== -->
+            <!-- ===== امکانات ===== -->
             <section class="card card--pad">
-                <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-2)">نیازمندی‌های سیستم</h2>
-                <textarea class="textarea" style="min-height:110px" @bind="requirementsText"></textarea>
+                <div class="between" style="margin-bottom:var(--sp-2)">
+                    <h2 style="font-size:var(--fs-md)">امکانات</h2>
+                    <span class="tiny muted">@Helpers.Fa.Num(features.Count) مورد</span>
+                </div>
+                <p class="tiny muted" style="margin-bottom:var(--sp-3)">
+                    هر مزیت را جدا اضافه کن؛ در صفحهٔ محصول به‌صورتِ فهرستِ تیک‌دار نشان داده می‌شود.
+                </p>
+
+                <div class="row-2" style="gap:8px;flex-wrap:nowrap">
+                    <input class="input" @bind="featureInput" @bind:event="oninput"
+                           @onkeydown="OnFeatureKey" placeholder="مثل: پشتیبانیِ کاملِ مالیات و عوارض" style="flex:1" />
+                    <button class="btn btn--soft btn--sm" @onclick="AddFeature" style="white-space:nowrap">
+                        <Icon Name="plus" Size="14" /> افزودن
+                    </button>
+                </div>
+
+                @if (features.Count > 0)
+                {
+                    <div class="row-2" style="flex-wrap:wrap;gap:8px;margin-top:var(--sp-3)">
+                        @foreach (var f in features.ToList())
+                        {
+                            <span class="chip">
+                                @f
+                                <button class="icon-btn" style="width:18px;height:18px;color:var(--ink-400)"
+                                        @onclick="() => features.Remove(f)" title="حذف">
+                                    <Icon Name="x" Size="12" />
+                                </button>
+                            </span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="tiny muted" style="margin-top:var(--sp-3)">هنوز موردی اضافه نشده.</p>
+                }
+            </section>
+
+            <!-- ===== نیازمندی‌های سیستم ===== -->
+            <section class="card card--pad">
+                <div class="between" style="margin-bottom:var(--sp-2)">
+                    <h2 style="font-size:var(--fs-md)">نیازمندی‌های سیستم</h2>
+                    <span class="tiny muted">@Helpers.Fa.Num(requirements.Count) مورد</span>
+                </div>
+                <p class="tiny muted" style="margin-bottom:var(--sp-3)">
+                    حداقلِ سخت‌افزار یا نرم‌افزارِ لازم؛ یکی‌یکی اضافه کن.
+                </p>
+
+                <div class="row-2" style="gap:8px;flex-wrap:nowrap">
+                    <input class="input" @bind="requirementInput" @bind:event="oninput"
+                           @onkeydown="OnRequirementKey" placeholder="مثل: ویندوز ۱۰ یا بالاتر" style="flex:1" />
+                    <button class="btn btn--soft btn--sm" @onclick="AddRequirement" style="white-space:nowrap">
+                        <Icon Name="plus" Size="14" /> افزودن
+                    </button>
+                </div>
+
+                @if (requirements.Count > 0)
+                {
+                    <div class="row-2" style="flex-wrap:wrap;gap:8px;margin-top:var(--sp-3)">
+                        @foreach (var r in requirements.ToList())
+                        {
+                            <span class="chip">
+                                @r
+                                <button class="icon-btn" style="width:18px;height:18px;color:var(--ink-400)"
+                                        @onclick="() => requirements.Remove(r)" title="حذف">
+                                    <Icon Name="x" Size="12" />
+                                </button>
+                            </span>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="tiny muted" style="margin-top:var(--sp-3)">هنوز موردی اضافه نشده.</p>
+                }
             </section>
         </div>
 
-        <!-- ===== Plans ===== -->
+        <!-- ===== طرح‌های قیمت ===== -->
         <aside class="stack-4">
             <section class="card card--pad">
-                <div class="between" style="margin-bottom:var(--sp-3)">
+                <div class="between" style="margin-bottom:var(--sp-2)">
                     <span class="card__title">طرح‌های قیمت</span>
                     <span class="tiny muted">@Helpers.Fa.Num(plans.Count) طرح</span>
                 </div>
 
+                <p class="tiny muted" style="margin-bottom:var(--sp-3);line-height:var(--lh-relax)">
+                    طرح یعنی همان گزینه‌هایی که مشتری در صفحهٔ محصول می‌بیند و یکی را انتخاب می‌کند؛
+                    مثلاً «تک‌کاربره / دائمی» و «سازمانی / سالانه». هر محصول باید <b>حداقل یک طرح</b> داشته باشد،
+                    وگرنه در فروشگاه دکمهٔ «افزودن به سبد» کار نمی‌کند.
+                </p>
+
                 <div class="stack-3">
-                    @foreach (var plan in plans)
+                    @foreach (var plan in plans.ToList())
                     {
                         <div class="card card--pad" style="box-shadow:none;background:var(--surface-sunk)">
                             <div class="between">
                                 <span class="heavy" style="font-size:var(--fs-sm)">@plan.Name</span>
-                                <button class="icon-btn" style="width:28px;height:28px;color:var(--bad-600)" @onclick="() => plans.Remove(plan)">
+                                <button class="icon-btn" style="width:28px;height:28px;color:var(--bad-600)"
+                                        @onclick="() => plans.Remove(plan)" title="حذفِ طرح">
                                     <Icon Name="trash" Size="14" />
                                 </button>
                             </div>
@@ -157,7 +327,18 @@ else
                                 <StatusBadge Status="@plan.Tier.ToString()" Kind="tier" Small="true" />
                                 <StatusBadge Status="@plan.BillingType.ToString()" Kind="billing" Small="true" />
                                 <span class="tiny muted">@Helpers.Fa.Num(plan.Seats) صندلی</span>
+                                @if (plan.LicenseMonths > 0)
+                                {
+                                    <span class="tiny muted">لایسنسِ @Helpers.Fa.Num(plan.LicenseMonths) ماه</span>
+                                }
                             </div>
+                        </div>
+                    }
+
+                    @if (plans.Count == 0)
+                    {
+                        <div class="tiny" style="color:var(--warn);background:var(--warn-soft,#fff4e5);padding:8px 10px;border-radius:var(--r-md)">
+                            بدونِ طرح، مشتری نمی‌تواند خرید کند.
                         </div>
                     }
                 </div>
@@ -166,24 +347,50 @@ else
 
                 <div class="stack-3">
                     <span class="heavy" style="font-size:var(--fs-sm)">افزودنِ طرح</span>
-                    <input class="input" placeholder="نام طرح" @bind="newPlan.Name" />
-                    <div class="grid-2" style="gap:8px">
+
+                    <label class="field">
+                        <input class="input" placeholder="نامِ طرح — مثل: تک‌کاربره" @bind="newPlanName" @bind:event="oninput" />
+                        <span class="field__hint">همان چیزی که مشتری رویِ دکمهٔ انتخاب می‌بیند.</span>
+                    </label>
+
+                    <label class="field">
                         <select class="select" @bind="newPlanTier">
                             <option value="SingleUser">تک‌کاربره</option>
                             <option value="MultiUser">چندکاربره</option>
                             <option value="Enterprise">سازمانی</option>
                         </select>
+                        <span class="field__hint">@TierHint(newPlanTier)</span>
+                    </label>
+
+                    <label class="field">
                         <select class="select" @bind="newPlanBilling">
                             <option value="OneTime">خرید دائمی</option>
                             <option value="Annual">اشتراک سالانه</option>
                         </select>
-                    </div>
+                        <span class="field__hint">@BillingHint(newPlanBilling)</span>
+                    </label>
+
+                    <label class="field">
+                        <input class="input input--ltr" style="text-align:left" type="number" min="0" step="1000"
+                               placeholder="قیمتِ طرح (ریال)" @bind="newPlanRial" @bind:event="oninput" />
+                        <span class="field__hint">معادل: <b>@Helpers.Fa.Money(RialToToman(newPlanRial))</b></span>
+                    </label>
+
                     <div class="grid-2" style="gap:8px">
-                        <input class="input input--ltr" style="text-align:left" type="number" placeholder="قیمت (دلار)" @bind="newPlanPrice" />
-                        <input class="input input--ltr" style="text-align:left" type="number" placeholder="صندلی" @bind="newPlan.Seats" />
+                        <label class="field">
+                            <input class="input input--ltr" style="text-align:left" type="number" min="1"
+                                   placeholder="صندلی" @bind="newPlanSeats" />
+                            <span class="field__hint">تعدادِ کاربرِ مجاز.</span>
+                        </label>
+                        <label class="field">
+                            <input class="input input--ltr" style="text-align:left" type="number" min="0" max="120"
+                                   placeholder="مدتِ لایسنس (ماه)" @bind="newPlanMonths" />
+                            <span class="field__hint">۰ = بی‌پایان.</span>
+                        </label>
                     </div>
+
                     <button class="btn btn--soft btn--sm btn--block" @onclick="AddPlan">
-                        <Icon Name="plus" Size="14" /> افزودن
+                        <Icon Name="plus" Size="14" /> افزودن به فهرست
                     </button>
                 </div>
             </section>
@@ -195,6 +402,7 @@ else
                 </div>
                 <p class="small muted" style="line-height:var(--lh-relax)">
                     تغییرِ قیمت روی لایسنس‌های صادرشده اثر ندارد؛ فقط خریدهای جدید با قیمتِ تازه محاسبه می‌شوند.
+                    طرح‌ها بعد از ذخیرهٔ محصول ثبت می‌شوند.
                 </p>
             </section>
         </aside>
@@ -209,16 +417,27 @@ else
     private ProductEdit draft = new();
     private List<PlanDto> plans = new();
     private IReadOnlyList<CategoryDto> categories = Array.Empty<CategoryDto>();
-    private string featuresText = "";
-    private string requirementsText = "";
+
+    private List<string> features = new();
+    private List<string> requirements = new();
+    private string featureInput = "";
+    private string requirementInput = "";
+
     private string typeValue = "Module";
-    private decimal basePriceDollars;
+    private bool showTypeHelp;
+    private bool showNewCat;
+    private string newCatName = "";
+    private bool catBusy;
+
+    private decimal basePriceRial;
     private bool busy;
 
-    private PlanEdit newPlan = new() { Name = "", Seats = 1 };
+    private string newPlanName = "";
     private string newPlanTier = "SingleUser";
     private string newPlanBilling = "OneTime";
-    private decimal newPlanPrice;
+    private decimal newPlanRial;
+    private int newPlanSeats = 1;
+    private int newPlanMonths = 12;
 
     private sealed class ProductEdit
     {
@@ -236,11 +455,45 @@ else
         public bool IsActive { get; set; } = true;
     }
 
-    private sealed class PlanEdit
+    /* ---------------------------- نمایشِ تومان --------------------------- */
+
+    /// <summary>ورودیِ پنل ریال است و پایگاه‌داده تومان نگه می‌دارد (هر تومان = ۱۰ ریال).</summary>
+    private static decimal RialToToman(decimal rial) => decimal.Round(rial / 10m, 0);
+
+    /* ---------------------------- راهنماها ------------------------------ */
+
+    private static string TypeLabel(string t) => t switch
     {
-        public string Name { get; set; } = "";
-        public int Seats { get; set; } = 1;
-    }
+        "Module" => "ماژول",
+        "DesktopApp" => "برنامهٔ دسکتاپ",
+        "AddOn" => "افزونه",
+        _ => t
+    };
+
+    private static string TypeHint(string t) => t switch
+    {
+        "Module" => "بخشی از نرم‌افزارِ اصلیِ خودمان؛ جدا نصب نمی‌شود.",
+        "DesktopApp" => "برنامهٔ مستقل که مشتری رویِ ویندوز نصب می‌کند.",
+        "AddOn" => "قابلیتِ جانبی برایِ محصولِ دیگر.",
+        _ => ""
+    };
+
+    private static string TierHint(string t) => t switch
+    {
+        "SingleUser" => "برایِ یک نفر رویِ یک رایانه.",
+        "MultiUser" => "چند صندلی برایِ یک تیم.",
+        "Enterprise" => "سازمانی با پشتیبانی و شرایطِ ویژه.",
+        _ => ""
+    };
+
+    private static string BillingHint(string t) => t switch
+    {
+        "OneTime" => "یک‌بار پرداخت، لایسنس تا مدتِ تعیین‌شده.",
+        "Annual" => "هر سال تمدید می‌شود.",
+        _ => ""
+    };
+
+    /* ------------------------------ بارگذاری ----------------------------- */
 
     protected override async Task OnInitializedAsync()
     {
@@ -276,64 +529,161 @@ else
                 IsActive = product.IsActive,
             };
             plans = product.Plans.ToList();
-            featuresText = string.Join('\n', product.Features);
-            requirementsText = string.Join('\n', product.SystemRequirements);
+            features = product.Features.ToList();
+            requirements = product.SystemRequirements.ToList();
             typeValue = product.Type.ToString();
-            basePriceDollars = product.BasePriceToman / 100m;
+            basePriceRial = product.BasePriceToman * 10m;
         }
     }
 
+    /* ------------------------------- دسته -------------------------------- */
+
+    private async Task CreateCategory()
+    {
+        if (newCatName.Trim().Length < 2)
+        {
+            Toast.Push("نامِ دسته کوتاه است", "حداقل دو حرف بنویس.", ToastTone.Warn);
+            return;
+        }
+
+        catBusy = true;
+        try
+        {
+            var created = await Api.UpsertCategoryAsync(new CategoryDto("", newCatName.Trim(), "", null, "folder", 0));
+            categories = await Api.GetCategoriesAsync(true);
+            draft.CategoryId = created.Id;
+            newCatName = "";
+            showNewCat = false;
+            Toast.Push("دسته ساخته شد", created.Name, ToastTone.Ok);
+        }
+        catch (Services.V1.V1ApiException ex)
+        {
+            Toast.Push("دسته ساخته نشد", ex.Message, ToastTone.Warn);
+        }
+        catch (Exception)
+        {
+            Toast.Push("دسته ساخته نشد", "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.", ToastTone.Warn);
+        }
+        finally
+        {
+            catBusy = false;
+        }
+    }
+
+    /* --------------------------- امکانات/نیازمندی ------------------------ */
+
+    private void AddFeature()
+    {
+        var v = featureInput.Trim();
+        if (v.Length == 0) return;
+        if (!features.Contains(v)) features.Add(v);
+        featureInput = "";
+    }
+
+    private void AddRequirement()
+    {
+        var v = requirementInput.Trim();
+        if (v.Length == 0) return;
+        if (!requirements.Contains(v)) requirements.Add(v);
+        requirementInput = "";
+    }
+
+    private void OnFeatureKey(KeyboardEventArgs e) { if (e.Key == "Enter") AddFeature(); }
+    private void OnRequirementKey(KeyboardEventArgs e) { if (e.Key == "Enter") AddRequirement(); }
+
+    /* -------------------------------- طرح -------------------------------- */
+
     private void AddPlan()
     {
-        if (string.IsNullOrWhiteSpace(newPlan.Name) || newPlanPrice <= 0) return;
+        if (string.IsNullOrWhiteSpace(newPlanName) || newPlanRial <= 0)
+        {
+            Toast.Push("طرح ناقص است", "نام و قیمتِ طرح (ریال) لازم است.", ToastTone.Warn);
+            return;
+        }
 
         plans.Add(new PlanDto(
-            $"{newPlan.Name}-{plans.Count}", newPlan.Name,
+            $"new-{Guid.NewGuid():N}", newPlanName.Trim(),
             Enum.Parse<PlanTier>(newPlanTier), Enum.Parse<BillingType>(newPlanBilling),
-            (int)Math.Round(newPlanPrice * 100), newPlan.Seats, null, false));
+            RialToToman(newPlanRial), Math.Max(1, newPlanSeats), null, false,
+            Math.Clamp(newPlanMonths, 0, 120)));
 
-        newPlan = new PlanEdit { Seats = 1 };
-        newPlanPrice = 0;
+        newPlanName = "";
+        newPlanRial = 0;
+        newPlanSeats = 1;
+        newPlanMonths = 12;
     }
+
+    /* -------------------------------- ذخیره ------------------------------ */
 
     private async Task Save()
     {
         if (product is null) return;
+
         if (draft.Name.Trim().Length < 2 || draft.Slug.Trim().Length < 2)
         {
             Toast.Push("اطلاعات ناقص است", "نام و شناسهٔ محصول الزامی‌اند.", ToastTone.Warn);
             return;
         }
 
-        busy = true;
-        var category = categories.FirstOrDefault(c => c.Id == draft.CategoryId);
-
-        var updated = product with
+        if (string.IsNullOrWhiteSpace(draft.CategoryId))
         {
-            Name = draft.Name.Trim(),
-            Slug = draft.Slug.Trim(),
-            Tagline = draft.Tagline,
-            Description = draft.Description,
-            CategoryId = draft.CategoryId,
-            CategoryName = category?.Name ?? product.CategoryName,
-            CategorySlug = category?.Slug ?? product.CategorySlug,
-            Platform = draft.Platform,
-            Version = draft.Version,
-            AccentColor = draft.AccentColor,
-            TrialDays = draft.TrialDays,
-            IsFeatured = draft.IsFeatured,
-            IsActive = draft.IsActive,
-            Type = Enum.Parse<ProductType>(typeValue),
-            BasePriceToman = (int)Math.Round(basePriceDollars * 100),
-            Features = featuresText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
-            SystemRequirements = requirementsText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
-            Plans = plans,
-        };
+            Toast.Push("دسته انتخاب نشده", "یک دسته‌بندی انتخاب کن یا دستهٔ تازه بساز.", ToastTone.Warn);
+            return;
+        }
 
-        await Api.UpsertProductAsync(updated);
-        busy = false;
+        if (draft.Description.Trim().Length < 10)
+        {
+            Toast.Push("توضیحات ناقص است", "توضیحِ محصول حداقل ۱۰ حرف باشد؛ همین متن در صفحهٔ محصول دیده می‌شود.", ToastTone.Warn);
+            return;
+        }
 
-        Toast.Push("تغییرات ذخیره شد", updated.Name, ToastTone.Ok);
-        Nav.NavigateTo("/dashboard/admin/products");
+        busy = true;
+        try
+        {
+            var category = categories.FirstOrDefault(c => c.Id == draft.CategoryId);
+
+            var updated = product with
+            {
+                Name = draft.Name.Trim(),
+                Slug = draft.Slug.Trim(),
+                Tagline = draft.Tagline,
+                Description = draft.Description,
+                CategoryId = draft.CategoryId,
+                CategoryName = category?.Name ?? product.CategoryName,
+                CategorySlug = category?.Slug ?? product.CategorySlug,
+                Platform = draft.Platform,
+                Version = draft.Version,
+                AccentColor = draft.AccentColor,
+                TrialDays = draft.TrialDays,
+                IsFeatured = draft.IsFeatured,
+                IsActive = draft.IsActive,
+                Type = Enum.Parse<ProductType>(typeValue),
+                BasePriceToman = RialToToman(basePriceRial),
+                Features = features.ToList(),
+                SystemRequirements = requirements.ToList(),
+                Plans = plans.ToList(),
+            };
+
+            // محصولِ تازه شناسهٔ واقعی ندارد؛ خالی گذاشتنش باعث می‌شود مسیریاب
+            // به‌جایِ PUT (که ۴۰۴ می‌داد) از POST استفاده کند.
+            if (isNew) updated = updated with { Id = "" };
+
+            await Api.UpsertProductAsync(updated);
+
+            Toast.Push("تغییرات ذخیره شد", updated.Name, ToastTone.Ok);
+            Nav.NavigateTo("/dashboard/admin/products");
+        }
+        catch (Services.V1.V1ApiException ex)
+        {
+            Toast.Push("ذخیره نشد", ex.Message, ToastTone.Warn);
+        }
+        catch (Exception)
+        {
+            Toast.Push("ذخیره نشد", "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.", ToastTone.Warn);
+        }
+        finally
+        {
+            busy = false;
+        }
     }
 }

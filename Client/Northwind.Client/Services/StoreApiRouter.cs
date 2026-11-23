@@ -763,7 +763,39 @@ public sealed class StoreApiRouter : IStoreApi
             ? await _v1.SendAsync<V1ProductDetail>("PUT", $"api/v1/products/{gid}", input)
             : await _v1.SendAsync<V1ProductDetail>("POST", "api/v1/products", input);
 
-        return ToDetail(saved);
+        var detail = ToDetail(saved);
+        await SyncPlansAsync(detail, product.Plans);
+        return detail;
+    }
+
+    /// <summary>
+    /// فرمِ محصول، طرح‌ها را همراهِ خودش می‌فرستد ولی API طرح‌ها را در مسیرِ جدا
+    /// نگه می‌دارد. اینجا اختلاف جبران می‌شود: طرح‌هایِ تازه ساخته و طرح‌هایِ
+    /// برداشته‌شده حذف می‌شوند، وگرنه بخشِ «طرح‌های قیمت» فقط تزئینی می‌بود.
+    /// </summary>
+    private async Task SyncPlansAsync(ProductDetailDto product, IReadOnlyList<PlanDto> wanted)
+    {
+        var toCreate = wanted.Where(p => !Guid.TryParse(p.Id, out _)).ToList();
+
+        foreach (var plan in toCreate)
+        {
+            await _v1.SendAsync<V1Plan>("POST", $"api/v1/products/{RequireGuid(product.Id, "محصول")}/plans", new
+            {
+                name = plan.Name,
+                tier = plan.Tier.ToString(),
+                billingType = plan.BillingType.ToString(),
+                priceToman = plan.PriceToman,
+                seats = plan.Seats,
+                description = plan.Description,
+                isPopular = plan.IsPopular,
+                licenseMonths = plan.LicenseMonths
+            });
+        }
+
+        var keep = wanted.Where(p => Guid.TryParse(p.Id, out _)).Select(p => p.Id).ToHashSet();
+
+        foreach (var old in product.Plans.Where(e => !keep.Contains(e.Id)))
+            await _v1.SendAsync("DELETE", $"api/v1/plans/{RequireGuid(old.Id, "طرح")}");
     }
 
     public Task DeleteProductAsync(string id)

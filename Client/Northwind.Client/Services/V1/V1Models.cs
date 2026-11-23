@@ -104,7 +104,9 @@ public sealed record V1Article(
 /* -------------------------------- خطا -------------------------------- */
 
 /// <summary>بدنهٔ خطایِ استانداردِ نسخهٔ ۱: <c>{ code, message, status, traceId }</c>.</summary>
-public sealed record V1Error(string? Code, string? Message, int Status, string? TraceId);
+public sealed record V1Error(
+    string? Code, string? Message, int Status, string? TraceId,
+    IDictionary<string, string[]>? Errors = null);
 
 /* ------------------------------ حساب کاربری ----------------------------- */
 

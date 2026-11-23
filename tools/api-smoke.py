@@ -91,7 +91,8 @@ check("بدنهٔ خطا شکل‌دار", missing.get("code") == "not_found" an
       f"→ {missing.get('code')}")
 
 st, cats = call("GET", "/api/v1/categories")
-check("۸ دسته", st == 200 and len(cats) == 8, f"→ {len(cats)}")
+# آزمون‌ها دستهٔ تازه می‌سازند؛ پس «حداقلِ» دسته‌هایِ اولیه سنجیده می‌شود.
+check("دسته‌ها (≥۸)", st == 200 and len(cats) >= 8, f"→ {len(cats)}")
 check("شمارش محصول در دسته", any(c["productCount"] > 0 for c in cats))
 
 # ───────────────────────── محتوا ─────────────────────────
@@ -241,9 +242,12 @@ check("ویرایش دسته", st == 200 and upd["name"] == "دستهٔ ویرا
 st, _ = call("DELETE", f"/api/v1/categories/{new_cat}", token=admin_token)
 check("حذف دسته ۲۰۴", st == 204, f"→ {st}")
 
-st, conflict = call("DELETE", f"/api/v1/categories/{cats[0]['id']}", token=admin_token)
+# دسته‌ای را انتخاب می‌کنیم که واقعاً محصول دارد؛ آزمون‌هایِ قبلی دسته‌هایِ
+# خالی می‌سازند و «اولینِ فهرست» ممکن است یکی از همان‌ها باشد.
+busy_cat = next((c for c in cats if c.get("productCount", 0) > 0), cats[0])
+st, conflict = call("DELETE", f"/api/v1/categories/{busy_cat['id']}", token=admin_token)
 check("حذف دستهٔ دارایِ محصول ۴۰۹", st == 409, f"→ {st}")
-check("کد خطا", conflict.get("code") == "category_not_empty")
+check("کد خطا", (conflict or {}).get("code") == "category_not_empty")
 
 # آزمونِ چرخهٔ کاملِ دیدگاه: ثبت → صفِ بررسی → تأیید → نمایش در صفحهٔ محصول
 pid = products["items"][0]["id"]

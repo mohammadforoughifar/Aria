@@ -171,6 +171,12 @@ public sealed class V1Api : IV1Api
 
         var status = (int)res.StatusCode;
 
+        // سرور برایِ خطاهایِ اعتبارسنجی پیامِ هر فیلد را جدا می‌فرستد؛ اگر فقط
+        // «برخی از فیلدها معتبر نیستند» نشان دهیم، کاربر نمی‌فهمد کدام فیلد.
+        string? details = error?.Errors is { Count: > 0 } fields
+            ? string.Join("؛ ", fields.SelectMany(f => f.Value).Where(v => !string.IsNullOrWhiteSpace(v)))
+            : null;
+
         // ۴۰۴/۴۰۵ رویِ مسیرِ api/v1 یعنی درخواست اصلاً به API نرسیده.
         if (error is null && status is 404 or 405)
         {
@@ -182,6 +188,8 @@ public sealed class V1Api : IV1Api
         var message = string.IsNullOrWhiteSpace(error?.Message)
             ? $"درخواست انجام نشد (کدِ {status})."
             : error!.Message!;
+
+        if (details is not null) message = $"{message} — {details}";
         throw new V1ApiException(message, error?.Code, status);
     }
 
