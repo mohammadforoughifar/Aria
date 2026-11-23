@@ -18,6 +18,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\Northwind.Shared\Northwind.Shared.csproj" />
+    <ProjectReference Include="..\Northwind.Api\Northwind.Api.csproj" />
+    <ProjectReference Include="..\Northwind.Infrastructure\Northwind.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

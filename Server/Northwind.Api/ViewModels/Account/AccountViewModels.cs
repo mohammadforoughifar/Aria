@@ -25,8 +25,9 @@ public sealed class LoginInput
     [MaxLength(256)]
     public string Email { get; set; } = "";
 
+    // در «ورود» حداقلِ طول بررسی نمی‌شود: پیامِ خطا نباید سیاستِ رمز را لو بدهد.
+    // هر رمزی که درست نباشد پاسخِ یکسانِ «ایمیل یا رمز درست نیست» می‌گیرد.
     [Required(ErrorMessage = "رمز عبور لازم است.")]
-    [MinLength(6, ErrorMessage = "رمز عبور حداقل ۶ نویسه است.")]
     [MaxLength(128)]
     public string Password { get; set; } = "";
 }

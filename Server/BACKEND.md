@@ -1,7 +1,7 @@
 # معماریِ بک‌اند — SQL Server + REST
 
-این سند وضعیتِ **گامِ یک** را ثبت می‌کند: موجودیت‌ها و ویو‌مدل‌ها آماده‌اند و
-پایگاه‌داده رویِ SQL Server تعریف شده است. سرویس‌ها و کنترلرها گامِ بعدی‌اند.
+این سند وضعیتِ فعلی را ثبت می‌کند: پایگاه‌داده رویِ SQL Server، موجودیت‌ها،
+ویو‌مدل‌ها، **سرویس‌ها و کنترلرهایِ REST** آماده و آزموده‌اند.
 
 ---
 
@@ -115,36 +115,112 @@ dotnet ef database update --project Server/Northwind.Infrastructure
 
 ---
 
-## ۵. گامِ بعد — سرویس‌ها و کنترلرها
+## ۵. سرویس‌ها
 
-```
-Northwind.Api/
-├── Controllers/
-│   ├── ProductsController.cs      GET/POST /api/products، GET/PUT/DELETE /api/products/{id}
-│   ├── CategoriesController.cs
-│   ├── CartController.cs
-│   ├── OrdersController.cs
-│   ├── LicensesController.cs
-│   ├── TicketsController.cs
-│   ├── ArticlesController.cs
-│   └── Admin/…
-└── Services/                      ← منطقِ کسب‌وکار، پشتِ اینترفیس
-    ├── IProductService.cs / ProductService.cs
-    ├── ICartService.cs   / CartService.cs
-    ├── IOrderService.cs  / OrderService.cs
-    └── …
-```
+منطقِ کسب‌وکار در `Northwind.Api/Services` و پشتِ اینترفیس است. کنترلرها فقط
+درخواست را می‌گیرند، سرویس را صدا می‌زنند و پاسخِ HTTP می‌سازند.
 
-قراردادِ REST که پیاده می‌شود:
-
-| عمل | مسیر | پاسخ |
+| سرویس | مسئولیت | نکتهٔ مهم |
 |---|---|---|
-| فهرست | `GET /api/products?page=1&pageSize=12&search=…&sort=price_desc` | `200` + `PagedViewModel<ProductListItemViewModel>` |
-| یک آیتم | `GET /api/products/{id}` | `200` / `404` |
-| ساخت | `POST /api/products` | `201` + `Location` |
-| جایگزینی | `PUT /api/products/{id}` | `204` / `404` / `409` |
-| حذف | `DELETE /api/products/{id}` | `204` / `404` / `409` (وقتی سفارشی دارد) |
-| خطا | — | `ApiErrorViewModel` با کدِ ماشین‌خوان و پیامِ فارسی |
+| `CategoryService` | دسته‌ها و شمارشِ محصولات | حذفِ دستهٔ دارایِ محصول → ۴۰۹ |
+| `ProductService` | فهرست/جزئیات/CRUD، طرح‌ها، نسخه‌ها | میانگینِ امتیاز در یک پرس‌وجویِ جدا (بدونِ N+1) |
+| `ReviewService` | ثبت و صفِ بررسیِ دیدگاه | دیدگاه تازه همیشه `Pending` است |
+| `CartService` | سبدِ مهمان و کاربر | سبد موجودیتِ پایدار نیست؛ شناسه از کلیدِ نشست |
+| `OrderService` | تسویه، سفارش، فاکتور | مبالغ فقط سمتِ سرور؛ همه‌چیز در یک تراکنش |
+| `LicenseService` | صدور، تمدید، ابطال، فعال‌سازی | ظرفیتِ `Seats` کنترل می‌شود |
+| `DownloadService` | فایل‌هایِ در دسترس و تاریخچه | پرچمِ «لایسنس دارد» از لایسنس‌هایِ فعال |
+| `DiscountService` | CRUD و اعتبارسنجیِ کد | چهار حالتِ خطا با کدِ ماشین‌خوان |
+| `TicketService` | تیکت و رشتهٔ گفتگو | وضعیت با هر پیام جلو می‌رود |
+| `NotificationService` | اعلان‌ها و شمارشِ خوانده‌نشده | — |
+| `ContentService` | مقاله، نقلِ‌قول، پرسش، تنظیمات | تنظیمات یک رکوردِ تکی |
+| `ContactService` | تماس و درخواستِ دمو | — |
+| `AccountService` | ورود، ثبت‌نام، پروفایل، داشبورد | هشِ PBKDF2؛ توکنِ JWT |
+| `AdminService` | شاخص‌هایِ پنلِ مدیر | درآمدِ ۱۲ ماه و پرفروش‌ها |
 
-نکتهٔ مهم: کلیدها `Guid` شده‌اند. کلاینت فعلی شناسه را رشته می‌فرستد و
-دریافت می‌کند، پس در JSON همان رشته می‌ماند و مسیرها (`/products/{id}`) دست‌نخورده کار می‌کنند.
+### قواعدی که در همهٔ سرویس‌ها رعایت شده
+
+- **خطا با استثنا**: `NotFoundException`، `ConflictException`، `ForbiddenException`،
+  `BusinessRuleException`. میان‌افزار آن‌ها را به ۴۰۴/۴۰۹/۴۰۳/۴۲۲ و
+  `ApiErrorViewModel` تبدیل می‌کند.
+- **مالکیت بررسی می‌شود**: هر سرویسِ شخصی، `UserId` را با مالکِ داده مقایسه
+  می‌کند؛ نه فقط با `[Authorize]` بسنده می‌کند.
+- **مبالغ سمتِ سرور**: هیچ مبلغی از بدنهٔ درخواست پذیرفته نمی‌شود؛ قیمت از
+  طرح خوانده و مالیات از تنظیمات حساب می‌شود.
+- **بدونِ N+1**: نگاشت‌ها با `Include` یا پرس‌وجویِ تجمیعیِ جدا انجام می‌شوند.
+
+## ۶. کنترلرها و مسیرها
+
+همهٔ مسیرهایِ تازه زیرِ `/api/v1` هستند. این انتخاب عمدی است: کنترلرهایِ
+قدیمی هنوز روی `/api/...` کار می‌کنند و رابطِ فعلی به آن‌ها وابسته است.
+با نسخه‌بندی، هر دو کنارِ هم زندگی می‌کنند و مهاجرتِ صفحه‌به‌صفحه ممکن می‌شود.
+
+| گروه | مسیر | دسترسی |
+|---|---|---|
+| محصولات | `GET /api/v1/products`، `/{id}`، `/slug/{slug}`، `/featured` | عمومی |
+| محصولات | `POST`، `PUT /{id}`، `DELETE /{id}` | مدیر |
+| طرح‌ها | `GET/POST /products/{id}/plans`، `PUT/DELETE /plans/{id}` | عمومی / مدیر |
+| نسخه‌ها | `GET/POST /products/{id}/versions` | عمومی / مدیر |
+| دسته‌ها | `GET /categories`، `POST`، `PUT`، `DELETE` | عمومی / مدیر |
+| دیدگاه | `GET /products/{id}/reviews`، `POST /reviews` | عمومی / کاربر |
+| دیدگاه | `GET /admin/reviews`، `PATCH /admin/reviews/{id}/status` | مدیر |
+| سبد | `GET /cart`، `POST /cart/items`، `PUT/DELETE /cart/items/{id}`، `POST /cart/discount` | عمومی |
+| تسویه | `POST /checkout` | کاربر |
+| سفارش | `GET /orders`، `/orders/{id}`، `/invoices`، `/invoices/{id}` | کاربر |
+| سفارش | `GET /admin/orders`، `PATCH /admin/orders/{id}/status` | مدیر |
+| لایسنس | `GET /licenses`، `POST /licenses/{id}/action` | کاربر |
+| لایسنس | `GET/POST /admin/licenses` | مدیر |
+| دریافت | `GET /downloads/available`، `POST /downloads`، `GET /downloads` | عمومی / کاربر |
+| تخفیف | `POST /discounts/validate` | عمومی |
+| تخفیف | `GET/POST/PUT/DELETE /admin/discounts` | مدیر |
+| تیکت | `GET/POST /tickets`، `/{id}`، `/{id}/messages` | کاربر |
+| تیکت | `GET /admin/tickets`، `PATCH /admin/tickets/{id}/status` | مدیر |
+| اعلان | `GET /notifications`، `/unread-count`، `POST /{id}/read`، `/read-all` | کاربر |
+| محتوا | `GET /articles`، `/articles/{slug}`، `/faqs`، `/testimonials`، `/settings` | عمومی |
+| محتوا | `POST/PUT/DELETE /admin/articles`، `PUT /admin/settings` | مدیر |
+| ارتباط | `POST /contact`، `POST /demo-requests` | عمومی |
+| ارتباط | `GET /admin/contact-messages`، `GET /admin/demo-requests` | مدیر |
+| حساب | `POST /auth/login`، `/auth/register` | عمومی |
+| حساب | `GET/PUT /account/me`، `POST /account/password`، `GET /account/overview` | کاربر |
+| حساب | `GET /admin/customers`، `PUT /admin/customers/{id}`، `GET /admin/overview` | مدیر |
+
+### احراز هویت
+- رمز با **PBKDF2-SHA256** (۱۰۰٬۰۰۰ دور، نمکِ تصادفی، مقایسهٔ زمان‌ثابت).
+- توکنِ **JWT** با HMAC-SHA256؛ نقش در claim می‌آید و `[Authorize(Roles="Admin")]`
+  از آن استفاده می‌کند.
+- پیامِ خطایِ ورود برایِ «کاربرِ ناموجود» و «رمزِ غلط» یکسان است تا ایمیل‌هایِ
+  ثبت‌شده قابلِ شناسایی نباشند.
+- کلیدِ امضا در `Jwt:Key` است؛ **در محیطِ واقعی باید از متغیرِ محیطی بیاید.**
+
+### شکلِ خطا
+```json
+{
+  "code": "category_not_empty",
+  "message": "این دسته محصول دارد و حذف نمی‌شود. اول محصولاتش را جابه‌جا یا حذف کنید.",
+  "status": 409,
+  "traceId": "0HN7..."
+}
+```
+خطاهایِ اعتبارسنجی هم فیلدبه‌فیلد برمی‌گردند (`code: validation_failed` + `errors`).
+
+## ۷. دادهٔ نمایشی
+
+`DemoSeeder` (در `Northwind.Api/Services/Seed`) فقط وقتی اجرا می‌شود که جدولِ
+محصولات خالی باشد: ۸ دسته، ۱۲ محصول با ۳۶ طرح و ۲۴ نسخه، ۵ کاربر، ۷ سفارش،
+۳ تیکت، ۶ مقاله، ۵ دیدگاه، ۲ کدِ تخفیف و چند پیام و اعلان.
+
+**رمزِ همهٔ حساب‌هایِ نمایشی:** `Password123!`
+- مدیر: `admin@northwindsoft.example`
+- مشتری: `casey.demo@example.com`
+
+## ۸. آزمون
+
+`/home/user/scratch/api-smoke.py` — ۸۴ بررسیِ سرتاسری رویِ سرورِ در حالِ اجرا:
+کاتالوگ، صفحه‌بندی، فیلتر، محتوا، اعتبارسنجی، ورود، مجوزها، چرخهٔ کاملِ
+سبد→تسویه→لایسنس، و عملیاتِ مدیریتی. نتیجه: **۸۴/۸۴**.
+
+## ۹. گامِ بعد
+
+1. اتصالِ رابطِ Blazor به `/api/v1` صفحه‌به‌صفحه (شکلِ پاسخ‌ها هم‌تراز است).
+2. بازنشسته‌کردنِ کنترلرها و `DbContext` و `Seed`/`DemoData` قدیمی.
+3. Refresh Token و خروجِ سمتِ سرور.
+4. آزمونِ واحد برایِ سرویس‌ها و آزمونِ یکپارچگی با `WebApplicationFactory`.

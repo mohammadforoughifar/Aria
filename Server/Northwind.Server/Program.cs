@@ -1,6 +1,12 @@
 using System.IO.Compression;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Northwind.Api;
+using Northwind.Api.Middleware;
+using Northwind.Api.Services.Security;
+using Northwind.Api.Services.Seed;
+using Northwind.Infrastructure;
+using Northwind.Infrastructure.Persistence;
 using Northwind.Server;
 using Northwind.Server.Data;
 
@@ -14,6 +20,17 @@ var dbPath = Path.Combine(dataDir, "aria.db");
 builder.Configuration["DatabasePath"] = dbPath;
 
 builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlite($"Data Source={dbPath}"));
+
+/* --------------------- بک‌اندِ تازه (SQL Server + REST) ---------------------
+   لایه‌هایِ Domain/Infrastructure/Api. اگر رشتهٔ اتصالِ SQL Server تنظیم شده باشد
+   مهاجرت‌ها رویِ آن اعمال می‌شود؛ وگرنه برایِ دیدنِ سایت رویِ SQLite بالا می‌آید.
+   مسیرِ فالبک عمداً جدا از پایگاه‌دادهٔ قدیمی است تا این دو قاطی نشوند.          */
+var dbOptions = builder.Configuration.ReadDatabaseOptions();
+if (!dbOptions.HasSqlServer && !Path.IsPathRooted(dbOptions.SqlitePath))
+    dbOptions.SqlitePath = Path.Combine(builder.Environment.ContentRootPath, "data", "northwind-api.db");
+
+builder.Services.AddNorthwindPersistence(builder.Configuration, dbOptions);
+builder.Services.AddNorthwindApi(builder.Configuration);
 
 /* --------------------------------- API ------------------------------------ */
 builder.Services.AddControllers()
@@ -73,8 +90,24 @@ using (var scope = app.Services.CreateScope())
     app.Logger.LogInformation("پایگاه‌داده آماده است: {Path}", dbPath);
 }
 
+/* ------------------ آماده‌سازیِ پایگاه‌دادهٔ تازه + دادهٔ نمایشی ------------------ */
+await app.Services.InitializeNorthwindDatabaseAsync();
+using (var scope = app.Services.CreateScope())
+{
+    var apiDb = scope.ServiceProvider.GetRequiredService<NorthwindDbContext>();
+    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    if (dbOptions.SeedDemoData)
+        await DemoSeeder.SeedAsync(apiDb, hasher, app.Logger);
+
+    app.Logger.LogInformation("API تازه روی {Provider} آماده است",
+        apiDb.Database.IsSqlServer() ? "SQL Server" : "SQLite (حالتِ نمایشی)");
+}
+
 app.UseSwagger();
 app.UseSwaggerUI(o => { o.SwaggerEndpoint("/swagger/v1/swagger.json", "فروغ آریا پارسیان API"); o.RoutePrefix = "swagger"; });
+
+// خطاهایِ API را یکدست می‌کند و باید پیش از بقیه باشد.
+app.UseMiddleware<ApiExceptionMiddleware>();
 
 app.UseCors("client");
 app.UseResponseCompression();     // باید پیش از سروِ فایل‌های ایستا باشد
@@ -98,6 +131,9 @@ app.UseStaticFiles(new StaticFileOptions
             h.CacheControl = "no-cache";
     }
 });
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapControllers();
 app.MapFallbackToFile("index.html");
 
