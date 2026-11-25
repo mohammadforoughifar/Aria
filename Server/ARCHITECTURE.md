@@ -110,9 +110,14 @@ public Task<PagedViewModel<OrderViewModel>> Mine([FromQuery] ListQuery query,
    بعد صفحه.
 5. **آزمون** — `python3 tools/api-smoke.py` (قرارداد) و آزمونِ Playwright همان صفحه.
 
-## ۷) کارِ باقی‌مانده در همین مسیر
+## ۷) وضعیت: چهار لایه، بدونِ بدهیِ قدیمی
 
-* `Server/Northwind.Server` هنوز API قدیمی (`aria.db`, `AppDbContext`, `DemoData`) را دارد؛
-  حذفش کارِ **موج ۴** است. بعد از آن، میزبان فقط سیم‌کشی می‌ماند و نقشِ لایه ندارد.
-* پروژهٔ `Shared` از نظرِ مفهومی «قرارداد» است نه لایهٔ پنجم؛ عمداً جدا مانده چون کلاینتِ
-  WASM نمی‌تواند به پروژه‌ای که EF دارد ارجاع بدهد.
+API قدیمیِ `/api/...` (۶ کنترلرِ میزبان + `AppDbContext` + `aria.db`) در **موج ۴**
+کامل حذف شد. امروز:
+
+* تنها لایهٔ API، `Northwind.Api` است و تنها پایگاه‌داده، `northwind-api.db`.
+* میزبان (`Northwind.Server`) هیچ کنترلر و هیچ کدِ کاری ندارد؛ فقط `Program.cs`.
+* `Northwind.Data` تنها جایی است که `DbContext` و رشتهٔ اتصال را می‌شناسد.
+
+`Shared/Northwind.Shared` از نظرِ مفهومی «قرارداد» است نه لایهٔ پنجم؛ عمداً جدا
+مانده چون کلاینتِ WASM نمی‌تواند به پروژه‌ای که EF دارد ارجاع بدهد.

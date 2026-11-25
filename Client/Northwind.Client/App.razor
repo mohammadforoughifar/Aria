@@ -4,12 +4,12 @@
 
 <Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Shared.Layout.StoreLayout)" />
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Components.Layout.StoreLayout)" />
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
     <NotFound>
         <PageTitle>صفحه یافت نشد — فروغ آریا پارسیان</PageTitle>
-        <LayoutView Layout="@typeof(Shared.Layout.StoreLayout)">
+        <LayoutView Layout="@typeof(Components.Layout.StoreLayout)">
             <div class="wrap" style="padding:96px 0">
                 <EmptyState Icon="search" Title="این صفحه وجود ندارد"
                                       Text="آدرسی که وارد کرده‌اید پیدا نشد. شاید محصول تغییر نام داده باشد.">

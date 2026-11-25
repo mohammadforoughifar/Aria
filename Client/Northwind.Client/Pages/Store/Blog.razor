@@ -82,7 +82,7 @@
         try
         {
             using var http = new HttpClient { BaseAddress = new Uri(Nav.BaseUri) };
-            return await http.GetFromJsonAsync<IReadOnlyList<string>>("api/articles/categories") ?? Array.Empty<string>();
+            return await http.GetFromJsonAsync<IReadOnlyList<string>>("api/v1/articles/categories") ?? Array.Empty<string>();
         }
         catch { return Array.Empty<string>(); }
     }

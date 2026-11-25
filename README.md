@@ -35,7 +35,7 @@ Aria/
 │   ├── Persistence/              DbContext، نگاشت‌ها، DatabaseOptions (رشتهٔ اتصال)
 │   └── Migrations/               مهاجرت‌هایِ EF (SQL Server)
 │
-├── Server/Northwind.Server/      میزبان — فقط سیم‌کشی (API قدیمی: در حالِ حذف)
+├── Server/Northwind.Server/      میزبان — فقط Program.cs و سیم‌کشی (بدونِ منطق)
 └── Aria.sln
 ```
 
@@ -43,9 +43,13 @@ Aria/
 هیچ لایه‌ای از لایهٔ بالاتر خبر ندارد و این قاعده با `ProjectReference` اجبار شده است.
 توضیحِ کامل، الگوها و چک‌لیستِ افزودنِ قابلیت: [`Server/ARCHITECTURE.md`](Server/ARCHITECTURE.md).
 
-داده پشتِ اینترفیسِ `IStoreApi` است، بنابراین می‌توانید `HttpStoreApi`
-(پیش‌فرض) را با `MockStoreApi` یا هر پیاده‌سازیِ دیگر در
-`Client/Northwind.Client/Program.cs` عوض کنید — بدون دست‌زدن به یک خط از صفحات.
+داده پشتِ اینترفیسِ `IStoreApi` است. پیاده‌سازیِ پیش‌فرض `StoreApiRouter` است که
+همهٔ کارها را روی `/api/v1` انجام می‌دهد؛ برایِ کارِ بدونِ سرور می‌توانید در
+`Client/Northwind.Client/Program.cs` آن را با `MockStoreApi` عوض کنید — بدونِ
+دست‌زدن به یک خط از صفحه‌ها.
+
+**فقط یک API وجود دارد.** API قدیمیِ `/api/...` در موجِ ۴ کامل حذف شد؛ جزئیات:
+[`Server/CLIENT-V1.md`](Server/CLIENT-V1.md).
 
 ---
 
@@ -69,8 +73,8 @@ dotnet run                              # http://localhost:5080 — Swagger در
 cd Client/Northwind.Client
 dotnet run                              # http://localhost:5081
 ```
-پایگاه‌داده در `Server/Northwind.Server/data/aria.db` ساخته و پُر می‌شود.
-برای بازسازی از صفر، سه فایل `aria.db*` را پاک کنید و دوباره اجرا کنید.
+پایگاه‌داده در `Server/Northwind.Server/data/northwind-api.db` ساخته و پُر می‌شود.
+برای بازسازی از صفر، فایل‌های `northwind-api.db*` را پاک کنید و دوباره اجرا کنید.
 
 ---
 

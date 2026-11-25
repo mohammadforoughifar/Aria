@@ -107,7 +107,7 @@ public sealed class ApiEndpoint
     {
         try
         {
-            using var req = new HttpRequestMessage(HttpMethod.Get, candidate + "api/settings");
+            using var req = new HttpRequestMessage(HttpMethod.Get, candidate + "api/v1/settings");
             using var res = await _probe.SendAsync(req, ct);
             if (!res.IsSuccessStatusCode) return false;
 

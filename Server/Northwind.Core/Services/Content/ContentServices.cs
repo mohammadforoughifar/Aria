@@ -15,6 +15,9 @@ public interface IContentService
 {
     Task<PagedViewModel<ArticleViewModel>> ArticlesAsync(bool publishedOnly, ListQuery query, CancellationToken ct = default);
     Task<ArticleViewModel> ArticleBySlugAsync(string slug, CancellationToken ct = default);
+
+    /// <summary>دسته‌هایِ یکتایِ مقاله‌هایِ منتشرشده — برایِ صافیِ صفحهٔ وبلاگ.</summary>
+    Task<IReadOnlyList<string>> ArticleCategoriesAsync(CancellationToken ct = default);
     Task<ArticleViewModel> CreateArticleAsync(ArticleInput input, CancellationToken ct = default);
     Task<ArticleViewModel> UpdateArticleAsync(Guid id, ArticleInput input, CancellationToken ct = default);
     Task DeleteArticleAsync(Guid id, CancellationToken ct = default);
@@ -49,6 +52,14 @@ public sealed class ContentService : IContentService
         q = q.OrderByDescending(a => a.PublishedAt);
         return await q.ToPagedAsync(query, a => a.ToViewModel(), ct);
     }
+
+    public async Task<IReadOnlyList<string>> ArticleCategoriesAsync(CancellationToken ct = default)
+        => await _db.Articles.AsNoTracking()
+            .Where(a => a.IsPublished && a.Category != null && a.Category != "")
+            .Select(a => a.Category!)
+            .Distinct()
+            .OrderBy(c => c)
+            .ToListAsync(ct);
 
     public async Task<ArticleViewModel> ArticleBySlugAsync(string slug, CancellationToken ct = default)
     {

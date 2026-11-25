@@ -1,19 +1,13 @@
-// مسیریابِ لایهٔ داده.
+// پیاده‌سازیِ واحدِ IStoreApi رویِ API نسخهٔ ۱.
 //
-// صفحه‌ها فقط IStoreApi را می‌شناسند. این کلاس تصمیم می‌گیرد هر فراخوانی از
-// کدام پشته پاسخ بگیرد:
+// تاریخچه: این کلاس تا پیش از موجِ ۴ یک «مسیریاب» بود — اول نسخهٔ ۱ را
+// می‌پرسید و اگر جواب نمی‌گرفت به HttpStoreApi قدیمی برمی‌گشت. با حذفِ کاملِ
+// API قدیمی، پشتوانه (fallback) هم برداشته شد: همهٔ متدها از /api/v1 می‌آیند
+// و رفتارِ خطا یکدست است —
 //
-//   ۱) اگر آن بخش به API نسخهٔ ۱ وصل شده باشد → V1Api (REST واقعی، مبلغ decimal،
-//      پیامِ خطایِ فارسی از خودِ سرور).
-//   ۲) اگر نه → همان HttpStoreApi قدیمی، بدونِ هیچ تغییری.
-//
-// چرا این‌طور؟ چون مهاجرت «صفحه‌به‌صفحه» است و هیچ لحظه‌ای نباید فروشگاه
-// نیمه‌کاره بماند. هر موج، چند متد را از شاخهٔ ۲ به شاخهٔ ۱ منتقل می‌کند و
-// بقیه دست‌نخورده کار می‌کنند. وقتی همه منتقل شد، کلاسِ قدیمی حذف می‌شود.
-//
-// موجِ ۱ (همین حالا): کاتالوگ، دسته‌ها، جزئیاتِ محصول، دیدگاه‌ها، سبدِ مهمان،
-// تسویه‌حساب، محتوایِ عمومی (تنظیمات، نظراتِ مشتریان، پرسش‌ها، وبلاگ)، فرمِ
-// تماس و درخواستِ دمو.
+//   · خواندن: اگر پاسخ نرسد، فهرستِ خالی/صفرِ صادق برمی‌گردد و پیامِ خطا در
+//     LastError می‌نشیند تا صفحه بگوید «دریافت نشد»، نه اینکه داده از خود بسازد.
+//   · نوشتن: استثنایِ V1ApiException با پیامِ فارسیِ خودِ سرور بالا می‌رود.
 
 using Northwind.Client.Services.V1;
 using Northwind.Shared.Contracts;
@@ -22,21 +16,16 @@ namespace Northwind.Client.Services;
 
 public sealed class StoreApiRouter : IStoreApi
 {
-    private readonly IStoreApi _legacy;
     private readonly IV1Api _v1;
 
-    public StoreApiRouter(IStoreApi legacy, IV1Api v1)
-    {
-        _legacy = legacy;
-        _v1 = v1;
-    }
+    public StoreApiRouter(IV1Api v1) => _v1 = v1;
 
     /* ============================== تنظیمات ============================== */
 
     public async Task<SiteSettingsDto> GetSettingsAsync()
     {
         var s = await _v1.GetAsync<V1Settings>("api/v1/settings");
-        if (s is null) return await _legacy.GetSettingsAsync();
+        if (s is null) return DefaultSettings();
         return ToSettings(s);
     }
 
@@ -71,7 +60,11 @@ public sealed class StoreApiRouter : IStoreApi
             ("featured", query.Featured == true ? "true" : null));
 
         var page = await _v1.GetAsync<V1Paged<V1ProductListItem>>(url);
-        if (page is null) return await _legacy.GetProductsAsync(query);
+        if (page is null)
+        {
+            MarkUnauthorized("محصولات");
+            return Paged<ProductListItemDto>.Empty(query.PageSize);
+        }
 
         return new Paged<ProductListItemDto>(
             page.Items.Select(ToListItem).ToList(),
@@ -81,19 +74,14 @@ public sealed class StoreApiRouter : IStoreApi
     public async Task<ProductDetailDto?> GetProductBySlugAsync(string slug)
     {
         var d = await _v1.GetAsync<V1ProductDetail>($"api/v1/products/slug/{Uri.EscapeDataString(slug)}");
-        if (d is not null) return ToDetail(d);
-
-        // پیوندهایِ قدیمی (مثلاً از پنلِ مدیریت) هنوز به اسلاگ‌هایِ پایگاه‌دادهٔ قبلی
-        // اشاره می‌کنند؛ تا مهاجرتِ کامل، صفحهٔ محصول به‌جایِ «پیدا نشد» همان محصول
-        // را از مسیرِ قدیمی نشان می‌دهد.
-        return await _legacy.GetProductBySlugAsync(slug);
+        return d is null ? null : ToDetail(d);
     }
 
     public async Task<ProductDetailDto?> GetProductByIdAsync(string id)
     {
-        if (!Guid.TryParse(id, out var guid)) return await _legacy.GetProductByIdAsync(id);
+        if (!Guid.TryParse(id, out var guid)) return null;
         var d = await _v1.GetAsync<V1ProductDetail>($"api/v1/products/{guid}");
-        return d is null ? await _legacy.GetProductByIdAsync(id) : ToDetail(d);
+        return d is null ? null : ToDetail(d);
     }
 
     /// <summary>
@@ -125,7 +113,11 @@ public sealed class StoreApiRouter : IStoreApi
     public async Task<IReadOnlyList<CategoryDto>> GetCategoriesAsync(bool includeInactive = false)
     {
         var list = await _v1.GetAsync<List<V1Category>>("api/v1/categories");
-        if (list is null) return await _legacy.GetCategoriesAsync(includeInactive);
+        if (list is null)
+        {
+            MarkUnauthorized("دسته‌بندی‌ها");
+            return Array.Empty<CategoryDto>();
+        }
 
         return list.Select(c => new CategoryDto(
             c.Id.ToString(), c.Name, c.Slug, c.Description, c.Icon, c.ProductCount)).ToList();
@@ -148,7 +140,7 @@ public sealed class StoreApiRouter : IStoreApi
     public async Task<IReadOnlyList<TestimonialDto>> GetTestimonialsAsync()
     {
         var list = await _v1.GetAsync<List<V1Testimonial>>("api/v1/testimonials");
-        if (list is null) return await _legacy.GetTestimonialsAsync();
+        if (list is null) return Array.Empty<TestimonialDto>();
 
         return list.Select(t => new TestimonialDto(
             t.Id.ToString(), t.AuthorName, t.AuthorRole, t.Company, t.Quote, t.Rating)).ToList();
@@ -157,7 +149,7 @@ public sealed class StoreApiRouter : IStoreApi
     public async Task<IReadOnlyList<FaqDto>> GetFaqsAsync()
     {
         var list = await _v1.GetAsync<List<V1Faq>>("api/v1/faqs");
-        if (list is null) return await _legacy.GetFaqsAsync();
+        if (list is null) return Array.Empty<FaqDto>();
 
         return list.Select(f => new FaqDto(f.Id.ToString(), f.Question, f.Answer)).ToList();
     }
@@ -176,7 +168,11 @@ public sealed class StoreApiRouter : IStoreApi
             : await _v1.SendAsync<V1Cart>("POST", "api/v1/cart/discount",
                 new { code = discountCode, sessionKey });
 
-        if (cart is null) return await _legacy.GetCartAsync(sessionKey, discountCode);
+        if (cart is null)
+        {
+            MarkUnauthorized("سبدِ خرید");
+            return EmptyCart;
+        }
         return ToCart(cart);
     }
 
@@ -185,7 +181,7 @@ public sealed class StoreApiRouter : IStoreApi
         _v1.SessionKey = sessionKey;
 
         if (!Guid.TryParse(planId, out var plan))
-            return await _legacy.AddToCartAsync(sessionKey, planId, quantity);
+            throw new V1ApiException("طرحِ انتخاب‌شده معتبر نیست.", "invalid_plan", 400);
 
         var cart = await _v1.SendAsync<V1Cart>("POST", "api/v1/cart/items",
             new { planId = plan, quantity, sessionKey });
@@ -197,7 +193,7 @@ public sealed class StoreApiRouter : IStoreApi
         _v1.SessionKey = sessionKey;
 
         if (!Guid.TryParse(itemId, out var id))
-            return await _legacy.UpdateCartItemAsync(sessionKey, itemId, quantity);
+            throw new V1ApiException("ردیفِ سبد معتبر نیست.", "invalid_cart_item", 400);
 
         var key = Uri.EscapeDataString(sessionKey);
         var cart = await _v1.SendAsync<V1Cart>("PUT", $"api/v1/cart/items/{id}?sessionKey={key}", new { quantity });
@@ -209,7 +205,7 @@ public sealed class StoreApiRouter : IStoreApi
         _v1.SessionKey = sessionKey;
 
         if (!Guid.TryParse(itemId, out var id))
-            return await _legacy.RemoveCartItemAsync(sessionKey, itemId);
+            throw new V1ApiException("ردیفِ سبد معتبر نیست.", "invalid_cart_item", 400);
 
         var key = Uri.EscapeDataString(sessionKey);
         var cart = await _v1.SendAsync<V1Cart>("DELETE", $"api/v1/cart/items/{id}?sessionKey={key}");
@@ -263,7 +259,6 @@ public sealed class StoreApiRouter : IStoreApi
         var result = await _v1.GetAsync<V1Paged<V1Order>>(url);
         if (result is null)
         {
-            if (CanFallBack) return await _legacy.GetOrdersAsync(page, pageSize, status, search);
             MarkUnauthorized("سفارش‌ها");
             return Paged<OrderDto>.Empty(pageSize);
         }
@@ -273,7 +268,7 @@ public sealed class StoreApiRouter : IStoreApi
 
     public async Task<OrderDto?> GetOrderAsync(string id)
     {
-        if (!Guid.TryParse(id, out var guid)) return await _legacy.GetOrderAsync(id);
+        if (!Guid.TryParse(id, out var guid)) return null;
         var order = await _v1.GetAsync<V1Order>($"api/v1/orders/{guid}");
         return order is null ? null : ToOrder(order);
     }
@@ -311,7 +306,6 @@ public sealed class StoreApiRouter : IStoreApi
         var result = await _v1.GetAsync<V1Paged<V1Invoice>>(url);
         if (result is null)
         {
-            if (CanFallBack) return await _legacy.GetInvoicesAsync(page, pageSize);
             MarkUnauthorized("فاکتورها");
             return Paged<InvoiceDto>.Empty(pageSize);
         }
@@ -321,7 +315,7 @@ public sealed class StoreApiRouter : IStoreApi
 
     public async Task<InvoiceDto?> GetInvoiceAsync(string id)
     {
-        if (!Guid.TryParse(id, out var guid)) return await _legacy.GetInvoiceAsync(id);
+        if (!Guid.TryParse(id, out var guid)) return null;
         var invoice = await _v1.GetAsync<V1Invoice>($"api/v1/invoices/{guid}");
         return invoice is null ? null : ToInvoice(invoice);
     }
@@ -336,7 +330,6 @@ public sealed class StoreApiRouter : IStoreApi
         var result = await _v1.GetAsync<V1Paged<V1License>>(url);
         if (result is null)
         {
-            if (CanFallBack) return await _legacy.GetLicensesAsync(page, pageSize, status, search);
             MarkUnauthorized("لایسنس‌ها");
             return Paged<LicenseDto>.Empty(pageSize);
         }
@@ -352,7 +345,7 @@ public sealed class StoreApiRouter : IStoreApi
     public async Task<LicenseDto> LicenseActionAsync(string id, string action, int? days = null, string? machineName = null)
     {
         if (!Guid.TryParse(id, out var guid))
-            return await _legacy.LicenseActionAsync(id, action, days, machineName);
+            throw new V1ApiException("لایسنسِ انتخاب‌شده معتبر نیست.", "invalid_license", 400);
 
         var mapped = action switch
         {
@@ -407,7 +400,11 @@ public sealed class StoreApiRouter : IStoreApi
     public async Task<IReadOnlyList<AvailableDownloadDto>> GetAvailableDownloadsAsync()
     {
         var list = await _v1.GetAsync<List<V1AvailableDownload>>("api/v1/downloads/available");
-        if (list is null) return await _legacy.GetAvailableDownloadsAsync();
+        if (list is null)
+        {
+            MarkUnauthorized("فایل‌هایِ قابلِ دانلود");
+            return Array.Empty<AvailableDownloadDto>();
+        }
 
         return list.Select(d => new AvailableDownloadDto(
             d.ProductId.ToString(), d.ProductName, d.ProductSlug, d.AccentColor, d.Licensed,
@@ -421,7 +418,6 @@ public sealed class StoreApiRouter : IStoreApi
         var result = await _v1.GetAsync<V1Paged<V1Download>>("api/v1/downloads?pageSize=50");
         if (result is null)
         {
-            if (CanFallBack) return await _legacy.GetDownloadHistoryAsync();
             MarkUnauthorized("تاریخچهٔ دانلودها");
             return Array.Empty<DownloadDto>();
         }
@@ -431,7 +427,7 @@ public sealed class StoreApiRouter : IStoreApi
     public async Task<DownloadDto> RecordDownloadAsync(string productId, string? versionId, string kind, string fileName, int sizeMb)
     {
         if (!Guid.TryParse(productId, out var pid))
-            return await _legacy.RecordDownloadAsync(productId, versionId, kind, fileName, sizeMb);
+            throw new V1ApiException("محصولِ انتخاب‌شده معتبر نیست.", "invalid_product", 400);
 
         var download = await _v1.SendAsync<V1Download>("POST", "api/v1/downloads", new
         {
@@ -460,11 +456,32 @@ public sealed class StoreApiRouter : IStoreApi
             }
         }
 
-        // فهرستِ کامل/مدیریتی: پشتهٔ قدیمی.
-        return await _legacy.GetReviewsAsync(page, pageSize, productId, status);
+        // فهرستِ سراسری (بدونِ محصول) فقط از صفِ بررسیِ مدیر می‌آید.
+        var url = "api/v1/admin/reviews" + V1Query.Of(
+            ("page", page), ("pageSize", pageSize), ("status", status?.ToString()));
+
+        var queue = await _v1.GetAsync<V1Paged<V1Review>>(url);
+        if (queue is null)
+        {
+            MarkUnauthorized("دیدگاه‌ها");
+            return Paged<ReviewDto>.Empty(pageSize);
+        }
+
+        return new Paged<ReviewDto>(queue.Items.Select(ToReview).ToList(), Meta(queue.Meta));
     }
 
-    public Task<ReviewDto> CreateReviewAsync(NewReviewInput input) => _legacy.CreateReviewAsync(input);
+    public async Task<ReviewDto> CreateReviewAsync(NewReviewInput input)
+    {
+        var review = await _v1.SendAsync<V1Review>("POST", "api/v1/reviews", new
+        {
+            productId = RequireGuid(input.ProductId, "محصول"),
+            rating = input.Rating,
+            title = input.Title,
+            body = input.Body
+        });
+
+        return ToReview(review);
+    }
 
     public async Task<ReviewDto> ModerateReviewAsync(string id, ReviewStatus status)
     {
@@ -504,7 +521,6 @@ public sealed class StoreApiRouter : IStoreApi
         var result = await _v1.GetAsync<V1Paged<V1Ticket>>(url);
         if (result is null)
         {
-            if (CanFallBack) return await _legacy.GetTicketsAsync(page, pageSize, status, search);
             MarkUnauthorized("تیکت‌ها");
             return Paged<TicketDto>.Empty(pageSize);
         }
@@ -514,7 +530,7 @@ public sealed class StoreApiRouter : IStoreApi
 
     public async Task<TicketDetailDto?> GetTicketAsync(string id)
     {
-        if (!Guid.TryParse(id, out var guid)) return await _legacy.GetTicketAsync(id);
+        if (!Guid.TryParse(id, out var guid)) return null;
         var ticket = await _v1.GetAsync<V1TicketDetail>($"api/v1/tickets/{guid}");
         return ticket is null ? null : ToTicketDetail(ticket);
     }
@@ -564,7 +580,7 @@ public sealed class StoreApiRouter : IStoreApi
     public async Task<TicketDetailDto> AddTicketMessageAsync(string id, string body, TicketStatus? status = null)
     {
         if (!Guid.TryParse(id, out var guid))
-            return await _legacy.AddTicketMessageAsync(id, body, status);
+            throw new V1ApiException("تیکتِ انتخاب‌شده معتبر نیست.", "invalid_ticket", 400);
 
         var detail = await _v1.SendAsync<V1TicketDetail>("POST", $"api/v1/tickets/{guid}/messages",
             new { body });
@@ -573,12 +589,39 @@ public sealed class StoreApiRouter : IStoreApi
 
     /* ================================ احراز ============================== */
 
-    // ورود و ثبت‌نام از این موج به بعد در AuthState و رویِ نسخهٔ ۱ انجام می‌شود؛
-    // این دو متد فقط برایِ سازگاری مانده‌اند.
-    public Task<UserDto?> LoginAsync(string email, string password) => _legacy.LoginAsync(email, password);
+    // صفحه‌هایِ ورود/ثبت‌نام از AuthState استفاده می‌کنند؛ این دو متد برایِ
+    // سازگاریِ IStoreApi مانده‌اند و همان قراردادِ نسخهٔ ۱ را صدا می‌زنند.
+    public async Task<UserDto?> LoginAsync(string email, string password)
+    {
+        try
+        {
+            var result = await _v1.SendAsync<V1AuthResult>("POST", "api/v1/auth/login",
+                new { email, password });
+            _v1.AccessToken = result.Token;
+            return ToUser(result.User);
+        }
+        catch (V1ApiException ex)
+        {
+            LastError = ex.Message;
+            return null;
+        }
+    }
 
-    public Task<UserDto?> RegisterAsync(string fullName, string email, string password, string? company, string? country)
-        => _legacy.RegisterAsync(fullName, email, password, company, country);
+    public async Task<UserDto?> RegisterAsync(string fullName, string email, string password, string? company, string? country)
+    {
+        try
+        {
+            var result = await _v1.SendAsync<V1AuthResult>("POST", "api/v1/auth/register",
+                new { fullName, email, password, company, country });
+            _v1.AccessToken = result.Token;
+            return ToUser(result.User);
+        }
+        catch (V1ApiException ex)
+        {
+            LastError = ex.Message;
+            return null;
+        }
+    }
 
     public async Task<UserDto> UpdateProfileAsync(string fullName, string? company, string? phone, string? country)
     {
@@ -605,12 +648,16 @@ public sealed class StoreApiRouter : IStoreApi
 
     private void ClearError() => LastError = null;
 
-    /// <summary>
-    /// آیا اجازه داریم بعد از شکستِ نسخهٔ ۱ سراغِ API قدیمی برویم؟
-    /// فقط وقتی نشستی وجود ندارد. با توکن، بازگشت به قدیمی یعنی نشان‌دادنِ دادهٔ
-    /// کاربرِ دیگر با ۲۰۰ — که یک نشتیِ واقعی بود؛ دیگر هرگز.
-    /// </summary>
-    private bool CanFallBack => string.IsNullOrWhiteSpace(_v1.AccessToken);
+    /// <summary>تنظیماتِ پیش‌فرض تا صفحهٔ نخست در نبودِ سرور سفید نشود.</summary>
+    private static SiteSettingsDto DefaultSettings()
+        => new("فروغ آریا پارسیان", "", "", "",
+               "مجموعهٔ نرم‌افزار یکپارچه برای کسب‌وکار شما",
+               "ماژول‌های ERP، برنامه‌های دسکتاپ و افزونه‌ها — با پشتیبانی، بروزرسانی و نصبِ رایگان.",
+               900, 14, false, "");
+
+    /// <summary>سبدِ خالیِ صادق — برایِ وقتی سرور پاسخ نمی‌دهد.</summary>
+    private static CartDto EmptyCart
+        => new("", Array.Empty<CartItemDto>(), 0, 0, 0, 0, 0, null, "IRR");
 
     /// <summary>
     /// زبانهٔ «همه» در رابط یعنی «بی‌فیلتر». نسخهٔ ۱ مقدار را به enum تبدیل می‌کند و
@@ -656,7 +703,6 @@ public sealed class StoreApiRouter : IStoreApi
         var o = await _v1.GetAsync<V1CustomerOverview>("api/v1/account/overview");
         if (o is null)
         {
-            if (CanFallBack) return await _legacy.GetCustomerOverviewAsync();
             MarkUnauthorized("نمایِ کلیِ حساب");
             return new CustomerOverviewDto(
                 0, 0, 0, 0, 0, 0, 0,
@@ -808,7 +854,6 @@ public sealed class StoreApiRouter : IStoreApi
         var result = await _v1.GetAsync<V1Paged<V1Notification>>("api/v1/notifications?pageSize=50");
         if (result is null)
         {
-            if (CanFallBack) return await _legacy.GetNotificationsAsync();
             MarkUnauthorized("اعلان‌ها");
             return Array.Empty<NotificationDto>();
         }
@@ -820,11 +865,7 @@ public sealed class StoreApiRouter : IStoreApi
 
     public async Task MarkNotificationReadAsync(string id)
     {
-        if (!Guid.TryParse(id, out var guid))
-        {
-            await _legacy.MarkNotificationReadAsync(id);
-            return;
-        }
+        if (!Guid.TryParse(id, out var guid)) return;
         await _v1.SendAsync("POST", $"api/v1/notifications/{guid}/read");
     }
 
@@ -838,7 +879,6 @@ public sealed class StoreApiRouter : IStoreApi
         var result = await _v1.GetAsync<V1Paged<V1Article>>(url);
         if (result is null)
         {
-            if (CanFallBack) return await _legacy.GetArticlesAsync(page, pageSize, publishedOnly);
             MarkUnauthorized("مقاله‌ها");
             return Paged<ArticleDto>.Empty(pageSize);
         }

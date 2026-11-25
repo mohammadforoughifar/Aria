@@ -120,6 +120,12 @@ public sealed class ContentController : ControllerBase
     public Task<PagedViewModel<ArticleViewModel>> Articles([FromQuery] ListQuery query, CancellationToken ct)
         => _content.ArticlesAsync(publishedOnly: true, query, ct);
 
+    /// <summary>دسته‌هایِ مقاله — مبنایِ صافیِ صفحهٔ وبلاگ.</summary>
+    [HttpGet("articles/categories")]
+    [AllowAnonymous]
+    public Task<IReadOnlyList<string>> ArticleCategories(CancellationToken ct)
+        => _content.ArticleCategoriesAsync(ct);
+
     [HttpGet("articles/{slug}")]
     [AllowAnonymous]
     [ProducesResponseType<ArticleViewModel>(StatusCodes.Status200OK)]

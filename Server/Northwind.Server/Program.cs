@@ -7,24 +7,13 @@ using Northwind.Core.Services.Security;
 using Northwind.Core.Services.Seed;
 using Northwind.Data;
 using Northwind.Data.Persistence;
-using Northwind.Server;
-using Northwind.Server.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-/* ------------------------------- پایگاه‌داده ------------------------------- */
-// فایلِ SQLite داخلِ workspace است تا همهٔ داده‌ها بعد از ریست هم باقی بمانند.
-var dataDir = Path.Combine(builder.Environment.ContentRootPath, "data");
-Directory.CreateDirectory(dataDir);
-var dbPath = Path.Combine(dataDir, "aria.db");
-builder.Configuration["DatabasePath"] = dbPath;
-
-builder.Services.AddDbContext<AppDbContext>(o => o.UseSqlite($"Data Source={dbPath}"));
-
-/* --------------------- بک‌اندِ تازه (SQL Server + REST) ---------------------
-   لایه‌هایِ Domain/Infrastructure/Api. اگر رشتهٔ اتصالِ SQL Server تنظیم شده باشد
-   مهاجرت‌ها رویِ آن اعمال می‌شود؛ وگرنه برایِ دیدنِ سایت رویِ SQLite بالا می‌آید.
-   مسیرِ فالبک عمداً جدا از پایگاه‌دادهٔ قدیمی است تا این دو قاطی نشوند.          */
+/* ------------------------------- پایگاه‌داده -------------------------------
+   ساختارِ چهارلایه: تنها پایگاه‌دادهٔ برنامه در لایهٔ Northwind.Data تعریف شده
+   است. اگر رشتهٔ اتصالِ SQL Server تنظیم شده باشد مهاجرت‌ها رویِ آن اعمال
+   می‌شود؛ وگرنه برایِ دیدنِ سایت رویِ SQLite (حالتِ نمایشی) بالا می‌آید.        */
 var dbOptions = builder.Configuration.ReadDatabaseOptions();
 if (!dbOptions.HasSqlServer && !Path.IsPathRooted(dbOptions.SqlitePath))
     dbOptions.SqlitePath = Path.Combine(builder.Environment.ContentRootPath, "data", "northwind-api.db");
@@ -79,18 +68,7 @@ builder.Services.AddSwaggerGen(o =>
 var app = builder.Build();
 app.Logger.LogInformation("ریشهٔ فایل‌های کلاینت: {Path}", builder.Environment.WebRootPath);
 
-/* --------------------- ایجاد و seed در اولین اجرا --------------------- */
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
-    Seed.Run(db);
-    Seed.Patch(db);          // به‌روزرسانیِ افزاینده: برند و بسته‌ها
-    DemoData.Run(db, m => app.Logger.LogWarning(m));   // دادهٔ تستی
-    app.Logger.LogInformation("پایگاه‌داده آماده است: {Path}", dbPath);
-}
-
-/* ------------------ آماده‌سازیِ پایگاه‌دادهٔ تازه + دادهٔ نمایشی ------------------ */
+/* ------------------ آماده‌سازیِ پایگاه‌داده + دادهٔ نمایشی ------------------ */
 await app.Services.InitializeNorthwindDatabaseAsync();
 using (var scope = app.Services.CreateScope())
 {
@@ -99,7 +77,7 @@ using (var scope = app.Services.CreateScope())
     if (dbOptions.SeedDemoData)
         await DemoSeeder.SeedAsync(apiDb, hasher, app.Logger);
 
-    app.Logger.LogInformation("API تازه روی {Provider} آماده است",
+    app.Logger.LogInformation("API روی {Provider} آماده است",
         apiDb.Database.IsSqlServer() ? "SQL Server" : "SQLite (حالتِ نمایشی)");
 }
 

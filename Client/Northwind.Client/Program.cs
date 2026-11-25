@@ -36,15 +36,12 @@ builder.Services.AddScoped(sp =>
 builder.Services.AddSingleton<ApiHealth>();
 // داده‌هایِ کم‌تغییر (تنظیمات، دسته‌بندی، نظرات، پرسش‌ها) یک‌بار گرفته می‌شوند
 builder.Services.AddSingleton<ApiCache>();
-// کلاینتِ نسخهٔ ۱ + مسیریاب:
-//   HttpStoreApi قدیمی به‌عنوانِ «پشتوانه» تزریق می‌شود و StoreApiRouter هر
-//   فراخوانی را یا به /api/v1 می‌برد یا (اگر آن بخش هنوز مهاجرت نکرده) به
-//   همان مسیرِ قدیمی. صفحه‌ها هیچ تغییری نمی‌کنند.
+// کلاینتِ نسخهٔ ۱ + پیاده‌سازیِ IStoreApi:
+//   از موجِ ۴ به بعد API قدیمی وجود ندارد؛ StoreApiRouter تنها و تنها رویِ
+//   /api/v1 کار می‌کند و صفحه‌ها همچنان فقط IStoreApi را می‌شناسند.
 builder.Services.AddScoped<V1Api>();
 builder.Services.AddScoped<IV1Api>(sp => sp.GetRequiredService<V1Api>());
-builder.Services.AddScoped<HttpStoreApi>();
 builder.Services.AddScoped<IStoreApi>(sp => new StoreApiRouter(
-    sp.GetRequiredService<HttpStoreApi>(),
     sp.GetRequiredService<IV1Api>()));
 
 /* ---------- وضعیتِ سمت کلاینت ---------- */

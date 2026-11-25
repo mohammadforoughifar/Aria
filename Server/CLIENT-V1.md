@@ -193,3 +193,27 @@
   `<iframe>` آپارات با `allowfullscreen`. محصولِ بدونِ ویدیو هیچ بخشِ خالی نمی‌سازد.
 * دادهٔ نمایشی: محصولاتِ ویژه با لینکِ نمونه `aparat.com/v/nlk1rob` پر شده‌اند؛
   با لینکِ واقعیِ خودت عوضشان کن.
+
+---
+
+## ۶) موج ۴ — حذفِ کاملِ API قدیمی
+
+**هدف:** یک API، یک پایگاه‌داده، سه لایهٔ سروری بدونِ استثنا.
+
+| کار | نتیجه |
+|---|---|
+| `HttpStoreApi` (۵۸ فراخوانیِ `/api/...`) | حذف شد. `StoreApiRouter` حالا تنها رویِ `IV1Api` کار می‌کند و `fallback` ندارد. |
+| `_legacy` و `CanFallBack` در روتر | حذف شدند؛ ۳۲ نقطهٔ بازگشت به پشتهٔ قدیمی بسته شد. |
+| `Northwind.Server/Controllers` (۶ فایل، ۶۷ اکشن) | حذف شد. |
+| `Northwind.Server/Data` (`AppDbContext`, `Entities`, `Seed`, `DemoData`, `LegacyMoney`) | حذف شد. |
+| `data/aria.db*` | حذف شد. تنها پایگاه‌داده: `data/northwind-api.db`. |
+| ورود/ثبت‌نام و ثبتِ دیدگاه در روتر | بازنویسی رویِ `POST /api/v1/auth/login`، `/auth/register`، `/reviews`. |
+| `GET /api/v1/articles/categories` | **تازه** — صافیِ صفحهٔ وبلاگ که قبلاً از مسیرِ قدیمی می‌آمد. |
+| `Client/Northwind.Client/Shared` | به `Components` تغییر نام داد (تداخلِ نام با `Northwind.Shared` قراردادها). |
+
+**رفتارِ خطا یکدست شد:** خواندن‌ها در نبودِ سرور فهرستِ خالی/صفرِ صادق برمی‌گردانند و
+`LastError` را پر می‌کنند؛ نوشتن‌ها `V1ApiException` با پیامِ فارسیِ خودِ سرور می‌دهند.
+هیچ متدی دیگر دادهٔ کاربرِ دیگری را با ۲۰۰ برنمی‌گرداند.
+
+**آزمون‌ها بعد از حذف:** api-smoke ۹۲/۹۲ · v1-funnel ۲۰/۲۰ · v1-admin ۲۰/۲۰ ·
+v1-dashboard ۲۱/۲۱ · v1-product-form ۱۷/۱۷ · v1-video ۱۲/۱۲ · verify: صفر خطا.
