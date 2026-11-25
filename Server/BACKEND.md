@@ -3,14 +3,16 @@
 این سند وضعیتِ فعلی را ثبت می‌کند: پایگاه‌داده رویِ SQL Server، موجودیت‌ها،
 ویو‌مدل‌ها، **سرویس‌ها و کنترلرهایِ REST** آماده و آزموده‌اند.
 
+> ساختارِ چهارلایه (کلاینت · هسته · API · داده): [`ARCHITECTURE.md`](ARCHITECTURE.md)
+
 ---
 
 ## ۱. لایه‌ها
 
 ```
 Server/
-├── Northwind.Domain/           ← موجودیت‌ها و enumها. به هیچ پروژه‌ای وابسته نیست.
-├── Northwind.Infrastructure/   ← DbContext، پیکربندیِ نگاشت، مهاجرت‌ها، ثبتِ DI.
+├── Northwind.Data/           ← موجودیت‌ها و enumها. به هیچ پروژه‌ای وابسته نیست.
+├── Northwind.Data/   ← DbContext، پیکربندیِ نگاشت، مهاجرت‌ها، ثبتِ DI.
 ├── Northwind.Api/              ← ویو‌مدل‌ها + (در گامِ بعد) کنترلرها و سرویس‌ها.
 ├── Northwind.Server/           ← میزبان: ترکیبِ قطعات و سرو کردنِ کلاینتِ Blazor.
 └── Scripts/                    ← اسکریپتِ SQL تولیدشده برایِ DBA.
@@ -19,9 +21,9 @@ Server/
 جهتِ وابستگی یک‌طرفه است:
 
 ```
-Northwind.Server ──▶ Northwind.Api ──▶ Northwind.Domain
+Northwind.Server ──▶ Northwind.Api ──▶ Northwind.Data
         │                                   ▲
-        └────────▶ Northwind.Infrastructure ┘
+        └────────▶ Northwind.Data ┘
 ```
 
 لایهٔ `Domain` هیچ بستهٔ بیرونی ندارد؛ نه EF، نه ASP.NET. همین باعث می‌شود
@@ -58,7 +60,7 @@ Northwind.Server ──▶ Northwind.Api ──▶ Northwind.Domain
 | ستونِ `rowversion` | ۲۲ |
 | ستونِ JSON | ۸ |
 
-مهاجرت: `Server/Northwind.Infrastructure/Migrations/*_InitialCreate.cs`
+مهاجرت: `Server/Northwind.Data/Migrations/*_InitialCreate.cs`
 اسکریپتِ آماده برایِ اجرا رویِ سرور: `Server/Scripts/001-InitialCreate.sql` (۹۰۵ خط، idempotent).
 
 ### اجرا با SQL Server
@@ -82,7 +84,7 @@ docker compose up -d          # SQL Server 2022 روی پورت ۱۴۳۳
 مهاجرت‌ها هنگامِ شروع خودکار اعمال می‌شوند. برایِ اجرایِ دستی:
 
 ```bash
-dotnet ef database update --project Server/Northwind.Infrastructure
+dotnet ef database update --project Server/Northwind.Data
 ```
 
 ### حالتِ نمایشی (بدونِ SQL Server)
@@ -117,7 +119,7 @@ dotnet ef database update --project Server/Northwind.Infrastructure
 
 ## ۵. سرویس‌ها
 
-منطقِ کسب‌وکار در `Northwind.Api/Services` و پشتِ اینترفیس است. کنترلرها فقط
+منطقِ کسب‌وکار در `Northwind.Core/Services` و پشتِ اینترفیس است. کنترلرها فقط
 درخواست را می‌گیرند، سرویس را صدا می‌زنند و پاسخِ HTTP می‌سازند.
 
 | سرویس | مسئولیت | نکتهٔ مهم |
@@ -204,7 +206,7 @@ dotnet ef database update --project Server/Northwind.Infrastructure
 
 ## ۷. دادهٔ نمایشی
 
-`DemoSeeder` (در `Northwind.Api/Services/Seed`) فقط وقتی اجرا می‌شود که جدولِ
+`DemoSeeder` (در `Northwind.Core/Services/Seed`) فقط وقتی اجرا می‌شود که جدولِ
 محصولات خالی باشد: ۸ دسته، ۱۲ محصول با ۳۶ طرح و ۲۴ نسخه، ۵ کاربر، ۷ سفارش،
 ۳ تیکت، ۶ مقاله، ۵ دیدگاه، ۲ کدِ تخفیف و چند پیام و اعلان.
 

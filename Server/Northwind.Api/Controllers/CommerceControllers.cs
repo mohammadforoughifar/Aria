@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Northwind.Api.Services.Commerce;
-using Northwind.Api.Services.Security;
-using Northwind.Api.ViewModels.Commerce;
-using Northwind.Api.ViewModels.Common;
-using Northwind.Domain.Enums;
+using Northwind.Core.Services.Commerce;
+using Northwind.Core.Services.Security;
+using Northwind.Core.Models.Commerce;
+using Northwind.Core.Models.Common;
+using Northwind.Data.Enums;
 
 namespace Northwind.Api.Controllers;
 

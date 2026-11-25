@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Http;
 using System.Text.Json;
-using Northwind.Api.Services.Common;
-using Northwind.Api.ViewModels.Common;
+using Northwind.Core.Services.Common;
+using Northwind.Core.Models.Common;
 
 namespace Northwind.Api.Middleware;
 

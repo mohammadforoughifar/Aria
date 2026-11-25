@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Northwind.Api;
 using Northwind.Api.Middleware;
-using Northwind.Api.Services.Security;
-using Northwind.Api.Services.Seed;
-using Northwind.Infrastructure;
-using Northwind.Infrastructure.Persistence;
+using Northwind.Core.Services.Security;
+using Northwind.Core.Services.Seed;
+using Northwind.Data;
+using Northwind.Data.Persistence;
 using Northwind.Server;
 using Northwind.Server.Data;
 
@@ -29,7 +29,7 @@ var dbOptions = builder.Configuration.ReadDatabaseOptions();
 if (!dbOptions.HasSqlServer && !Path.IsPathRooted(dbOptions.SqlitePath))
     dbOptions.SqlitePath = Path.Combine(builder.Environment.ContentRootPath, "data", "northwind-api.db");
 
-builder.Services.AddNorthwindPersistence(builder.Configuration, dbOptions);
+builder.Services.AddNorthwindData(builder.Configuration, dbOptions);
 builder.Services.AddNorthwindApi(builder.Configuration);
 
 /* --------------------------------- API ------------------------------------ */

@@ -1,37 +1,30 @@
-using Microsoft.AspNetCore.Http;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using Northwind.Api.Services.Admin;
-using Northwind.Api.Services.Catalog;
-using Northwind.Api.Services.Commerce;
-using Northwind.Api.Services.Content;
-using Northwind.Api.Services.Identity;
-using Northwind.Api.Services.Security;
-using Northwind.Api.Services.Support;
-using Northwind.Api.ViewModels.Common;
+using Northwind.Core;
+using Northwind.Core.Models.Common;
+using Northwind.Core.Services.Security;
 
 namespace Northwind.Api;
 
 public static class DependencyInjection
 {
     /// <summary>
-    /// ثبتِ کاملِ لایهٔ API: سرویس‌ها، احراز هویتِ JWT، کنترلرها و
-    /// شکلِ یکسانِ خطاها.
+    /// ثبتِ لایهٔ API: احراز هویت، کنترلرها و شکلِ یکسانِ خطاها.
+    /// منطقِ کاری از <see cref="Northwind.Core.DependencyInjection.AddNorthwindCore"/> می‌آید.
     /// </summary>
     public static IServiceCollection AddNorthwindApi(this IServiceCollection services, IConfiguration configuration)
     {
-        /* ------------------------------ امنیت ------------------------------ */
+        /* ------------------------ منطقِ کاری (لایهٔ هسته) ------------------------ */
+        services.AddNorthwindCore(configuration);
+
+        /* ------------------------------ امنیتِ HTTP --------------------------- */
         var jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
-        services.AddSingleton(jwt);
-        services.AddSingleton<ITokenService, JwtTokenService>();
-        services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
-        services.AddHttpContextAccessor();
-        services.AddScoped<ICurrentUser, CurrentUser>();
 
         services
             .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -51,22 +44,6 @@ public static class DependencyInjection
             });
 
         services.AddAuthorization();
-
-        /* ----------------------------- سرویس‌ها ----------------------------- */
-        services.AddScoped<ICategoryService, CategoryService>();
-        services.AddScoped<IProductService, ProductService>();
-        services.AddScoped<IReviewService, ReviewService>();
-        services.AddScoped<ICartService, CartService>();
-        services.AddScoped<IOrderService, OrderService>();
-        services.AddScoped<ILicenseService, LicenseService>();
-        services.AddScoped<IDownloadService, DownloadService>();
-        services.AddScoped<IDiscountService, DiscountService>();
-        services.AddScoped<ITicketService, TicketService>();
-        services.AddScoped<INotificationService, NotificationService>();
-        services.AddScoped<IContentService, ContentService>();
-        services.AddScoped<IContactService, ContactService>();
-        services.AddScoped<IAccountService, AccountService>();
-        services.AddScoped<IAdminService, AdminService>();
 
         /* ----------------------------- کنترلرها ----------------------------- */
         services.AddControllers()

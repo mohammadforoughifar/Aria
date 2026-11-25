@@ -1,12 +1,12 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Northwind.Api.Services.Admin;
-using Northwind.Api.Services.Identity;
-using Northwind.Api.Services.Security;
-using Northwind.Api.ViewModels.Account;
-using Northwind.Api.ViewModels.Common;
-using Northwind.Api.ViewModels.Content;
+using Northwind.Core.Services.Admin;
+using Northwind.Core.Services.Identity;
+using Northwind.Core.Services.Security;
+using Northwind.Core.Models.Account;
+using Northwind.Core.Models.Common;
+using Northwind.Core.Models.Content;
 
 namespace Northwind.Api.Controllers;
 

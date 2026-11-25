@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- لایهٔ ۲: هسته
+       منطقِ کاری (Services) + مدل‌هایِ خروجی/ورودی (Models) + نگاشت (Mapping).
+       این لایه فقط به لایهٔ داده تکیه دارد و هیچ چیزی از ASP.NET MVC نمی‌شناسد؛
+       به همین دلیل هم می‌شود آن را در یک آزمون یا یک کارگرِ پس‌زمینه استفاده کرد. -->
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Northwind.Core</RootNamespace>
+  </PropertyGroup>
+
+  <!-- IHttpContextAccessor و واژه‌هایِ احراز هویت در همین لایه استفاده می‌شوند. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Northwind.Data\Northwind.Data.csproj" />
+  </ItemGroup>
+
+</Project>

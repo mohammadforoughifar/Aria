@@ -7,26 +7,41 @@
 
 ---
 
-## ۱. ساختار
+## ۱. ساختار (چهار لایه)
 
 ```
 Aria/
-├── Shared/Northwind.Shared/      قراردادها (DTOها و enumهای مشترک بین کلاینت و سرور)
-├── Server/Northwind.Server/      Web API روی ASP.NET Core 9 + EF Core + SQLite
-│   ├── Data/Entities.cs          ۲۷ موجودیت
-│   ├── Data/AppDbContext.cs      DbContext
-│   ├── Data/Seed.cs              دادهٔ اولیه (idempotent)
-│   ├── Controllers/              Catalog · Commerce · Account · Support · Admin · Blog
-│   └── data/aria.db              پایگاه‌داده (در نخستین اجرا ساخته می‌شود)
-├── Client/Northwind.Client/      Blazor WebAssembly — ۳۹ صفحه + ۱۹ کامپوننت
+├── Client/Northwind.Client/      ① لایهٔ کلاینت — Blazor WebAssembly
 │   ├── Pages/Store/              فروشگاه (عمومی)
 │   ├── Pages/Auth/               ورود، ثبت‌نام، بازیابی
 │   ├── Pages/Dashboard/          پورتالِ مشتری
 │   ├── Pages/Admin/              پنلِ مدیریت
-│   ├── Shared/UI/                کامپوننت‌های رابط
+│   ├── Services/V1/              کلاینتِ تایپ‌دارِ API + مدل‌هایِ پاسخ
 │   └── wwwroot/css/tokens.css    نشانه‌های طراحی (تمِ سرمه‌ای + حالتِ تاریک)
+│
+├── Shared/Northwind.Shared/      قراردادهایِ سیم (DTO) — تنها نقطهٔ اشتراکِ کلاینت و سرور
+│
+├── Server/Northwind.Core/       ② لایهٔ هسته — منطقِ کاری و مدل‌ها
+│   ├── Services/                 سرویس‌هایِ کاری (سفارش، لایسنس، کاتالوگ، پشتیبانی…)
+│   ├── Models/                   مدل‌هایِ ورودی/خروجیِ API
+│   └── Mapping/                  نگاشتِ موجودیت → مدل
+│
+├── Server/Northwind.Api/        ③ لایهٔ API — کنترلرها
+│   ├── Controllers/              ۴ فایل، ۸۴ مسیرِ REST روی /api/v1
+│   └── Middleware/               خطاهایِ دامنه → پاسخِ یکسانِ JSON
+│
+├── Server/Northwind.Data/       ④ لایهٔ داده — پایگاه‌داده
+│   ├── Entities/ · Enums/        ۲۷ موجودیت
+│   ├── Persistence/              DbContext، نگاشت‌ها، DatabaseOptions (رشتهٔ اتصال)
+│   └── Migrations/               مهاجرت‌هایِ EF (SQL Server)
+│
+├── Server/Northwind.Server/      میزبان — فقط سیم‌کشی (API قدیمی: در حالِ حذف)
 └── Aria.sln
 ```
+
+**قاعدهٔ وابستگی تک‌جهته است:** `Client → Shared` و `Server → Api → Core → Data`.
+هیچ لایه‌ای از لایهٔ بالاتر خبر ندارد و این قاعده با `ProjectReference` اجبار شده است.
+توضیحِ کامل، الگوها و چک‌لیستِ افزودنِ قابلیت: [`Server/ARCHITECTURE.md`](Server/ARCHITECTURE.md).
 
 داده پشتِ اینترفیسِ `IStoreApi` است، بنابراین می‌توانید `HttpStoreApi`
 (پیش‌فرض) را با `MockStoreApi` یا هر پیاده‌سازیِ دیگر در

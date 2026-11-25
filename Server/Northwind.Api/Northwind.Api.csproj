@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- لایهٔ ۳: API
+       فقط کنترلرها، میان‌افزارِ خطا و سیم‌کشیِ HTTP. منطقِ کاری اینجا نیست؛
+       کنترلر حداکثر یک خط است که سرویسِ هسته را صدا می‌زند. -->
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -7,8 +10,6 @@
     <RootNamespace>Northwind.Api</RootNamespace>
   </PropertyGroup>
 
-  <!-- کنترلرها و فیلترها به فریم‌ورکِ ASP.NET Core نیاز دارند،
-       اما این پروژه خودش اجرا نمی‌شود؛ میزبان Northwind.Server است. -->
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
@@ -18,8 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Northwind.Domain\Northwind.Domain.csproj" />
-    <ProjectReference Include="..\Northwind.Infrastructure\Northwind.Infrastructure.csproj" />
+    <ProjectReference Include="..\Northwind.Core\Northwind.Core.csproj" />
   </ItemGroup>
 
 </Project>
