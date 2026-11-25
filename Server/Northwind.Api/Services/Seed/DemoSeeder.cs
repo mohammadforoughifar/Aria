@@ -112,7 +112,11 @@ public static class DemoSeeder
                         "پشتیبان‌گیریِ خودکار"
                     },
                     Requirements = new List<string> { "ویندوز ۱۰ یا جدیدتر", "رم ۸ گیگابایت", "فضایِ ۲ گیگابایت" },
-                    Gallery = new List<string>()
+                    Gallery = new List<string>(),
+
+                    // ویدیویِ معرفی: لینکِ نمونه رویِ آپارات. مدیر از پنل با لینکِ
+                    // واقعیِ خودش عوضش می‌کند؛ صفحهٔ محصول همان‌جا پخشش می‌کند.
+                    DemoVideoUrl = spec.Featured ? "https://www.aparat.com/v/nlk1rob" : null
                 };
 
                 product.Plans.Add(new Plan

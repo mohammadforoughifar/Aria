@@ -172,6 +172,60 @@ else
                 </div>
             </section>
 
+            <!-- ===== ویدیویِ معرفی ===== -->
+            <section class="card card--pad">
+                <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-2)">ویدیویِ معرفی</h2>
+                <p class="tiny muted" style="margin-bottom:var(--sp-3)">
+                    ویدیو را در آپارات بگذار و لینکش را اینجا بچسبان؛ در صفحهٔ محصول همین ویدیو پخش می‌شود.
+                    اختیاری است.
+                </p>
+
+                <label class="field">
+                    <span class="field__label">لینکِ آپارات</span>
+                    <input class="input input--ltr" style="text-align:left" @bind="draft.DemoVideoUrl"
+                           @bind:event="oninput" placeholder="https://www.aparat.com/v/nlk1rob" />
+                    <span class="field__hint">
+                        شکل‌های پذیرفته‌شده: <span class="num--lat">aparat.com/v/کد</span> ·
+                        لینکِ آمادهٔ جای‌گذاری (embed) · فایلِ <span class="num--lat">mp4</span>
+                    </span>
+                </label>
+
+                @if (!string.IsNullOrWhiteSpace(draft.DemoVideoUrl))
+                {
+                    @if (VideoProblem is not null)
+                    {
+                        <div class="tiny" style="margin-top:8px;color:var(--bad-600);background:var(--bad-50,#fdeceb);padding:8px 10px;border-radius:var(--r-md)">
+                            <Icon Name="alert" Size="13" /> @VideoProblem
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row-2" style="margin-top:10px;gap:10px;align-items:center">
+                            <div style="width:132px;height:74px;border-radius:var(--r-md);overflow:hidden;flex:none;
+                                        border:1px solid var(--line);background:linear-gradient(135deg,#111827,#374151);
+                                        display:flex;align-items:center;justify-content:center;color:#fff">
+                                <Icon Name="play" Size="20" />
+                            </div>
+                            <div class="stack-1">
+                                <span class="tiny" style="color:var(--ok-600,#0f7b3f)">
+                                    <Icon Name="check" Size="13" /> لینک شناسایی شد@(Aparat.HashOf(draft.DemoVideoUrl) is { } h ? $" (کدِ {h})" : "")
+                                </span>
+                                <a class="tiny muted" href="@draft.DemoVideoUrl" target="_blank" rel="noopener">دیدنِ ویدیو در آپارات ↗</a>
+                            </div>
+                        </div>
+                    }
+                }
+
+                <div class="grid-2" style="gap:var(--sp-4);margin-top:var(--sp-4)">
+                    <label class="field">
+                        <span class="field__label">تصویرِ شاخص (Hero)</span>
+                        <input class="input input--ltr" style="text-align:left" @bind="draft.HeroImage"
+                               placeholder="/img/products/sepidaar.png" />
+                        <span class="field__hint">نشانیِ تصویری که بالایِ صفحهٔ محصول و در کارت‌ها دیده می‌شود.</span>
+                    </label>
+                </div>
+            </section>
+
             <!-- ===== نمایش در فروشگاه: ویژه و فعال ===== -->
             <section class="card card--pad">
                 <h2 style="font-size:var(--fs-md);margin-bottom:var(--sp-4)">نمایش در فروشگاه</h2>
@@ -450,6 +504,8 @@ else
         public string Platform { get; set; } = "ویندوز ۱۰/۱۱";
         public string Version { get; set; } = "1.0.0";
         public string AccentColor { get; set; } = "#4f46e5";
+        public string? DemoVideoUrl { get; set; }
+        public string? HeroImage { get; set; }
         public int TrialDays { get; set; } = 30;
         public bool IsFeatured { get; set; }
         public bool IsActive { get; set; } = true;
@@ -461,6 +517,9 @@ else
     private static decimal RialToToman(decimal rial) => decimal.Round(rial / 10m, 0);
 
     /* ---------------------------- راهنماها ------------------------------ */
+
+    /// <summary>پیامِ خطایِ لینکِ ویدیو (null = سالم یا خالی).</summary>
+    private string? VideoProblem => Helpers.Aparat.Problem(draft.DemoVideoUrl);
 
     private static string TypeLabel(string t) => t switch
     {
@@ -527,6 +586,8 @@ else
                 TrialDays = product.TrialDays,
                 IsFeatured = product.IsFeatured,
                 IsActive = product.IsActive,
+                DemoVideoUrl = product.DemoVideoUrl,
+                HeroImage = product.HeroImage,
             };
             plans = product.Plans.ToList();
             features = product.Features.ToList();
@@ -654,6 +715,8 @@ else
                 Platform = draft.Platform,
                 Version = draft.Version,
                 AccentColor = draft.AccentColor,
+                DemoVideoUrl = string.IsNullOrWhiteSpace(draft.DemoVideoUrl) ? null : draft.DemoVideoUrl.Trim(),
+                HeroImage = string.IsNullOrWhiteSpace(draft.HeroImage) ? null : draft.HeroImage.Trim(),
                 TrialDays = draft.TrialDays,
                 IsFeatured = draft.IsFeatured,
                 IsActive = draft.IsActive,
