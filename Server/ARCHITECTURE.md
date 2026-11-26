@@ -9,54 +9,50 @@
 
 ```
         ┌──────────────────────────────────────────────────────────────┐
-        │  ① لایهٔ کلاینت — Northwind.Client  (Blazor WebAssembly)      │
-        │     صفحه‌ها، مؤلفه‌ها، وضعیتِ رابط، V1Api (HttpClient)          │
+        │  ① Northwind.Client — لایهٔ کلاینت (Blazor WebAssembly)        │
+        │     صفحه‌ها، کامپوننت‌ها، وضعیتِ رابط، V1Api، و قراردادهایِ سیم     │
+        │     (Contracts/) — تنها لایهٔ اجراشده در مرورگر                 │
         └───────────────────────────┬──────────────────────────────────┘
                                     │ HTTP/JSON  (api/v1/…)
-                                    │ فقط قراردادهایِ Northwind.Shared
         ┌───────────────────────────▼──────────────────────────────────┐
-        │  ③ لایهٔ API — Northwind.Api                                  │
-        │     کنترلرها، میان‌افزارِ خطا، سیم‌کشیِ JWT و JSON              │
+        │  ③ Northwind.Api — لایهٔ API (و نقطهٔ اجرایِ برنامه)           │
+        │     کنترلرها، میان‌افزارِ خطا، سیم‌کشیِ JWT/JSON، Program.cs      │
         └───────────────────────────┬──────────────────────────────────┘
                                     │ فراخوانیِ متد (بدونِ HTTP)
         ┌───────────────────────────▼──────────────────────────────────┐
-        │  ② لایهٔ هسته — Northwind.Core                                │
+        │  ② Northwind.Core — لایهٔ هسته                                │
         │     سرویس‌هایِ کاری، مدل‌هایِ ورودی/خروجی، نگاشت                │
         └───────────────────────────┬──────────────────────────────────┘
                                     │ DbContext (LINQ)
         ┌───────────────────────────▼──────────────────────────────────┐
-        │  ④ لایهٔ داده — Northwind.Data                                │
+        │  ④ Northwind.Data — لایهٔ داده                                │
         │     موجودیت‌ها، DbContext، نگاشت‌ها، مهاجرت‌ها، رشتهٔ اتصال      │
         └──────────────────────────────────────────────────────────────┘
 
-        Shared/Northwind.Shared: قراردادهایِ سیم (DTO) — تنها چیزی که
-        کلاینت و سرور هر دو می‌شناسند. کلاینت به هیچ لایهٔ سروری دسترسی ندارد.
+        دقیقاً چهار پروژه در Solution — نه یکی بیشتر.
 ```
 
 ## ۲) پروژه‌ها و مسئولیت‌ها
 
 | لایه | پروژه | داخلش چه هست | داخلش چه نباید باشد |
 |---|---|---|---|
-| ① کلاینت | `Client/Northwind.Client` | `Pages/**`, `Shared/**` (مؤلفه‌ها)، `Services/**` (وضعیت + `V1Api`)، `Helpers/**` | دسترسی به EF، رشتهٔ اتصال، منطقِ تجاریِ سرور |
-| ② هسته | `Server/Northwind.Core` | `Services/**` (منطقِ کاری)، `Models/**` (ViewModel)، `Mapping/**`، `DependencyInjection.AddNorthwindCore` | کنترلر، `HttpRequest`، کدِ SQL، `IServiceCollection`هایِ وب |
-| ③ API | `Server/Northwind.Api` | `Controllers/**`, `Middleware/**`, `DependencyInjection.AddNorthwindApi` | منطقِ کاری، کوئریِ EF، محاسبهٔ مبلغ |
-| ④ داده | `Server/Northwind.Data` | `Entities/**`, `Enums/**`, `Persistence/**` (DbContext + Configuration)، `Migrations/**`, `DatabaseOptions`, `DataRegistration` | سرویس، DTO، هر چیزی که «قاعدهٔ کاری» باشد |
-| قرارداد | `Shared/Northwind.Shared` | رکوردهایِ DTO و enumهایی که رویِ سیم می‌روند | منطق، EF، وابستگی به سرور |
-| میزبان | `Server/Northwind.Server` | `Program.cs` (فقط سیم‌کشی)، و API قدیمیِ در حالِ حذف (موج ۴) | کدِ تازه |
+| ① کلاینت | `Client/Northwind.Client` | `Pages/**`، `Components/**`، `Services/**` (وضعیت + `V1Api`)، `Helpers/**`، `Contracts/` (DTOهایِ سیم) | دسترسی به EF، رشتهٔ اتصال، منطقِ تجاریِ سرور |
+| ② هسته | `Server/Northwind.Core` | `Services/**` (منطقِ کاری)، `Models/**` (ViewModel)، `Mapping/**`، `AddNorthwindCore` | کنترلر، `HttpRequest`، کدِ SQL |
+| ③ API | `Server/Northwind.Api` | `Controllers/**`، `Middleware/**`، `DependencyInjection`، **`Program.cs`**، `appsettings*.json`، `data/` | منطقِ کاری، کوئریِ EF، محاسبهٔ مبلغ |
+| ④ داده | `Server/Northwind.Data` | `Entities/**`، `Enums/**`، `Persistence/**`، `Migrations/**`، `DatabaseOptions`، `AddNorthwindData` | سرویس، DTO، هر چیزی که «قاعدهٔ کاری» باشد |
 
 ## ۳) قاعدهٔ وابستگی (تک‌جهته)
 
 ```
-Client ──▶ Shared
-Server ──▶ Api ──▶ Core ──▶ Data
+Northwind.Api ──▶ Northwind.Core ──▶ Northwind.Data
+        (و Api همان میزبان است: Program.cs همین‌جاست)
 ```
 
-* هیچ فلشِ برگشتی مجاز نیست. `Data` از `Core` خبر ندارد، `Core` از `Api` خبر ندارد و
+* هیچ فلشِ برگشتی مجاز نیست: `Data` از `Core` خبر ندارد، `Core` از `Api` خبر ندارد و
   کلاینت هیچ‌کدام را نمی‌بیند.
-* این قاعده در سطحِ `ProjectReference` اجبار شده است: اگر کسی در `Core` بنویسد
+* این قاعده در سطحِ `ProjectReference` اجبار شده است؛ اگر کسی در `Core` بنویسد
   `using Northwind.Api…`، بیلد می‌شکند — همان چیزی که می‌خواهیم.
-* تنها استثنا: `Northwind.Server` (میزبان) هر دو `Api` و `Data` را می‌بیند، چون وظیفه‌اش
-  فقط سیم‌کشیِ آغازین است.
+* لایهٔ کلاینت هیچ ارجاعِ پروژه‌ای به سرور ندارد؛ فقط HTTP می‌شناسد.
 
 ## ۴) نقطه‌هایِ سیم‌کشی
 
@@ -65,7 +61,7 @@ Server ──▶ Api ──▶ Core ──▶ Data
 | `Northwind.Data/DataRegistration.cs` | `DatabaseOptions`، `NorthwindDbContext` (SQL Server یا SQLite)، ساخت/مهاجرتِ طرح | `AddNorthwindData()` · `InitializeNorthwindDatabaseAsync()` |
 | `Northwind.Core/DependencyInjection.cs` | امنیت (`ITokenService`, `IPasswordHasher`, `ICurrentUser`) و همهٔ سرویس‌هایِ کاری | `AddNorthwindCore()` |
 | `Northwind.Api/DependencyInjection.cs` | `AddNorthwindCore`، طرحِ احراز هویتِ JWT، کنترلرها، شکلِ یکسانِ خطا و اعتبارسنجی | `AddNorthwindApi()` |
-| `Northwind.Server/Program.cs` | ترتیب: `AddNorthwindData` → `AddNorthwindApi` → `InitializeNorthwindDatabaseAsync` → Seed | — |
+| `Northwind.Api/Program.cs` | ترتیب: `AddNorthwindData` → `AddNorthwindApi` → `InitializeNorthwindDatabaseAsync` → Seed | — |
 
 ## ۵) الگویِ لایه‌ها در عمل
 
@@ -110,14 +106,15 @@ public Task<PagedViewModel<OrderViewModel>> Mine([FromQuery] ListQuery query,
    بعد صفحه.
 5. **آزمون** — `python3 tools/api-smoke.py` (قرارداد) و آزمونِ Playwright همان صفحه.
 
-## ۷) وضعیت: چهار لایه، بدونِ بدهیِ قدیمی
+## ۷) وضعیت: چهار لایه، چهار پروژه، بدونِ بدهیِ قدیمی
 
-API قدیمیِ `/api/...` (۶ کنترلرِ میزبان + `AppDbContext` + `aria.db`) در **موج ۴**
-کامل حذف شد. امروز:
-
-* تنها لایهٔ API، `Northwind.Api` است و تنها پایگاه‌داده، `northwind-api.db`.
-* میزبان (`Northwind.Server`) هیچ کنترلر و هیچ کدِ کاری ندارد؛ فقط `Program.cs`.
-* `Northwind.Data` تنها جایی است که `DbContext` و رشتهٔ اتصال را می‌شناسد.
-
-`Shared/Northwind.Shared` از نظرِ مفهومی «قرارداد» است نه لایهٔ پنجم؛ عمداً جدا
-مانده چون کلاینتِ WASM نمی‌تواند به پروژه‌ای که EF دارد ارجاع بدهد.
+* **چهار پروژه**، هر کدام یک لایه: `Northwind.Client` · `Northwind.Core` ·
+  `Northwind.Api` · `Northwind.Data`.
+* **`Northwind.Api` نقطهٔ اجراست** (`Microsoft.NET.Sdk.Web`). پروژهٔ جداگانه‌ای به نامِ
+  «Server» وجود ندارد؛ `Program.cs`، `appsettings.json` و پوشهٔ `data/` داخلِ همین
+  لایه‌اند چون میزبان همان API است.
+* **قراردادهایِ سیم داخلِ کلاینت‌اند** (`Client/Northwind.Client/Contracts/`): سرور
+  هیچ‌گاه آن‌ها را نمی‌بیند — سرور `Core/Models` را برمی‌گرداند و کلاینت آن‌ها را به
+  مدلِ خودش نگاشت می‌کند. این‌طور پروژهٔ پنجم لازم نمی‌شود.
+* API قدیمیِ `/api/…` و `aria.db` در موج ۴ کامل حذف شدند؛ تنها پایگاه‌داده
+  `data/northwind-api.db` است.

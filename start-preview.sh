@@ -57,9 +57,9 @@ CLIENT_WWWROOT="$PUBLISH_DIR/wwwroot"
 # ---------- ۳. بیلد و اجرای سرور ----------
 cd "$ROOT/Aria"
 echo "▸ بیلدِ سرور…"
-dotnet build Server/Northwind.Server --nologo -v q
+dotnet build Server/Northwind.Api --nologo -v q
 
 echo "▸ اجرا روی http://0.0.0.0:$PORT  (رابط + API روی یک مبدأ)"
 export ASPNETCORE_WEBROOT="$CLIENT_WWWROOT"
-exec dotnet run --no-build --no-launch-profile --project Server/Northwind.Server \
+exec dotnet run --no-build --no-launch-profile --project Server/Northwind.Api \
   --urls "http://0.0.0.0:$PORT"

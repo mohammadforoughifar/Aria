@@ -4,7 +4,7 @@
 
 using Northwind.Client.Models;
 
-using Northwind.Shared.Contracts;
+using Northwind.Client.Contracts;
 
 namespace Northwind.Client.Services;
 

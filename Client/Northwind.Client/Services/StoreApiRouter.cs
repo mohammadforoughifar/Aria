@@ -10,7 +10,7 @@
 //   · نوشتن: استثنایِ V1ApiException با پیامِ فارسیِ خودِ سرور بالا می‌رود.
 
 using Northwind.Client.Services.V1;
-using Northwind.Shared.Contracts;
+using Northwind.Client.Contracts;
 
 namespace Northwind.Client.Services;
 

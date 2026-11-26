@@ -217,3 +217,16 @@
 
 **آزمون‌ها بعد از حذف:** api-smoke ۹۲/۹۲ · v1-funnel ۲۰/۲۰ · v1-admin ۲۰/۲۰ ·
 v1-dashboard ۲۱/۲۱ · v1-product-form ۱۷/۱۷ · v1-video ۱۲/۱۲ · verify: صفر خطا.
+
+---
+
+## ۷) جمع‌شدنِ Solution به چهار پروژه
+
+| قبل | بعد |
+|---|---|
+| `Northwind.Shared` (پروژهٔ پنجم، فقط DTO) | `Client/Northwind.Client/Contracts/` — قراردادهایِ سیم داخلِ لایهٔ کلاینت |
+| `Northwind.Server` (میزبانِ خالی) | `Northwind.Api` خودش `Microsoft.NET.Sdk.Web` است و `Program.cs` را دارد |
+| ۶ پروژه در Solution | **۴ پروژه**: Client · Core · Api · Data |
+
+`appsettings*.json` و پوشهٔ `data/` هم به `Northwind.Api` منتقل شدند؛ اسکریپت‌ها
+(`start-preview.sh`, `start-server.sh`, `اجرای-همه.bat`) به مسیرِ تازه اشاره می‌کنند.

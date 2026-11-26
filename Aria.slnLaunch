@@ -1,0 +1,24 @@
+[
+  {
+    "Name": "کلاینت + API",
+    "Projects": [
+      {
+        "Path": "Client\\Northwind.Client\\Northwind.Client.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Server\\Northwind.Api\\Northwind.Api.csproj",
+        "Action": "Start"
+      }
+    ]
+  },
+  {
+    "Name": "فقط API (با سروِ کلاینتِ منتشرشده)",
+    "Projects": [
+      {
+        "Path": "Server\\Northwind.Api\\Northwind.Api.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

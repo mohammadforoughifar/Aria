@@ -10,7 +10,7 @@ echo.
 echo  هر دو پنجره را باز بگذارید. برای توقف، در هر پنجره Ctrl+C بزنید.
 echo.
 
-start "سرورِ فروغ آریا پارسیان (5182)" cmd /k "dotnet run --project "%~dp0Server\Northwind.Server" --urls "http://localhost:5182""
+start "سرورِ فروغ آریا پارسیان (5182)" cmd /k "dotnet run --project "%~dp0Server\Northwind.Api" --urls "http://localhost:5182""
 timeout /t 6 /nobreak >nul
 start "رابطِ فروغ آریا پارسیان (5212)" cmd /k "dotnet run --project "%~dp0Client\Northwind.Client""
 

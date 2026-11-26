@@ -10,36 +10,34 @@
 ## ۱. ساختار (چهار لایه)
 
 ```
-Aria/
-├── Client/Northwind.Client/      ① لایهٔ کلاینت — Blazor WebAssembly
-│   ├── Pages/Store/              فروشگاه (عمومی)
-│   ├── Pages/Auth/               ورود، ثبت‌نام، بازیابی
-│   ├── Pages/Dashboard/          پورتالِ مشتری
-│   ├── Pages/Admin/              پنلِ مدیریت
-│   ├── Services/V1/              کلاینتِ تایپ‌دارِ API + مدل‌هایِ پاسخ
-│   └── wwwroot/css/tokens.css    نشانه‌های طراحی (تمِ سرمه‌ای + حالتِ تاریک)
+Aria/                             چهار پروژه = چهار لایه
+├── Client/Northwind.Client/      ① کلاینت — Blazor WebAssembly
+│   ├── Pages/                    فروشگاه، پورتالِ مشتری، پنلِ مدیریت
+│   ├── Components/               کامپوننت‌های رابط (Layout · Store · UI)
+│   ├── Services/                 وضعیت + کلاینتِ تایپ‌دارِ API
+│   ├── Contracts/                DTOهایِ سیم (فقط سمتِ کلاینت)
+│   └── wwwroot/css/tokens.css    نشانه‌های طراحی
 │
-├── Shared/Northwind.Shared/      قراردادهایِ سیم (DTO) — تنها نقطهٔ اشتراکِ کلاینت و سرور
-│
-├── Server/Northwind.Core/       ② لایهٔ هسته — منطقِ کاری و مدل‌ها
-│   ├── Services/                 سرویس‌هایِ کاری (سفارش، لایسنس، کاتالوگ، پشتیبانی…)
+├── Server/Northwind.Core/        ② هسته — منطقِ کاری
+│   ├── Services/                 سفارش، لایسنس، کاتالوگ، پشتیبانی…
 │   ├── Models/                   مدل‌هایِ ورودی/خروجیِ API
 │   └── Mapping/                  نگاشتِ موجودیت → مدل
 │
-├── Server/Northwind.Api/        ③ لایهٔ API — کنترلرها
-│   ├── Controllers/              ۴ فایل، ۸۴ مسیرِ REST روی /api/v1
-│   └── Middleware/               خطاهایِ دامنه → پاسخِ یکسانِ JSON
+├── Server/Northwind.Api/         ③ API — کنترلرها + نقطهٔ اجرا
+│   ├── Controllers/              ۸۴ مسیرِ REST روی /api/v1
+│   ├── Middleware/               خطاهایِ دامنه → پاسخِ یکسانِ JSON
+│   ├── Program.cs                سیم‌کشیِ لایه‌ها
+│   └── data/                     northwind-api.db
 │
-├── Server/Northwind.Data/       ④ لایهٔ داده — پایگاه‌داده
+├── Server/Northwind.Data/        ④ داده — پایگاه‌داده
 │   ├── Entities/ · Enums/        ۲۷ موجودیت
-│   ├── Persistence/              DbContext، نگاشت‌ها، DatabaseOptions (رشتهٔ اتصال)
-│   └── Migrations/               مهاجرت‌هایِ EF (SQL Server)
+│   ├── Persistence/              DbContext، نگاشت‌ها، DatabaseOptions
+│   └── Migrations/               مهاجرت‌هایِ EF
 │
-├── Server/Northwind.Server/      میزبان — فقط Program.cs و سیم‌کشی (بدونِ منطق)
 └── Aria.sln
 ```
 
-**قاعدهٔ وابستگی تک‌جهته است:** `Client → Shared` و `Server → Api → Core → Data`.
+**قاعدهٔ وابستگی تک‌جهته است:** `Api → Core → Data` و کلاینت فقط از راهِ HTTP.
 هیچ لایه‌ای از لایهٔ بالاتر خبر ندارد و این قاعده با `ProjectReference` اجبار شده است.
 توضیحِ کامل، الگوها و چک‌لیستِ افزودنِ قابلیت: [`Server/ARCHITECTURE.md`](Server/ARCHITECTURE.md).
 
@@ -66,14 +64,14 @@ bash start-preview.sh     # رابط + API روی یک مبدأ: http://0.0.0.0:
 ### روی سیستمِ خودتان
 ```bash
 # ۱) API
-cd Server/Northwind.Server
+cd Server/Northwind.Api
 dotnet run                              # http://localhost:5080 — Swagger در /swagger
 
 # ۲) کلاینت (ترمینالِ دوم)
 cd Client/Northwind.Client
 dotnet run                              # http://localhost:5081
 ```
-پایگاه‌داده در `Server/Northwind.Server/data/northwind-api.db` ساخته و پُر می‌شود.
+پایگاه‌داده در `Server/Northwind.Api/data/northwind-api.db` ساخته و پُر می‌شود.
 برای بازسازی از صفر، فایل‌های `northwind-api.db*` را پاک کنید و دوباره اجرا کنید.
 
 ---

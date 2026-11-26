@@ -4,7 +4,7 @@
 // نکته: مبالغ همیشه به «تومانِ کامل» (عددِ صحیح) هستند و تبدیل به ریال/ارقام
 // فارسی فقط در لایهٔ نمایش انجام می‌شود.
 
-namespace Northwind.Shared.Contracts;
+namespace Northwind.Client.Contracts;
 
 public enum Role { Admin, Customer }
 public enum ProductType { Module, DesktopApp, AddOn }

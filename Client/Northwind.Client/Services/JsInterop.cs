@@ -4,7 +4,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
-using Northwind.Shared.Contracts;
+using Northwind.Client.Contracts;
 
 namespace Northwind.Client.Services;
 

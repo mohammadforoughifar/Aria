@@ -10,22 +10,21 @@
 ## ۱. لایه‌ها
 
 ```
-Server/
-├── Northwind.Data/      ④ داده     ← موجودیت‌ها، DbContext، نگاشت‌ها، مهاجرت‌ها، رشتهٔ اتصال
-├── Northwind.Core/      ② هسته     ← سرویس‌هایِ کاری، مدل‌ها، نگاشت به ویو‌مدل
-├── Northwind.Api/       ③ API      ← کنترلرها، میان‌افزارِ خطا، سیم‌کشیِ JWT/JSON
-├── Northwind.Server/    میزبان     ← فقط Program.cs (بدونِ کنترلر و بدونِ منطق)
-└── Scripts/                        ← اسکریپتِ SQL تولیدشده برایِ DBA
+Client/Northwind.Client/   ① کلاینت  ← Blazor WASM + Contracts/ (DTOهایِ سیم)
+Server/Northwind.Core/     ② هسته    ← سرویس‌هایِ کاری، مدل‌ها، نگاشت
+Server/Northwind.Api/      ③ API     ← کنترلرها + Program.cs + appsettings + data/
+Server/Northwind.Data/     ④ داده    ← موجودیت‌ها، DbContext، نگاشت‌ها، مهاجرت‌ها
+Server/Scripts/                     ← اسکریپتِ SQL تولیدشده برایِ DBA
 ```
 
 جهتِ وابستگی یک‌طرفه و اجباری است:
 
 ```
-Northwind.Server ──▶ Northwind.Api ──▶ Northwind.Core ──▶ Northwind.Data
+Northwind.Api ──▶ Northwind.Core ──▶ Northwind.Data
 ```
 
-لایهٔ `Domain` هیچ بستهٔ بیرونی ندارد؛ نه EF، نه ASP.NET. همین باعث می‌شود
-موجودیت‌ها مستقل از پایگاه‌داده و فریم‌ورک بمانند.
+`Northwind.Api` خودش اجرا می‌شود (`Microsoft.NET.Sdk.Web`)؛ پروژهٔ جداگانه‌ای به نامِ
+«Server» وجود ندارد.
 
 ---
 
@@ -107,7 +106,7 @@ dotnet ef database update --project Server/Northwind.Data
 
 - **نامِ فیلدها عیناً همان قراردادِ فعلیِ کلاینت است** تا وقتی سرویس‌ها وصل
   شوند، کلاینت بدونِ تغییر کار کند.
-- **enumها همان ترتیبِ عددیِ `Northwind.Shared` را دارند** (با آزمون تأیید شد)؛
+- **enumها همان ترتیبِ عددیِ قراردادِ کلاینت (`Client/.../Contracts`) را دارند** (با آزمون تأیید شد)؛
   چون رویِ سیم به‌صورتِ عدد می‌روند.
 - **ورودی‌ها اعتبارسنجیِ اعلانی دارند** (`[Required]`، `[Range]`، `[EmailAddress]`)
   با پیامِ فارسی؛ کنترلر فقط `ModelState` را بررسی می‌کند.
@@ -245,9 +244,8 @@ dotnet ef database update --project Server/Northwind.Data
 مهاجرت: `Migrations/*_MoneyToDecimal.cs` (۲۲ `ALTER COLUMN`)؛ اسکریپتِ SQL Server:
 `Server/Scripts/002-MoneyToDecimal.sql` (idempotent، ۱۶۷ خط).
 
-> **توجه:** پشتهٔ قدیمی (`AppDbContext` + قراردادهایِ `Northwind.Shared` + BFF) هنوز
-> مبلغ‌ها را `int` نگه می‌دارد؛ چون رابطِ فعلی رویِ همان کار می‌کند و تا مهاجرتِ کلاینت
-> به `/api/v1` دست نمی‌خورد. با مهاجرتِ صفحه‌ها، آن لایه هم `decimal` می‌شود.
+> **توجه:** پشتهٔ قدیمی (که مبلغ‌ها را `int` نگه می‌داشت) در موج ۴ کامل حذف شد؛
+> امروز تنها پشتهٔ `decimal` وجود دارد.
 
 ---
 

@@ -4,7 +4,7 @@
 
 using Northwind.Client.Models;
 
-using Northwind.Shared.Contracts;
+using Northwind.Client.Contracts;
 
 namespace Northwind.Client.Services;
 
@@ -27,7 +27,7 @@ public sealed record CheckoutInput(
     string BillingName, string? BillingCompany, string BillingEmail, string BillingCountry,
     string? VatId, string? Notes,
     // فاکتورِ رسمی: خریدِ حقوقی یا حقیقی. پیش‌فرض همان رفتارِ قبلی است.
-    Northwind.Shared.Contracts.AccountType AccountType = Northwind.Shared.Contracts.AccountType.Individual,
+    Northwind.Client.Contracts.AccountType AccountType = Northwind.Client.Contracts.AccountType.Individual,
     string? EconomicCode = null, string? NationalId = null, string? CompanyName = null);
 
 public interface IStoreApi
