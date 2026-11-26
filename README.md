@@ -156,24 +156,39 @@ dotnet run                              # http://localhost:5081
 > Unable to resolve 'Microsoft.NETCore.App.Runtime.Mono.browser-wasm (= 9.0.11)' …
 > PackageSourceMapping is enabled, the following source(s) were not considered: nuget.org
 
-این خطا **از پروژه نیست، از تنظیماتِ NuGet رویِ سیستمِ شماست**: «Package Source
-Mapping» روشن است ولی برایِ این بسته الگویی به `nuget.org` نداده، بنابراین NuGet
-آن منبع را حتی نگاه هم نمی‌کند.
+این خطا **از کدِ پروژه نیست، از تنظیماتِ NuGet رویِ سیستمِ شماست**: «Package Source
+Mapping» روشن است ولی برایِ این بسته الگویی به `nuget.org` نداده، پس NuGet آن منبع
+را حتی نگاه نمی‌کند.
 
-سه راهِ رفع (به ترتیبِ سادگی):
+**راهِ اول (سریع‌ترین):** رویِ ویندوز `tools\fix-nuget.cmd` را اجرا کنید (دوبار کلیک).
+اسکریپت از تنظیماتِ NuGet شما پشتیبان می‌گیرد، نگاشتِ منبع را برمی‌دارد،
+`nuget.org` را فعال می‌کند، کش را پاک می‌کند و در آخر `restore` و `build` می‌زند:
 
-1. **همین ریپو**: فایلِ `NuGet.config` در ریشهٔ Solution هست و همه‌چیز را به
-   `nuget.org` نگاشت می‌کند. کافی است آخرین نسخهٔ پروژه را داشته باشید و
-   `obj/` و `bin/` کلاینت را پاک کنید و دوباره Restore بزنید.
-2. **تنظیماتِ ماشین**: در ویژوال استودیو →
-   `Tools › NuGet Package Manager › Package Manager Settings` →
-   `Package Sources` (مطمئن شوید `nuget.org` تیک دارد) و بعد
-   `Package Source Mapping` → اگر الگویی مثلِ `*` به `nuget.org` نیست، اضافه کنید
-   یا Mapping را کامل بردارید.
-3. **خط فرمان**: `dotnet nuget list source` و بعد
-   `dotnet nuget remove source <نامِ فیدِ خصوصی>`؛ یا فایلِ
-   `%APPDATA%\NuGet\NuGet.Config` را باز کنید و بخشِ `<packageSourceMapping>`
-   را حذف کنید.
+```bat
+tools\fix-nuget.cmd
+:: یا فقط نمایشِ کارها بدونِ تغییر:
+tools\fix-nuget.cmd -DryRun
+```
+
+**راهِ دوم (بدونِ اجرایِ چیزی):** پروژه خودش دو محافظ دارد —
+
+1. `NuGet.config` در ریشهٔ Solution: منابع را پاک می‌کند، `nuget.org` را تنها منبع
+   می‌گذارد و الگویِ `*` را به آن نگاشت می‌کند.
+2. `Directory.Build.props`: مقدارِ `RestoreConfigFile` را رویِ همان فایل می‌گذارد،
+   پس تنظیماتِ سطحِ ماشین در بازیابی **نادیده** گرفته می‌شود.
+
+کافی است `obj/` و `bin/` را پاک کنید و دوباره Restore بزنید.
+
+**راهِ سوم (دستی، اگر خواستید تنظیماتِ سیستم را درست کنید):**
+
+- ویژوال استودیو → `Tools › NuGet Package Manager › Package Manager Settings` →
+  `Package Sources` (تیکِ `nuget.org`) و `Package Source Mapping`
+  (الگویِ `*` برایِ `nuget.org` اضافه کنید یاMapping را بردارید)، یا
+- `%APPDATA%\NuGet\NuGet.Config` را باز کنید و بخشِ `<packageSourceMapping>` را حذف کنید.
 
 بعد از هر سه راه: `dotnet nuget locals http-cache --clear` و سپس
 `dotnet restore Aria.sln`.
+
+> اگر فیدِ خصوصیِ سازمانی لازم دارید، `NuGet.config` را ویرایش کنید و همان فید را
+> با الگویش اضافه کنید؛ در آن صورت خطِ `RestoreConfigFile` را از
+> `Directory.Build.props` بردارید.
