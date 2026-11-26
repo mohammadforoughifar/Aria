@@ -31,17 +31,4 @@
   </ItemGroup>
 
 
-  <!--
-    بازیابیِ بسته‌ها فقط از رویِ NuGet.config همین Solution انجام شود.
-    چرا؟ اگر رویِ سیستمِ کاربر «Package Source Mapping» روشن باشد و برایِ
-    بستهٔ زمان‌اجرایِ Blazor (Microsoft.NETCore.App.Runtime.Mono.browser-wasm)
-    الگویی نداشته باشد، خطایِ NU1100 می‌دهد. با این ویژگی، تنظیماتِ ماشین
-    نادیده گرفته می‌شود و بازیابی همیشه قابلِ تکرار است.
-    اگر روزی فیدِ خصوصیِ سازمانی لازم شد، این خط را بردار و همان فید را در
-    NuGet.config اضافه کن.
-  -->
-  <PropertyGroup>
-    <RestoreConfigFile Condition="'$(RestoreConfigFile)' == '' and Exists('$(MSBuildThisFileDirectory)NuGet.config')">$(MSBuildThisFileDirectory)NuGet.config</RestoreConfigFile>
-  </PropertyGroup>
-
 </Project>
