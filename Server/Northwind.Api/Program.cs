@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
 using Northwind.Api;
 using Northwind.Api.Middleware;
@@ -8,7 +9,39 @@ using Northwind.Core.Services.Seed;
 using Northwind.Data;
 using Northwind.Data.Persistence;
 
-var builder = WebApplication.CreateBuilder(args);
+/* ---------- سروِ فایل‌هایِ کلاینت در اجرایِ تک‌پروژه‌ای (ویندوز/ویژوال استودیو) ----------
+   وقتی API را تنها اجرا می‌کنید، پوشهٔ wwwroot کنارِ خودش خالی است و آدرسِ API
+   صفحهٔ سفید نشان می‌داد. اگر متغیرِ ASPNETCORE_WEBROOT ست نشده باشد، خروجیِ
+   بیلدِ کلاینت (bin/<Config>/net9.0/wwwroot) ریشهٔ فایل‌هایِ استاتیک می‌شود؛
+   نتیجه: http://localhost:5182 خودش سایت را نشان می‌دهد و به اجرایِ هم‌زمانِ
+   دو پروژه نیازی نیست. (ریشهٔ وب باید پیش از ساختِ builder تعیین شود، وگرنه
+   ASP.NET Core خطایِ «web root changed» می‌دهد.)                                */
+(string? WebRoot, string? FrameworkRoot) ClientStaticRoots()
+{
+    if (!string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("ASPNETCORE_WEBROOT")))
+        return (null, null);   // اسکریپت‌هایِ انتشار خودشان ریشه را می‌دهند
+
+    var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+    var config = string.IsNullOrEmpty(env) || env.Equals("Development", StringComparison.OrdinalIgnoreCase)
+        ? "Debug" : "Release";
+
+    var client = Path.GetFullPath(Path.Combine(
+        Directory.GetCurrentDirectory(), "..", "..", "Client", "Northwind.Client"));
+
+    // فایل‌هایِ خودِ سایت (index.html، css، فونت‌ها) در سورسِ کلاینت‌اند.
+    var web = Path.Combine(client, "wwwroot");
+
+    // فریم‌ورکِ بیلدشده (_framework) در خروجیِ بیلد است، نه در سورس.
+    var framework = Path.Combine(client, "bin", config, "net9.0", "wwwroot", "_framework");
+
+    return (Directory.Exists(web) ? web : null,
+            Directory.Exists(framework) ? framework : null);
+}
+
+var (clientWebRoot, clientFrameworkRoot) = ClientStaticRoots();
+var builder = clientWebRoot is null
+    ? WebApplication.CreateBuilder(args)
+    : WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, WebRootPath = clientWebRoot });
 
 /* ------------------------------- پایگاه‌داده -------------------------------
    ساختارِ چهارلایه: تنها پایگاه‌دادهٔ برنامه در لایهٔ Northwind.Data تعریف شده
@@ -68,6 +101,13 @@ builder.Services.AddSwaggerGen(o =>
 var app = builder.Build();
 app.Logger.LogInformation("ریشهٔ فایل‌های کلاینت: {Path}", builder.Environment.WebRootPath);
 
+/* اگر کاربر فقط API را اجرا کرده و کلاینت هنوز بیلد نشده باشد، به‌جایِ صفحهٔ
+   سفید، صریح در لاگ می‌گوییم چه کاری لازم است.                                  */
+if (clientFrameworkRoot is null && clientWebRoot is not null)
+    app.Logger.LogWarning(
+        "خروجیِ بیلدِ کلاینت پیدا نشد — یک بار «dotnet build Client/Northwind.Client» " +
+        "یا «start-windows.cmd» را اجرا کنید، وگرنه مرورگر فایل‌هایِ _framework را ۴۰۴ می‌گیرد.");
+
 /* ------------------ آماده‌سازیِ پایگاه‌داده + دادهٔ نمایشی ------------------ */
 await app.Services.InitializeNorthwindDatabaseAsync();
 using (var scope = app.Services.CreateScope())
@@ -89,6 +129,24 @@ app.UseMiddleware<ApiExceptionMiddleware>();
 
 app.UseCors("client");
 app.UseResponseCompression();     // باید پیش از سروِ فایل‌های ایستا باشد
+
+// فریم‌ورکِ بیلدشدهٔ کلاینت (فقط در اجرایِ تک‌پروژه‌ای؛ در حالتِ انتشار ریشهٔ
+// وب همین را دارد و این میان‌افزار لازم نیست).
+if (clientFrameworkRoot is not null)
+{
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(clientFrameworkRoot),
+        RequestPath = "/_framework",
+        // پسوندهایی مثلِ dll/pdb/dat در نقشهٔ نوعِ محتوایِ پیش‌فرض نیستند و
+        // بدونِ این دو خط ۴۰۴ می‌گیرند — همان چیزی که باعث می‌شد موتورِ
+        // بلیزر بالا نیاید («Failed to fetch … .pdb»).
+        ServeUnknownFileTypes = true,
+        DefaultContentType = "application/octet-stream",
+        OnPrepareResponse = ctx =>
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable"
+    });
+}
 app.UseDefaultFiles();
 
 /* ------------------------- حافظهٔ مرورگر -------------------------

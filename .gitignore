@@ -42,3 +42,6 @@ desktop.ini
 *-test.txt
 *-test-output.txt
 tools/*.png
+
+# ── خروجیِ start-windows.cmd ──
+.publish/

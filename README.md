@@ -53,26 +53,57 @@ Aria/                             چهار پروژه = چهار لایه
 
 ## ۲. اجرا
 
-### یک دستور (پیش‌نمایشِ زنده در این محیط ابری)
-```bash
-bash start-preview.sh     # رابط + API روی یک مبدأ: http://0.0.0.0:5210
-```
-این اسکریپت SDK را در صورت نیاز نصب می‌کند، کلاینت را publish می‌کند، سپس
-سرور را با `ASPNETCORE_WEBROOT` به همان خروجی اجرا می‌کند؛ در نتیجه رابط و API
-روی **یک پورت** هستند و هیچ مشکلِ CORS یا پروکسی پیش نمی‌آید.
+### ویندوز — یک کلیک، یک پورت (پیشنهادی)
 
-### روی سیستمِ خودتان
-```bash
-# ۱) API
-cd Server/Northwind.Api
-dotnet run                              # http://localhost:5080 — Swagger در /swagger
-
-# ۲) کلاینت (ترمینالِ دوم)
-cd Client/Northwind.Client
-dotnet run                              # http://localhost:5081
+```bat
+start-windows.cmd
 ```
+
+کلاینت را Release منتشر می‌کند و API را روی **http://localhost:5182** بالا می‌آورد؛
+مرورگر خودش باز می‌شود. فقط **یک** پروسه لازم است — نه پنجرهٔ دوم، نه CORS، نه
+تنظیمِ نشانیِ API.
+
+### خط فرمان — فقط API، بدونِ هیچ اسکریپتی
+
+```bash
+dotnet build Aria.sln                            # یک‌بار: کلاینت هم بیلد می‌شود
+dotnet run --project Server/Northwind.Api        # http://localhost:5182
+```
+
+API خودش سایت را هم سرو می‌کند: اگر `ASPNETCORE_WEBROOT` ست نشده باشد،
+`Client/Northwind.Client/wwwroot` را به‌عنوانِ ریشهٔ فایل‌هایِ استاتیک می‌گیرد و
+`_framework` را از خروجیِ بیلدِ کلاینت. پس با **یک** دستور، هم رابط و هم API
+رویِ یک نشانی بالا می‌آید. (Swagger: `/swagger`)
+
+> اگر کلاینت بیلد نشده باشد، لاگِ سرور صریح هشدار می‌دهد؛ چون لایهٔ API عمداً به
+> پروژهٔ کلاینت ارجاع نمی‌دهد (قاعدهٔ وابستگیِ تک‌جهته در `Server/ARCHITECTURE.md`).
+
+### حالتِ توسعه — کلاینت و سرور جدا
+
+```bat
+اجرای-همه.bat        :: دو پنجره: API روی ۵۱۸۲ و کلاینت روی ۵۲۱۲
+```
+
+یا دستی، در دو ترمینال:
+
+```bash
+dotnet run --project Server/Northwind.Api        # 5182
+dotnet run --project Client/Northwind.Client     # 5212
+```
+
+نشانیِ API در `Client/Northwind.Client/wwwroot/appsettings.json` تعیین می‌شود
+(پیش‌فرض `http://localhost:5182/`). اگر پورتِ سرور را عوض کردید، همان مقدار را
+هم‌اهنگ کنید.
+
 پایگاه‌داده در `Server/Northwind.Api/data/northwind-api.db` ساخته و پُر می‌شود.
 برای بازسازی از صفر، فایل‌های `northwind-api.db*` را پاک کنید و دوباره اجرا کنید.
+
+### اسکریپتهایِ تک‌پورتی (لینوکس/مک و پیش‌نمایشِ ابری)
+
+```bash
+bash start-preview.sh    # انتشارِ کلاینت + اجرا روی 0.0.0.0:5210
+bash start-server.sh     # فقط API روی 0.0.0.0:5211
+```
 
 ---
 
