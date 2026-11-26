@@ -146,3 +146,34 @@ dotnet run                              # http://localhost:5081
 3. **مهاجرت (Migrations)**: دیتابیس با `EnsureCreated` ساخته می‌شود؛ برای
    تغییراتِ بعدیِ طرح، `dotnet ef migrations add` لازم است.
 4. **محدودسازیِ نرخ** و قفل‌شدنِ حساب پس از تلاش‌های ناموفق پیاده‌سازی نشده است.
+
+---
+
+## عیب‌یابی
+
+### خطایِ NU1100 برایِ `Microsoft.NETCore.App.Runtime.Mono.browser-wasm`
+
+> Unable to resolve 'Microsoft.NETCore.App.Runtime.Mono.browser-wasm (= 9.0.11)' …
+> PackageSourceMapping is enabled, the following source(s) were not considered: nuget.org
+
+این خطا **از پروژه نیست، از تنظیماتِ NuGet رویِ سیستمِ شماست**: «Package Source
+Mapping» روشن است ولی برایِ این بسته الگویی به `nuget.org` نداده، بنابراین NuGet
+آن منبع را حتی نگاه هم نمی‌کند.
+
+سه راهِ رفع (به ترتیبِ سادگی):
+
+1. **همین ریپو**: فایلِ `NuGet.config` در ریشهٔ Solution هست و همه‌چیز را به
+   `nuget.org` نگاشت می‌کند. کافی است آخرین نسخهٔ پروژه را داشته باشید و
+   `obj/` و `bin/` کلاینت را پاک کنید و دوباره Restore بزنید.
+2. **تنظیماتِ ماشین**: در ویژوال استودیو →
+   `Tools › NuGet Package Manager › Package Manager Settings` →
+   `Package Sources` (مطمئن شوید `nuget.org` تیک دارد) و بعد
+   `Package Source Mapping` → اگر الگویی مثلِ `*` به `nuget.org` نیست، اضافه کنید
+   یا Mapping را کامل بردارید.
+3. **خط فرمان**: `dotnet nuget list source` و بعد
+   `dotnet nuget remove source <نامِ فیدِ خصوصی>`؛ یا فایلِ
+   `%APPDATA%\NuGet\NuGet.Config` را باز کنید و بخشِ `<packageSourceMapping>`
+   را حذف کنید.
+
+بعد از هر سه راه: `dotnet nuget locals http-cache --clear` و سپس
+`dotnet restore Aria.sln`.
