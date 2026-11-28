@@ -95,6 +95,9 @@ code, kbd, pre, samp, .ltr {
   border-radius: var(--r-xs);
 }
 :focus:not(:focus-visible) { outline: none; }
+/* تیترها فقط برایِ راهبریِ صفحه‌خوان فوکوس می‌گیرند؛ حلقهٔ فوکوس لازم نیست
+   (وگرنه بعد از هر جابه‌جایی، دورِ تیترِ صفحه یک کادر آبی می‌افتد). */
+h1:focus, h2:focus, h3:focus, h1:focus-visible, h2:focus-visible, h3:focus-visible { outline: none; }
 
 /* ------------------------------ Scrollbar -------------------------------
    پیش‌تر ضخامتِ نوار ۱۰px بود با حاشیهٔ شفافِ ۳px، پس دستهٔ دیداری فقط ۴px

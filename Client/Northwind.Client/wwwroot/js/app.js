@@ -44,6 +44,26 @@ window.nw = {
   },
   scrollTop: () => { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch { } },
 
+  /* اسکرولِ نرم به یک بخش */
+  scrollTo: (selector, offset) => {
+    try {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY - (offset || 80);
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    } catch (e) { }
+  },
+
+  /* اگر کاربر پایین‌تر از یک بخش باشد، نرم به بالایِ آن برمی‌گردد */
+  scrollToIfNeeded: (selector, offset) => {
+    try {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY - (offset || 80);
+      if (window.scrollY > top) window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    } catch (e) { }
+  },
+
   /* پوستهٔ پنل خودش اسکرول دارد (.dash__content)؛ مرورگر هنگامِ تغییرِ مسیر
      فقط اسکرولِ سند را صفر می‌کند، پس این یکی را باید خودمان برگردانیم. */
   scrollPanelTop: () => {

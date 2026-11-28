@@ -628,3 +628,223 @@
   user-select: none;
 }
 .money-input.is-disabled .money-input__unit { opacity: .5; }
+
+/* ============================================================
+   سازندهٔ ماژول (صفحهٔ نرم‌افزارها)
+   ستونِ راست: انتخابِ دسته (گامِ ۱) — چسبیده و کم‌اسکرول
+   ستونِ چپ: ماژول‌ها و امکاناتِ جانبی (گامِ ۲) با انیمیشنِ ورود
+   ============================================================ */
+
+.builder {
+  display: grid;
+  grid-template-columns: 324px minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+/* ---------------- ستونِ راست ---------------- */
+.builder__side {
+  position: sticky;
+  top: 84px;
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--line-soft, #e6e8ef);
+  border-radius: var(--r-xl, 18px);
+  background: var(--surface, #fff);
+  box-shadow: 0 12px 30px -26px rgba(15, 23, 42, .45);
+  max-height: calc(100dvh - 208px);   /* جا برایِ هدر و نوارِ خرید */
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.builder__side-head { display: flex; align-items: flex-start; gap: 10px; }
+.builder__side-title { font-size: var(--fs-sm, 13px); line-height: 1.6; display: block; }
+.builder__side-tip {
+  display: flex; align-items: flex-start; gap: 6px;
+  padding-top: var(--sp-2);
+  border-top: 1px dashed var(--line-soft, #e6e8ef);
+  font-size: 11px; line-height: 1.8; color: var(--text-3, #7b8496);
+}
+
+/* نشانِ شمارهٔ گام */
+.step-badge {
+  width: 26px; height: 26px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--brand-600, #4f46e5);
+  color: #fff;
+  font-size: 12px; font-weight: 800;
+  box-shadow: 0 6px 14px -8px rgba(79, 70, 229, .9);
+}
+.step-badge--sm { width: 22px; height: 22px; font-size: 11px; }
+
+/* فهرستِ دسته‌ها */
+.cat-list { display: grid; gap: 4px; }
+.cat-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-lg, 14px);
+  background: transparent;
+  text-align: right;
+  cursor: pointer;
+  transition: background .18s var(--ease, ease), border-color .18s var(--ease, ease), transform .18s var(--ease, ease);
+}
+.cat-item:hover { background: var(--surface-sunk, #f6f7fb); transform: translateX(-2px); }
+.cat-item.is-active {
+  background: var(--brand-50, #eef2ff);
+  border-color: var(--brand-200, #c7d2fe);
+}
+.cat-item__icon {
+  width: 34px; height: 34px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 11px;
+  background: var(--surface-sunk, #f6f7fb);
+  color: var(--ink-600, #475569);
+  transition: background .18s, color .18s, transform .18s;
+}
+.cat-item.is-active .cat-item__icon {
+  background: var(--brand-600, #4f46e5);
+  color: #fff;
+  transform: scale(1.04);
+}
+.cat-item__body { display: grid; gap: 2px; min-width: 0; flex: 1; }
+.cat-item__name {
+  font-size: var(--fs-sm, 13px);
+  color: var(--ink-900, #0f172a);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cat-item__meta { font-size: 11px; color: var(--text-3, #7b8496); }
+.cat-item__chev {
+  opacity: 0; transform: translateX(-4px);
+  color: var(--brand-600, #4f46e5);
+  transition: opacity .18s, transform .18s;
+}
+.cat-item.is-active .cat-item__chev { opacity: 1; transform: none; }
+
+/* ---------------- ستونِ چپ ---------------- */
+.builder__main { display: grid; gap: var(--sp-4); min-width: 0; }
+.builder__main-head { display: flex; align-items: flex-start; gap: 10px; }
+.builder__main-title { font-size: var(--fs-lg, 17px); font-weight: 800; color: var(--ink-900, #0f172a); }
+
+.mod-list { display: grid; gap: var(--sp-4); }
+
+/* انیمیشنِ ورودِ کارت‌هایِ ماژول — با تغییرِ دسته از نو اجرا می‌شود */
+.mod-card {
+  animation: modIn .46s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+@keyframes modIn {
+  from { opacity: 0; transform: translateY(16px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------------- نوارِ خریدِ چسبیده به پایین ---------------- */
+.buy-bar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;              /* بالایِ محتوا، زیرِ هدر (۴۰) و مودال (۸۰) */
+  background: color-mix(in srgb, var(--surface, #fff) 92%, transparent);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line-soft, #e6e8ef);
+  box-shadow: 0 -14px 30px -26px rgba(15, 23, 42, .5);
+  animation: barUp .32s cubic-bezier(.22, 1, .36, 1) both;
+}
+@keyframes barUp { from { transform: translateY(100%); } to { transform: none; } }
+.buy-bar__inner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-4); flex-wrap: wrap;
+  padding-block: 10px;
+}
+.buy-bar__info { display: flex; align-items: center; gap: 10px; }
+.buy-bar__total { font-size: 11px; color: var(--text-3, #7b8496); }
+.buy-bar__total b { color: var(--ink-900, #0f172a); font-size: var(--fs-sm, 13px); }
+.buy-bar__actions { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.buy-bar-spacer { height: 84px; }
+
+/* ---------------- واکنش‌گرا ---------------- */
+@media (max-width: 1080px) {
+  .builder { grid-template-columns: minmax(0, 1fr); }
+  .builder__side { position: static; max-height: none; }
+  .cat-list {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(212px, 1fr);
+    overflow-x: auto;
+    padding-bottom: 6px;
+    scroll-snap-type: x proximity;
+  }
+  .cat-item { scroll-snap-align: start; }
+  .cat-item__chev { display: none; }
+  .cat-item:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mod-card, .buy-bar { animation: none; }
+  .cat-item, .cat-item__icon, .cat-item__chev { transition: none; }
+  .cat-item:hover { transform: none; }
+}
+
+/* سرصفحهٔ فشردهٔ صفحهٔ نرم‌افزارها — تا سازندهٔ ماژول بی‌درنگ دیده شود */
+.hero--compact { padding-block: var(--sp-9) var(--sp-6); }
+.hero--compact .hero__inner { grid-template-columns: minmax(0, 1fr); gap: var(--sp-4); }
+.hero--compact .hero__visual { display: none; }
+.hero--compact .hero__copy { gap: var(--sp-3); }
+.hero--compact .hero__title { font-size: clamp(1.4rem, 1.1rem + 1vw, 2rem); max-width: 40ch; }
+.hero--compact .hero__sub { font-size: var(--fs-base, 14px); max-width: 68ch; }
+.hero--compact .hero__cta { margin-top: var(--sp-2); }
+.hero--compact .hero__stats {
+  margin-top: var(--sp-4);
+  max-width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  gap: var(--sp-3);
+}
+.hero--compact .hero__stat b { font-size: var(--fs-xl, 20px); }
+@media (max-width: 720px) {
+  .hero--compact { padding-block: var(--sp-7) var(--sp-5); }
+  .hero--compact .hero__stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* سرصفحهٔ کوتاهِ صفحهٔ نرم‌افزارها — سازنده بلافاصله زیرِ آن شروع می‌شود */
+.cat-hero {
+  position: relative;
+  padding-block: var(--sp-6) var(--sp-5);
+  background:
+    radial-gradient(700px 300px at 90% -20%, rgba(99, 102, 241, .10), transparent 60%),
+    linear-gradient(180deg, #ffffff 0%, var(--ink-50, #f6f8fc) 100%);
+  border-bottom: 1px solid var(--line-soft, #eef2f8);
+}
+.cat-hero__inner {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--sp-5); flex-wrap: wrap;
+}
+.cat-hero__copy { min-width: 0; display: grid; gap: 8px; justify-items: start; }
+.cat-hero__title {
+  font-size: clamp(1.2rem, 1rem + 0.9vw, 1.7rem);
+  font-weight: 800; line-height: 1.4; letter-spacing: -.01em;
+  max-width: 46ch; color: var(--ink-900, #0f172a);
+}
+.cat-hero__title span {
+  background: linear-gradient(100deg, var(--brand-600, #2563eb), #7c3aed);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.cat-hero__sub { font-size: var(--fs-sm, 13px); color: var(--text-2, #475569); max-width: 64ch; line-height: 1.9; }
+.cat-hero__stats {
+  display: flex; gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: rgba(255, 255, 255, .78);
+  border: 1px solid var(--line-soft, #eef2f8);
+  border-radius: var(--r-lg, 14px);
+  box-shadow: 0 10px 24px -22px rgba(15, 23, 42, .5);
+}
+.cat-hero__stats .hero__stat b { font-size: var(--fs-xl, 20px); }
+[data-theme="dark"] .cat-hero,
+:root[data-theme="dark"] .cat-hero {
+  background: linear-gradient(180deg, var(--surface, #14213d) 0%, var(--surface-sunk, #0f1830) 100%);
+}
+[data-theme="dark"] .cat-hero__stats { background: rgba(20, 33, 61, .78); }
+@media (max-width: 720px) {
+  .cat-hero { padding-block: var(--sp-5) var(--sp-4); }
+  .cat-hero__stats { width: 100%; justify-content: space-between; }
+}

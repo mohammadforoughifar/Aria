@@ -59,6 +59,23 @@ public sealed class JsInterop
         catch { return false; }
     }
 
+    /// <summary>اسکرولِ نرم به یک بخشِ صفحه (با فاصله از بالایِ دید).</summary>
+    public async Task ScrollTo(string selector, double offset)
+    {
+        try { await _js.InvokeVoidAsync("nw.scrollTo", selector, offset); }
+        catch { /* نادیده گرفتن */ }
+    }
+
+    /// <summary>
+    /// اگر کاربر پایین‌تر از یک بخش باشد، نرم به بالایِ آن برمی‌گردد (وقتی
+    /// دستهٔ دیگری انتخاب می‌شود تا نتیجه همان‌جا دیده شود).
+    /// </summary>
+    public async Task ScrollToIfNeeded(string selector, double offset)
+    {
+        try { await _js.InvokeVoidAsync("nw.scrollToIfNeeded", selector, offset); }
+        catch { /* نادیده گرفتن */ }
+    }
+
     /// <summary>وقتی صفحه اسکرول می‌خورد، یک کلاس به هدر اضافه می‌شود.</summary>
     public async Task WatchSticky(string selector, string className)
     {
