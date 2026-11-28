@@ -349,21 +349,6 @@ public sealed class MockStoreApi : IStoreApi
         return Task.FromResult(updated);
     }
 
-    public Task<LicenseDto> GenerateLicenseAsync(string userId, string productId, string? planId, int seats, int? validDays)
-    {
-        var product = _s.Products.First(p => p.Id == productId);
-        var user = _s.Users.First(u => u.Id == userId);
-        var plan = planId is null ? null : _s.FindPlan(planId);
-
-        var lic = new LicenseDto(
-            $"lic-{Guid.NewGuid().ToString("N")[..10]}", LicenseKey(), user.Id, user.FullName, user.Email,
-            product.Id, product.Name, product.Slug, plan?.Name, seats, 0, LicenseStatus.Active,
-            DateTime.UtcNow, validDays is null ? null : DateTime.UtcNow.AddDays(validDays.Value));
-
-        _s.Licenses.Add(lic);
-        return Task.FromResult(lic);
-    }
-
     /* ----------------------------- Downloads ----------------------------- */
 
     public Task<IReadOnlyList<AvailableDownloadDto>> GetAvailableDownloadsAsync()

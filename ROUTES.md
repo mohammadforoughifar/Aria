@@ -67,7 +67,7 @@
 | `/dashboard/admin/categories` | شبکهٔ دسته‌ها + ساخت/ویرایش/حذف |
 | `/dashboard/admin/customers` | جدولِ مشتریان، تغییرِ نقش، قفلِ حساب |
 | `/dashboard/admin/orders` | مدیریتِ سفارش‌ها + تغییرِ وضعیت |
-| `/dashboard/admin/licenses` | میترِ ظرفیت، تمدید/ابطال + مودالِ صدور |
+| `/dashboard/admin/licenses` | فهرستِ کلیدها (فقط‌خواندنی) + میترِ ظرفیت، تمدید/ابطال — صدورِ دستی برداشته شده؛ کلید با خرید صادر می‌شود |
 | `/dashboard/admin/discounts` | جدول + فرمِ چسبانِ کناری |
 | `/dashboard/admin/reviews` | صفِ بررسی با سگمنتِ وضعیت |
 | `/dashboard/admin/settings` | هویتِ برند، متنِ قهرمان، مالیات، حالتِ تعمیر + پیش‌نمایشِ اعلامیه |

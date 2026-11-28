@@ -166,7 +166,7 @@ dotnet ef database update --project Server/Northwind.Data
 | سفارش | `GET /orders`، `/orders/{id}`، `/invoices`، `/invoices/{id}` | کاربر |
 | سفارش | `GET /admin/orders`، `PATCH /admin/orders/{id}/status` | مدیر |
 | لایسنس | `GET /licenses`، `POST /licenses/{id}/action` | کاربر |
-| لایسنس | `GET/POST /admin/licenses` | مدیر |
+| لایسنس | `GET /admin/licenses` | مدیر (فهرست؛ صدورِ دستی برداشته شده) |
 | دریافت | `GET /downloads/available`، `POST /downloads`، `GET /downloads` | عمومی / کاربر |
 | تخفیف | `POST /discounts/validate` | عمومی |
 | تخفیف | `GET/POST/PUT/DELETE /admin/discounts` | مدیر |

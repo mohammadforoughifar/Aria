@@ -8,11 +8,13 @@
 <div class="page-head">
     <div>
         <h1 class="page-title">لایسنس‌ها</h1>
-        <p class="page-sub">@(paged is null ? "…" : Helpers.Fa.Num(paged.Meta.TotalCount) + " کلید صادرشده")</p>
+        <p class="page-sub">@(paged is null ? "…" : Helpers.Fa.Num(paged.Meta.TotalCount) + " کلید")</p>
     </div>
-    <button class="btn btn--primary btn--sm" @onclick="New">
-        <Icon Name="plus" Size="15" /> صدور لایسنس
-    </button>
+    @* صدورِ دستی برداشته شد: کلید فقط با خریدِ مشتری ساخته می‌شود.
+       این صفحه فقط برایِ دید و پشتیبانی (تمدید/ابطال) است. *@
+    <div class="chip" title="کلید پس از پرداختِ سفارش، خودکار برایِ مشتری صادر می‌شود.">
+        <Icon Name="key" Size="14" /> صدور خودکار پس از خرید
+    </div>
 </div>
 
 <div class="toolbar">
@@ -86,70 +88,12 @@
     <Pager Meta="@paged.Meta" OnPage="Go" />
 }
 
-<Modal IsOpen="@open" Title="صدور لایسنس جدید" Subtitle="کلید برای یکی از مشتریان صادر می‌شود."
-       OnClose="@(() => open = false)">
-    <ChildContent>
-        <div class="stack-4">
-            <label class="field">
-                <span class="field__label">مشتری <span class="field__req">*</span></span>
-                <select class="select" value="@userId" @onchange="OnUserPicked">
-                    <option value="">انتخاب کنید…</option>
-                    @foreach (var c in customers)
-                    {
-                        <option value="@c.Id">@c.FullName — @c.Email</option>
-                    }
-                </select>
-            </label>
-            <label class="field">
-                <span class="field__label">محصول <span class="field__req">*</span></span>
-                <select class="select" value="@productId" @onchange="OnProductPicked">
-                    <option value="">انتخاب کنید…</option>
-                    @foreach (var p in products)
-                    {
-                        <option value="@p.Id">@p.Name</option>
-                    }
-                </select>
-            </label>
-            <label class="field">
-                <span class="field__label">طرحِ قیمت</span>
-                <select class="select" @bind="planId">
-                    <option value="">بدون طرحِ مشخص</option>
-                    @foreach (var pl in plans)
-                    {
-                        <option value="@pl.Id">@pl.Name</option>
-                    }
-                </select>
-            </label>
-            <div class="grid-2" style="gap:var(--sp-4)">
-                <label class="field">
-                    <span class="field__label">تعداد صندلی</span>
-                    <input class="input input--ltr" style="text-align:left" type="number" min="1" @bind="seats" />
-                </label>
-                <label class="field">
-                    <span class="field__label">اعتبار (روز)</span>
-                    <input class="input input--ltr" style="text-align:left" type="number" min="30" @bind="days" />
-                </label>
-            </div>
-        </div>
-    </ChildContent>
-    <Footer>
-        <button class="btn btn--secondary" @onclick="() => open = false">انصراف</button>
-        <button class="btn btn--primary" @onclick="Issue">صدور</button>
-    </Footer>
-</Modal>
 
 @code {
     private Paged<LicenseDto>? paged;
-    private IReadOnlyList<CustomerDto> customers = Array.Empty<CustomerDto>();
-    private IReadOnlyList<ProductListItemDto> products = Array.Empty<ProductListItemDto>();
-    private IReadOnlyList<PlanDto> plans = Array.Empty<PlanDto>();
 
     private string search = "", status = "all";
     private int current = 1;
-
-    private bool open;
-    private string userId = "", productId = "", planId = "";
-    private int seats = 5, days = 365;
 
     private IReadOnlyList<SegItem<string>> statusTabs => new[]
     {
@@ -159,12 +103,7 @@
         new SegItem<string>("باطل", "Revoked"),
     };
 
-    protected override async Task OnInitializedAsync()
-    {
-        customers = (await Api.GetCustomersAsync(1, 100)).Items;
-        products = (await Api.GetProductsAsync(new ProductQuery { PageSize = 100, IncludeInactive = true })).Items;
-        await Load();
-    }
+    protected override async Task OnInitializedAsync() => await Load();
 
     private async Task Load()
     {
@@ -175,25 +114,6 @@
     private Task Go(int p) { current = p; return Load(); }
     private Task OnStatusChanged(string? v) { status = v ?? "all"; current = 1; return Load(); }
     private Task OnSearch(KeyboardEventArgs e) => e.Key == "Enter" ? Go(1) : Task.CompletedTask;
-
-    private void New()
-    {
-        userId = ""; productId = ""; planId = "";
-        seats = 5; days = 365;
-        plans = Array.Empty<PlanDto>();
-        open = true;
-    }
-
-    private void OnUserPicked(ChangeEventArgs e) => userId = e.Value?.ToString() ?? "";
-
-    private async Task OnProductPicked(ChangeEventArgs e)
-    {
-        productId = e.Value?.ToString() ?? "";
-        planId = "";
-        plans = productId.Length == 0
-            ? Array.Empty<PlanDto>()
-            : (await Api.GetProductByIdAsync(productId))?.Plans ?? Array.Empty<PlanDto>();
-    }
 
     private async Task Extend(LicenseDto l)
     {
@@ -213,20 +133,6 @@
     {
         await Api.LicenseActionAsync(l.Id, "activate");
         Toast.Push("لایسنس بازگردانده شد", l.LicenseKey, ToastTone.Ok);
-        await Load();
-    }
-
-    private async Task Issue()
-    {
-        if (userId.Length == 0 || productId.Length == 0)
-        {
-            Toast.Push("انتخاب ناقص است", "مشتری و محصول را انتخاب کنید.", ToastTone.Warn);
-            return;
-        }
-
-        await Api.GenerateLicenseAsync(userId, productId, planId.Length == 0 ? null : planId, seats, days);
-        open = false;
-        Toast.Push("لایسنس صادر شد", $"{Helpers.Fa.Num(seats)} صندلی · {Helpers.Fa.Num(days)} روز", ToastTone.Ok);
         await Load();
     }
 }

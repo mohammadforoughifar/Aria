@@ -124,19 +124,6 @@ public sealed record LicenseViewModel(
     Guid ProductId, string ProductName, string ProductSlug, string? PlanName,
     int Seats, int ActivationsUsed, LicenseStatus Status, DateTime IssuedAt, DateTime? ExpiresAt);
 
-/// <summary>صدورِ لایسنس از سویِ مدیر — <c>POST /api/admin/licenses</c>.</summary>
-public sealed class IssueLicenseInput
-{
-    [Required] public Guid UserId { get; set; }
-    [Required] public Guid ProductId { get; set; }
-    public Guid? PlanId { get; set; }
-
-    [Range(1, 10000)] public int Seats { get; set; } = 1;
-
-    /// <summary>مدتِ اعتبار به ماه؛ صفر یعنی همیشگی.</summary>
-    [Range(0, 120)] public int Months { get; set; } = 12;
-}
-
 /// <summary>عملیاتِ رویِ لایسنس: <c>renew</c>، <c>revoke</c>، <c>activate</c>.</summary>
 public sealed class LicenseActionInput
 {

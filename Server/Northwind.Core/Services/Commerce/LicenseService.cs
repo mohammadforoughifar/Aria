@@ -14,7 +14,6 @@ public interface ILicenseService
     Task<PagedViewModel<LicenseViewModel>> ListMineAsync(Guid userId, ListQuery query, LicenseStatus? status = null, CancellationToken ct = default);
     Task<PagedViewModel<LicenseViewModel>> AdminListAsync(ListQuery query, LicenseStatus? status, CancellationToken ct = default);
     Task<LicenseViewModel> GetAsync(Guid id, Guid userId, bool isAdmin, CancellationToken ct = default);
-    Task<LicenseViewModel> IssueAsync(IssueLicenseInput input, CancellationToken ct = default);
     Task<LicenseViewModel> ActionAsync(Guid id, LicenseActionInput input, Guid userId, bool isAdmin, CancellationToken ct = default);
     Task<int> ExpiringCountAsync(Guid? userId, int days, CancellationToken ct = default);
 }
@@ -78,36 +77,6 @@ public sealed class LicenseService : ILicenseService
         return license.ToViewModel();
     }
 
-    public async Task<LicenseViewModel> IssueAsync(IssueLicenseInput input, CancellationToken ct = default)
-    {
-        if (!await _db.Users.AnyAsync(u => u.Id == input.UserId, ct))
-            throw new NotFoundException("کاربر", input.UserId);
-
-        if (!await _db.Products.AnyAsync(p => p.Id == input.ProductId, ct))
-            throw new NotFoundException("محصول", input.ProductId);
-
-        if (input.PlanId is not null && !await _db.Plans.AnyAsync(p => p.Id == input.PlanId && p.ProductId == input.ProductId, ct))
-            throw new BadRequestException("طرح به این محصول تعلق ندارد.", "plan_mismatch");
-
-        var now = DateTime.UtcNow;
-        var license = new License
-        {
-            LicenseKey = await NextKeyAsync(ct),
-            UserId = input.UserId,
-            ProductId = input.ProductId,
-            PlanId = input.PlanId,
-            Seats = input.Seats,
-            Status = LicenseStatus.Active,
-            IssuedAt = now,
-            ExpiresAt = input.Months <= 0 ? null : now.AddMonths(input.Months)
-        };
-
-        _db.Licenses.Add(license);
-        await _db.SaveChangesAsync(ct);
-
-        return await GetAsync(license.Id, license.UserId, true, ct);
-    }
-
     public async Task<LicenseViewModel> ActionAsync(Guid id, LicenseActionInput input, Guid userId, bool isAdmin, CancellationToken ct = default)
     {
         var license = await _db.Licenses
@@ -167,15 +136,5 @@ public sealed class LicenseService : ILicenseService
 
         if (userId is not null) q = q.Where(l => l.UserId == userId);
         return await q.CountAsync(ct);
-    }
-
-    private async Task<string> NextKeyAsync(CancellationToken ct)
-    {
-        for (var attempt = 0; attempt < 20; attempt++)
-        {
-            var key = LicenseKeyGenerator.New();
-            if (!await _db.Licenses.AnyAsync(l => l.LicenseKey == key, ct)) return key;
-        }
-        return LicenseKeyGenerator.New();
     }
 }

@@ -177,14 +177,8 @@ public sealed class LicensesController : ControllerBase
     public Task<PagedViewModel<LicenseViewModel>> All([FromQuery] ListQuery query, [FromQuery] LicenseStatus? status, CancellationToken ct)
         => _licenses.AdminListAsync(query, status, ct);
 
-    [HttpPost("/api/v1/admin/licenses")]
-    [Authorize(Roles = "Admin")]
-    [ProducesResponseType<LicenseViewModel>(StatusCodes.Status201Created)]
-    public async Task<ActionResult<LicenseViewModel>> Issue([FromBody] IssueLicenseInput input, CancellationToken ct)
-    {
-        var license = await _licenses.IssueAsync(input, ct);
-        return Created($"/api/v1/licenses/{license.Id}", license);
-    }
+    /* صدورِ دستیِ لایسنس برداشته شد: کلید فقط از مسیرِ خرید (تسویه‌حساب)
+       ساخته می‌شود و مدیر از پنل کلید جدید صادر نمی‌کند.                     */
 }
 
 /* ============================== دریافت‌ها ============================== */

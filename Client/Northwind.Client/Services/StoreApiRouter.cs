@@ -375,26 +375,6 @@ public sealed class StoreApiRouter : IStoreApi
         return new Paged<LicenseDto>(result.Items.Select(ToLicense).ToList(), Meta(result.Meta));
     }
 
-    /// <summary>
-    /// صدورِ لایسنس از سویِ پشتیبانی. رابط با «روز» کار می‌کند و نسخهٔ ۱ با
-    /// «ماه»؛ تقسیم به بالا انجام می‌شود تا ۳۶۵ روز به ۱۳ ماه تبدیل نشود.
-    /// </summary>
-    public async Task<LicenseDto> GenerateLicenseAsync(string userId, string productId, string? planId, int seats, int? validDays)
-    {
-        var months = validDays is > 0 ? Math.Max(1, (int)Math.Ceiling(validDays.Value / 30d)) : 12;
-
-        var license = await _v1.SendAsync<V1License>("POST", "api/v1/admin/licenses", new
-        {
-            userId = RequireGuid(userId, "کاربر"),
-            productId = RequireGuid(productId, "محصول"),
-            planId = Guid.TryParse(planId, out var pl) ? pl : (Guid?)null,
-            seats = Math.Max(1, seats),
-            months
-        });
-
-        return ToLicense(license);
-    }
-
     /* ============================== دانلودها ============================= */
 
     public async Task<IReadOnlyList<AvailableDownloadDto>> GetAvailableDownloadsAsync()

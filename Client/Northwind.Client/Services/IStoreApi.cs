@@ -73,7 +73,6 @@ public interface IStoreApi
     /* ----------------------------- Licenses ------------------------------ */
     Task<Paged<LicenseDto>> GetLicensesAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null);
     Task<LicenseDto> LicenseActionAsync(string id, string action, int? days = null, string? machineName = null);
-    Task<LicenseDto> GenerateLicenseAsync(string userId, string productId, string? planId, int seats, int? validDays);
 
     /* ----------------------------- Downloads ----------------------------- */
     Task<IReadOnlyList<AvailableDownloadDto>> GetAvailableDownloadsAsync();
