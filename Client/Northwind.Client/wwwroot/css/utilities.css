@@ -182,6 +182,15 @@
 .site-header.is-stuck { background: var(--navy-900); box-shadow: 0 6px 24px -12px rgba(11, 31, 58, .7); }
 .site-header .burger { color: rgba(255, 255, 255, .82); }
 .site-header .burger:hover { background: rgba(255, 255, 255, .12); }
+/* کشویِ منویِ موبایل — همان زمینهٔ تیرهٔ سربرگ تا پیوندها خوانا بمانند */
+.site-header .nav-mobile {
+  border-top: 1px solid rgba(255, 255, 255, .12);
+  background: var(--navy-900);
+  padding: 10px 0 14px;
+}
+.site-header .nav-mobile .nav__link { display: block; color: rgba(255, 255, 255, .86); }
+.site-header .nav-mobile .nav__link:hover { color: #fff; background: rgba(255, 255, 255, .1); }
+.site-header .nav-mobile .nav__link.is-active { color: #fff; background: rgba(255, 255, 255, .16); }
 
 .topbar { background: var(--navy-900); border-bottom-color: rgba(255, 255, 255, .10); }
 .topbar .icon-btn { color: rgba(255, 255, 255, .8); }

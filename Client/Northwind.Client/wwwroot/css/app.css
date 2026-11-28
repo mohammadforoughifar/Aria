@@ -535,9 +535,21 @@ main { min-height: calc(100dvh - var(--header-h)); }
   .side__scrim { position: fixed; inset: 0; background: rgba(15, 23, 42, .4); z-index: calc(var(--z-drawer) - 1); backdrop-filter: blur(2px); animation: fadeIn var(--dur-2) var(--ease) both; }
   .burger { display: grid !important; }
 }
+/* سربرگ نباید بشکند و روی محتوا بیفتد — همه‌چیز در یک ردیف می‌مانَد
+   زیرِ ۱۲۸۰px منویِ دسکتاپ جای کافی ندارد؛ به کشویِ موبایل می‌رود. */
+@media (max-width: 1279px) {
+  .nav--desktop { display: none; }
+  .site-header__inner { flex-wrap: nowrap; gap: var(--sp-2); height: var(--header-h); }
+  .header-actions { gap: 4px; flex-wrap: nowrap; min-width: 0; }
+}
+@media (max-width: 720px) {
+  .header-actions > .btn { padding-inline: 10px; }
+}
+@media (max-width: 640px) {
+  .brand__name { display: none; }
+}
 @media (max-width: 720px) {
   :root { --sp-11: 40px; --sp-13: 56px; }
-  .nav--desktop { display: none; }
   .hero { padding-top: var(--sp-10); }
   .hero__stats { grid-template-columns: 1fr 1fr; }
   .site-footer__grid { grid-template-columns: 1fr; gap: var(--sp-6); }
@@ -548,6 +560,8 @@ main { min-height: calc(100dvh - var(--header-h)); }
 }
 .burger { display: none; width: 38px; height: 38px; border-radius: var(--r-md); place-items: center; color: var(--ink-600); }
 .burger:hover { background: var(--ink-100); }
+/* دکمهٔ کشویِ منو از ۱۲۷۹px پایین‌تر دیده می‌شود (بالاتر از قاعدهٔ پایه نوشته شده تا بازنویسی شود) */
+@media (max-width: 1279px) { .burger { display: grid; } }
 
 /* ═══════════════════════════════════════════════════════════════════════
    صفحهٔ «نرم‌افزارها»

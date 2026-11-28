@@ -768,14 +768,12 @@
 @media (max-width: 1080px) {
   .builder { grid-template-columns: minmax(0, 1fr); }
   .builder__side { position: static; max-height: none; }
+  /* زیرِ ۱۰۸۰px فهرستِ دسته‌ها به‌جای نوارِ افقیِ پنهان، در چند ردیف می‌نشیند */
   .cat-list {
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(212px, 1fr);
-    overflow-x: auto;
-    padding-bottom: 6px;
-    scroll-snap-type: x proximity;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 6px;
+    padding-bottom: 4px;
   }
-  .cat-item { scroll-snap-align: start; }
   .cat-item__chev { display: none; }
   .cat-item:hover { transform: none; }
 }
@@ -848,3 +846,312 @@
   .cat-hero { padding-block: var(--sp-5) var(--sp-4); }
   .cat-hero__stats { width: 100%; justify-content: space-between; }
 }
+
+/* ============================================================
+   کارتِ ماژول — طراحیِ تازه با رنگِ شاخصِ هر محصول
+   ============================================================ */
+
+.mod-card {
+  position: relative;
+  overflow: hidden;
+  padding: var(--sp-5);
+  border: 1px solid var(--line-soft, #eef2f8);
+  border-radius: var(--r-2xl, 26px);
+  background:
+    linear-gradient(180deg, #ffffff 0%, #ffffff 62%, var(--ink-25, #fbfcfe) 100%);
+  box-shadow: 0 2px 4px rgba(15, 23, 42, .04), 0 18px 40px -42px rgba(15, 23, 42, .55);
+  transition: transform .3s cubic-bezier(.22, 1, .36, 1),
+              box-shadow .3s cubic-bezier(.22, 1, .36, 1),
+              border-color .3s;
+  animation: modIn .5s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+  isolation: isolate;
+}
+
+/* نوارِ رنگیِ بالایِ کارت از رنگِ شاخصِ محصول */
+.mod-card::before {
+  content: "";
+  position: absolute; inset-inline: 0; top: 0; height: 3px;
+  background: linear-gradient(90deg,
+    var(--accent, #2563eb) 0%,
+    color-mix(in srgb, var(--accent, #2563eb) 45%, #ffffff) 100%);
+  opacity: .95;
+}
+
+/* هالهٔ نرمِ گوشهٔ کارت */
+.mod-card__glow {
+  position: absolute;
+  top: -150px; inset-inline-start: -90px;
+  width: 280px; height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    color-mix(in srgb, var(--accent, #2563eb) 26%, transparent) 0%,
+    transparent 68%);
+  opacity: .5;
+  pointer-events: none;
+  transition: opacity .3s, transform .45s cubic-bezier(.22, 1, .36, 1);
+  z-index: -1;
+}
+
+.mod-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 30%, var(--line-soft, #eef2f8));
+  box-shadow: 0 26px 48px -34px color-mix(in srgb, var(--accent, #2563eb) 60%, #0f172a),
+              0 2px 4px rgba(15, 23, 42, .04);
+}
+.mod-card:hover .mod-card__glow { opacity: .85; transform: scale(1.08); }
+
+.mod-card.is-selected {
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 48%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #2563eb) 14%, transparent),
+              0 26px 50px -36px color-mix(in srgb, var(--accent, #2563eb) 65%, #0f172a);
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--accent, #2563eb) 5%, #ffffff) 0%,
+      #ffffff 55%,
+      var(--ink-25, #fbfcfe) 100%);
+}
+.mod-card.is-selected .mod-card__glow { opacity: .95; }
+
+/* --------------------------- سرِ کارت --------------------------- */
+.mod-card__head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--sp-5); flex-wrap: wrap;
+}
+.mod-card__id { display: flex; align-items: flex-start; gap: 12px; min-width: 0; flex: 1; }
+
+.mod-card__icon {
+  width: 46px; height: 46px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 15px;
+  color: #fff;
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--accent, #2563eb) 88%, #ffffff),
+    var(--accent, #2563eb));
+  box-shadow: 0 10px 22px -12px color-mix(in srgb, var(--accent, #2563eb) 90%, #0f172a);
+  transition: transform .3s cubic-bezier(.34, 1.46, .64, 1);
+}
+.mod-card:hover .mod-card__icon { transform: rotate(-4deg) scale(1.06); }
+
+.mod-card__text { min-width: 0; }
+.mod-card__title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mod-card__name {
+  font-size: 1.05rem; font-weight: 800; letter-spacing: -.01em;
+  color: var(--ink-900, #0f172a);
+}
+.mod-card__tagline {
+  font-size: var(--fs-sm, 13px); color: var(--text-3, #64748b);
+  margin: 4px 0 8px; line-height: 1.8;
+}
+.mod-card__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 24px; padding: 0 9px;
+  border-radius: 999px;
+  background: var(--surface-sunk, #f6f7fb);
+  border: 1px solid var(--line-soft, #eef2f8);
+  color: var(--ink-600, #475569);
+  font-size: 11px; line-height: 1;
+  white-space: nowrap;
+}
+.chip--accent {
+  background: color-mix(in srgb, var(--accent, #2563eb) 12%, #ffffff);
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 30%, transparent);
+  color: color-mix(in srgb, var(--accent, #2563eb) 75%, #0f172a);
+  font-weight: 700;
+}
+
+/* --------------------------- سمتِ قیمت --------------------------- */
+.mod-card__side {
+  display: flex; align-items: stretch; gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.mod-card__price-box {
+  display: grid; gap: 2px; align-content: center;
+  padding: 10px 14px;
+  border-radius: var(--r-lg, 14px);
+  background: color-mix(in srgb, var(--accent, #2563eb) 7%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 18%, transparent);
+  min-width: 190px;
+}
+.mod-card__price-label { font-size: 10.5px; color: var(--text-3, #64748b); }
+.mod-card__price {
+  font-size: 1.15rem; font-weight: 800; line-height: 1.35;
+  color: color-mix(in srgb, var(--accent, #2563eb) 82%, #0f172a);
+  font-variant-numeric: tabular-nums;
+}
+.mod-card__price-sub { font-size: 10.5px; color: var(--text-3, #64748b); }
+
+.mod-card__cta {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-width: 148px;
+  padding: 0 16px;
+  border-radius: var(--r-lg, 14px);
+  border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 40%, transparent);
+  background: linear-gradient(145deg,
+    color-mix(in srgb, var(--accent, #2563eb) 92%, #ffffff),
+    var(--accent, #2563eb));
+  color: #fff;
+  font-size: var(--fs-sm, 13px); font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 12px 24px -16px color-mix(in srgb, var(--accent, #2563eb) 90%, #0f172a);
+  transition: transform .2s, box-shadow .2s, filter .2s;
+}
+.mod-card__cta:hover { transform: translateY(-1px); filter: brightness(1.04); }
+.mod-card__cta:active { transform: translateY(0); }
+.mod-card__cta.is-on {
+  background: color-mix(in srgb, var(--accent, #2563eb) 12%, #ffffff);
+  color: color-mix(in srgb, var(--accent, #2563eb) 85%, #0f172a);
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 45%, transparent);
+  box-shadow: none;
+}
+
+/* --------------------------- پنلِ امکانات --------------------------- */
+.mod-card__config {
+  margin-top: var(--sp-4);
+  padding: var(--sp-4);
+  border-radius: var(--r-xl, 20px);
+  background: color-mix(in srgb, var(--accent, #2563eb) 4%, var(--surface-sunk, #f6f7fb));
+  border: 1px dashed color-mix(in srgb, var(--accent, #2563eb) 26%, transparent);
+  display: grid; gap: 2px;
+  animation: cfgIn .34s cubic-bezier(.22, 1, .36, 1) both;
+}
+@keyframes cfgIn {
+  from { opacity: 0; transform: translateY(-6px) scale(.995); }
+  to { opacity: 1; transform: none; }
+}
+
+.cfg {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-4);
+  padding: 10px 4px;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent, #2563eb) 10%, transparent);
+}
+.cfg:last-of-type { border-bottom: 0; }
+.cfg--wrap { flex-wrap: wrap; }
+.cfg__label { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cfg__ico {
+  width: 32px; height: 32px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  background: #fff;
+  color: color-mix(in srgb, var(--accent, #2563eb) 80%, #0f172a);
+  border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 20%, transparent);
+}
+.cfg__label b { display: block; font-size: var(--fs-sm, 13px); color: var(--ink-900, #0f172a); }
+.cfg__label span { display: block; font-size: 11px; color: var(--text-3, #64748b); margin-top: 2px; line-height: 1.8; }
+.cfg__label span b { display: inline; color: color-mix(in srgb, var(--accent, #2563eb) 80%, #0f172a); }
+.cfg__toggles { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* شیپِ قفل‌شدهٔ دسکتاپ */
+.toggle-chip.is-locked { background: var(--ok-50, #ecfdf5); border-color: var(--ok-200, #a7f3d0); color: var(--ok-700, #15803d); font-weight: 700; cursor: default; }
+
+/* --------------------------- ریزِ قیمت --------------------------- */
+.mod-card__breakdown {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px dashed color-mix(in srgb, var(--accent, #2563eb) 22%, transparent);
+}
+.bd {
+  display: inline-flex; align-items: baseline; gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid color-mix(in srgb, var(--accent, #2563eb) 14%, transparent);
+  font-size: 11px;
+}
+.bd i { font-style: normal; color: var(--text-3, #64748b); }
+.bd b { color: var(--ink-800, #1e293b); font-weight: 700; }
+.bd--total {
+  margin-inline-start: auto;
+  background: color-mix(in srgb, var(--accent, #2563eb) 10%, #ffffff);
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 34%, transparent);
+}
+.bd--total b { color: color-mix(in srgb, var(--accent, #2563eb) 82%, #0f172a); font-size: 12px; }
+
+/* --------------------------- حالتِ تاریک --------------------------- */
+[data-theme="dark"] .mod-card { background: linear-gradient(180deg, var(--surface, #14213d), var(--surface-sunk, #0f1830)); }
+[data-theme="dark"] .mod-card.is-selected {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent, #2563eb) 16%, var(--surface, #14213d)), var(--surface-sunk, #0f1830));
+}
+[data-theme="dark"] .mod-card__price-box,
+[data-theme="dark"] .bd { background: rgba(255, 255, 255, .04); }
+[data-theme="dark"] .cfg__ico { background: rgba(255, 255, 255, .06); }
+[data-theme="dark"] .chip { background: rgba(255, 255, 255, .05); color: var(--ink-300, #cbd5e1); }
+
+/* --------------------------- موبایل --------------------------- */
+@media (max-width: 720px) {
+  .mod-card { padding: var(--sp-4); }
+  .mod-card__head { flex-direction: column; gap: var(--sp-4); }
+  .mod-card__side { width: 100%; }
+  .mod-card__price-box { flex: 1; min-width: 0; }
+  .mod-card__cta { min-width: 120px; }
+  .cfg { flex-wrap: wrap; gap: var(--sp-3); }
+  .cfg__label { flex: 1 1 100%; }
+  .cfg__toggles { width: 100%; justify-content: flex-start; }
+  .cfg__toggles .toggle-chip { height: 34px; }
+  .bd--total { margin-inline-start: 0; }
+}
+
+/* ------------------- خواناییِ کارتِ ماژول در حالتِ تاریک ------------------- */
+:root[data-theme="dark"] .mod-card__name { color: var(--ink-900, #eef2fa); }
+:root[data-theme="dark"] .mod-card__tagline { color: var(--ink-600, #a9b6d0); }
+:root[data-theme="dark"] .mod-card__price-label,
+:root[data-theme="dark"] .mod-card__price-sub { color: var(--ink-500, #7c8bab); }
+:root[data-theme="dark"] .mod-card__price { color: color-mix(in srgb, var(--accent, #2563eb) 42%, #ffffff); }
+:root[data-theme="dark"] .chip {
+  background: rgba(255, 255, 255, .06);
+  border-color: rgba(255, 255, 255, .12);
+  color: var(--ink-700, #c3cde2);
+}
+:root[data-theme="dark"] .chip--accent {
+  background: color-mix(in srgb, var(--accent, #2563eb) 26%, transparent);
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 50%, transparent);
+  color: color-mix(in srgb, var(--accent, #2563eb) 40%, #ffffff);
+}
+:root[data-theme="dark"] .mod-card__price-box {
+  background: color-mix(in srgb, var(--accent, #2563eb) 16%, transparent);
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 34%, transparent);
+}
+:root[data-theme="dark"] .mod-card__configuration,
+:root[data-theme="dark"] .mod-card__config {
+  background: color-mix(in srgb, var(--accent, #2563eb) 8%, var(--surface-sunk, #0f1830));
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 34%, transparent);
+}
+:root[data-theme="dark"] .cfg__label b { color: var(--ink-800, #dce4f2); }
+:root[data-theme="dark"] .cfg__label span { color: var(--ink-500, #7c8bab); }
+:root[data-theme="dark"] .cfg__label span b { color: color-mix(in srgb, var(--accent, #2563eb) 42%, #ffffff); }
+:root[data-theme="dark"] .cfg__ico {
+  background: rgba(255, 255, 255, .07);
+  border-color: rgba(255, 255, 255, .12);
+  color: color-mix(in srgb, var(--accent, #2563eb) 45%, #ffffff);
+}
+:root[data-theme="dark"] .bd { background: rgba(255, 255, 255, .05); border-color: rgba(255, 255, 255, .1); }
+:root[data-theme="dark"] .bd i { color: var(--ink-500, #7c8bab); }
+:root[data-theme="dark"] .bd b { color: var(--ink-800, #dce4f2); }
+:root[data-theme="dark"] .bd--total {
+  background: color-mix(in srgb, var(--accent, #2563eb) 24%, transparent);
+  border-color: color-mix(in srgb, var(--accent, #2563eb) 46%, transparent);
+}
+:root[data-theme="dark"] .bd--total b { color: color-mix(in srgb, var(--accent, #2563eb) 38%, #ffffff); }
+:root[data-theme="dark"] .mod-card__cta.is-on {
+  background: color-mix(in srgb, var(--accent, #2563eb) 24%, transparent);
+  color: color-mix(in srgb, var(--accent, #2563eb) 36%, #ffffff);
+}
+:root[data-theme="dark"] .cat-hero .hero__eyebrow {
+  background: rgba(255, 255, 255, .08);
+  border-color: rgba(255, 255, 255, .14);
+  color: var(--ink-800, #dce4f2);
+}
+:root[data-theme="dark"] .cat-hero .hero__eyebrow b {
+  background: color-mix(in srgb, var(--brand-500, #6366f1) 34%, transparent);
+  color: #dbeafe;
+}
+:root[data-theme="dark"] .cat-hero__stats { background: rgba(255, 255, 255, .05); border-color: var(--line, #22304f); }
+:root[data-theme="dark"] .builder__side { border-color: var(--line, #22304f); box-shadow: none; }
+:root[data-theme="dark"] .cat-item:hover { background: rgba(255, 255, 255, .04); }
+:root[data-theme="dark"] .cat-item.is-active { background: color-mix(in srgb, var(--brand-500, #6366f1) 22%, transparent); border-color: color-mix(in srgb, var(--brand-500, #6366f1) 40%, transparent); }
+:root[data-theme="dark"] .buy-bar { background: color-mix(in srgb, var(--surface, #14213d) 92%, transparent); border-top-color: var(--line, #22304f); }

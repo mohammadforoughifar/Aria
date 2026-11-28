@@ -150,61 +150,82 @@
                         var m = modules[mi];
                         var sel = SelectionOf(m);
                         var pricing = PricingOf(m);
-                        <div class="mod-card card card--pad @(sel is not null ? "card--selected" : "")"
-                             style="--i:@mi">
-                            <div class="between" style="gap:var(--sp-4);align-items:flex-start;flex-wrap:wrap">
-                                <div class="row-3" style="align-items:flex-start">
-                                    <button class="pick @(sel is not null ? "is-on" : "")"
-                                            @onclick="() => ToggleModule(m)" type="button"
-                                            aria-label="@(sel is not null ? "حذفِ ماژول از انتخاب" : "افزودنِ ماژول به انتخاب")">
-                                        @if (sel is not null) { <Icon Name="check" Size="14" /> }
-                                    </button>
+                        var accent = string.IsNullOrWhiteSpace(m.AccentColor) ? "#2563eb" : m.AccentColor;
 
-                                    <div>
-                                        <div class="row-2" style="gap:var(--sp-2)">
-                                            <b>@m.Name</b>
-                                            <span class="tag tag--sm">@m.Platform</span>
-                                        </div>
-                                        <p class="small muted" style="margin:4px 0 6px">@m.Tagline</p>
-                                        <div class="row-2" style="gap:var(--sp-2);flex-wrap:wrap">
-                                            <span class="flag flag--brand">قیمتِ پایه: <b class="num">@Helpers.Fa.Money(m.BasePriceToman)</b></span>
-                                            <span class="flag">دسکتاپ شامل است</span>
-                                            @if (m.PlanCount > 0)
+                        <article class="mod-card @(sel is not null ? "is-selected" : "")"
+                                 style="--i:@mi;--accent:@accent">
+                            <span class="mod-card__glow" aria-hidden="true"></span>
+
+                            <header class="mod-card__head">
+                                <div class="mod-card__id">
+                                    <span class="mod-card__icon">
+                                        <Icon Name="package" Size="20" />
+                                    </span>
+
+                                    <div class="mod-card__text">
+                                        <div class="mod-card__title-row">
+                                            <h3 class="mod-card__name">@m.Name</h3>
+                                            @if (m.IsFeatured)
                                             {
-                                                <span class="flag flag--ok">@Helpers.Fa.Num(m.PlanCount) طرحِ قیمت</span>
+                                                <span class="chip chip--accent">
+                                                    <Icon Name="sparkles" Size="12" /> پیشنهادِ آریا
+                                                </span>
                                             }
                                         </div>
+
+                                        <p class="mod-card__tagline">@m.Tagline</p>
+
+                                        <div class="mod-card__chips">
+                                            <span class="chip"><Icon Name="monitor" Size="12" /> @m.Platform</span>
+                                            <span class="chip"><Icon Name="layers" Size="12" /> @Helpers.Fa.Num(m.PlanCount) طرحِ قیمت</span>
+                                            <span class="chip"><Icon Name="users" Size="12" /> ۱ کاربر و ۱ شرکت در پایه</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div style="text-align:left;min-width:180px">
-                                    <div class="tiny muted">مبلغِ این ماژول</div>
-                                    <div class="num" style="font-weight:800;font-size:var(--fs-lg)">
-                                        @Helpers.Fa.Money(UnitPriceOf(m))
+                                <div class="mod-card__side">
+                                    <div class="mod-card__price-box">
+                                        <span class="mod-card__price-label">مبلغِ این ماژول</span>
+                                        <b class="mod-card__price num">@Helpers.Fa.Money(UnitPriceOf(m))</b>
+                                        <span class="mod-card__price-sub">
+                                            @(sel is null ? "با امکاناتِ پایه" : SummaryFor(m, sel))
+                                        </span>
                                     </div>
-                                    @if (sel is not null)
-                                    {
-                                        <div class="tiny muted" style="margin-top:2px">@SummaryFor(m, sel)</div>
-                                    }
+
+                                    <button class="mod-card__cta @(sel is not null ? "is-on" : "")"
+                                            type="button" @onclick="() => ToggleModule(m)"
+                                            aria-pressed="@(sel is not null ? "true" : "false")">
+                                        @if (sel is null)
+                                        {
+                                            <Icon Name="plus" Size="16" /> <span>افزودن به انتخاب</span>
+                                        }
+                                        else
+                                        {
+                                            <Icon Name="check" Size="16" /> <span>انتخاب شد</span>
+                                        }
+                                    </button>
                                 </div>
-                            </div>
+                            </header>
 
                             @if (sel is not null)
                             {
                                 @* ---------------- امکاناتِ جانبیِ همین ماژول ---------------- *@
-                                <div class="config" style="margin-top:var(--sp-4)">
-                                    <div class="config__row">
-                                        <div>
-                                            <b class="small">تعدادِ کاربر</b>
-                                            <div class="tiny muted">
-                                                قیمتِ هر کاربرِ اضافه:
-                                                <span class="num">@Helpers.Fa.Money(pricing.PricePerUserToman)</span>
-                                                @if (pricing.UsersIncluded > 1)
-                                                {
-                                                    <text> — @Helpers.Fa.Num(pricing.UsersIncluded) کاربر شاملِ قیمتِ پایه</text>
-                                                }
+                                <div class="mod-card__config">
+                                    <div class="cfg">
+                                        <div class="cfg__label">
+                                            <span class="cfg__ico"><Icon Name="users" Size="15" /></span>
+                                            <div>
+                                                <b>تعدادِ کاربر</b>
+                                                <span>
+                                                    هر کاربرِ اضافه <b class="num">@Helpers.Fa.Money(pricing.PricePerUserToman)</b>
+                                                    @if (pricing.UsersIncluded > 1)
+                                                    {
+                                                        <text> · @Helpers.Fa.Num(pricing.UsersIncluded) کاربر شاملِ پایه</text>
+                                                    }
+                                                </span>
                                             </div>
                                         </div>
+
                                         <div class="stepper">
                                             <button class="stepper__btn" type="button"
                                                     disabled="@(sel.Users <= MinUsersFor(m))"
@@ -216,23 +237,27 @@
                                         </div>
                                     </div>
 
-                                    <div class="config__row">
-                                        <div>
-                                            <b class="small">شرکتِ اضافه</b>
-                                            <div class="tiny muted">
-                                                @if (!pricing.AllowMultiCompany)
-                                                {
-                                                    <text>نسخهٔ چندشرکتی برایِ این دسته فعال نیست.</text>
-                                                }
-                                                else
-                                                {
-                                                    <text>
-                                                        هر شرکتِ اضافه <span class="num">@Helpers.Fa.Money(pricing.PricePerExtraCompanyToman)</span>
-                                                        — هر شرکت همان @Helpers.Fa.Num(sel.Users) کاربر را دارد
-                                                    </text>
-                                                }
+                                    <div class="cfg">
+                                        <div class="cfg__label">
+                                            <span class="cfg__ico"><Icon Name="building" Size="15" /></span>
+                                            <div>
+                                                <b>شرکتِ اضافه</b>
+                                                <span>
+                                                    @if (!pricing.AllowMultiCompany)
+                                                    {
+                                                        <text>نسخهٔ چندشرکتی برایِ این دسته فعال نیست.</text>
+                                                    }
+                                                    else
+                                                    {
+                                                        <text>
+                                                            هر شرکتِ اضافه <b class="num">@Helpers.Fa.Money(pricing.PricePerExtraCompanyToman)</b>
+                                                            · هر شرکت همان @Helpers.Fa.Num(sel.Users) کاربر را دارد
+                                                        </text>
+                                                    }
+                                                </span>
                                             </div>
                                         </div>
+
                                         <div class="stepper">
                                             <button class="stepper__btn" type="button"
                                                     disabled="@(!pricing.AllowMultiCompany || sel.ExtraCompanies <= 0)"
@@ -244,13 +269,19 @@
                                         </div>
                                     </div>
 
-                                    <div class="config__row">
-                                        <div>
-                                            <b class="small">نسخه‌ها</b>
-                                            <div class="tiny muted">دسکتاپ همیشه شامل است؛ موبایل افزونه است.</div>
+                                    <div class="cfg cfg--wrap">
+                                        <div class="cfg__label">
+                                            <span class="cfg__ico"><Icon Name="phone" Size="15" /></span>
+                                            <div>
+                                                <b>نسخه‌ها</b>
+                                                <span>دسکتاپ همیشه شامل است؛ موبایل افزونه است.</span>
+                                            </div>
                                         </div>
-                                        <div class="row-2" style="gap:var(--sp-2);flex-wrap:wrap">
-                                            <span class="flag flag--ok">دسکتاپ <Icon Name="check" Size="12" /></span>
+
+                                        <div class="cfg__toggles">
+                                            <span class="toggle-chip is-on is-locked">
+                                                <Icon Name="monitor" Size="13" /> دسکتاپ
+                                            </span>
 
                                             <button class="toggle-chip @(sel.IncludeAndroid ? "is-on" : "")"
                                                     type="button"
@@ -258,7 +289,7 @@
                                                     @onclick='() => TogglePlatform(sel, "android")'>
                                                 <Icon Name="phone" Size="13" />
                                                 اندروید
-                                                <span class="num">@Helpers.Fa.Money(pricing.PriceAndroidToman)</span>
+                                                <span class="num">+@Helpers.Fa.Money(pricing.PriceAndroidToman)</span>
                                             </button>
 
                                             <button class="toggle-chip @(sel.IncludeIos ? "is-on" : "")"
@@ -267,23 +298,24 @@
                                                     @onclick='() => TogglePlatform(sel, "ios")'>
                                                 <Icon Name="phone" Size="13" />
                                                 iOS
-                                                <span class="num">@Helpers.Fa.Money(pricing.PriceIosToman)</span>
+                                                <span class="num">+@Helpers.Fa.Money(pricing.PriceIosToman)</span>
                                             </button>
                                         </div>
                                     </div>
 
-                                    <div class="config__breakdown">
-                                        <span>پایهٔ ماژول <b class="num">@Helpers.Fa.Money(m.BasePriceToman)</b></span>
-                                        <span>کاربران <b class="num">@Helpers.Fa.Money(UsersCost(m, sel))</b></span>
-                                        <span>شرکت‌ها <b class="num">@Helpers.Fa.Money(CompaniesCost(m, sel))</b></span>
-                                        <span>موبایل <b class="num">@Helpers.Fa.Money(MobileCost(m, sel))</b></span>
+                                    <div class="mod-card__breakdown">
+                                        <span class="bd"><i>پایهٔ ماژول</i><b class="num">@Helpers.Fa.Money(m.BasePriceToman)</b></span>
+                                        <span class="bd"><i>کاربران</i><b class="num">@Helpers.Fa.Money(UsersCost(m, sel))</b></span>
+                                        <span class="bd"><i>شرکت‌ها</i><b class="num">@Helpers.Fa.Money(CompaniesCost(m, sel))</b></span>
+                                        <span class="bd"><i>موبایل</i><b class="num">@Helpers.Fa.Money(MobileCost(m, sel))</b></span>
+                                        <span class="bd bd--total"><i>جمعِ این ماژول</i><b class="num">@Helpers.Fa.Money(UnitPriceOf(m))</b></span>
                                     </div>
                                 </div>
                             }
-                        </div>
+                        </article>
                     }
-                        </div>
-                    }
+                </div>
+            }
 
                     @if (selected.Count > 0)
                     {
