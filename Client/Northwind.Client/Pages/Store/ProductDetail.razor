@@ -7,7 +7,7 @@
 
 <PageTitle>@(product?.Name ?? "محصول") — فروغ آریا پارسیان</PageTitle>
 
-@if (product is null)
+@if (product is null && !loaded)
 {
     <div class="wrap" style="padding-block:var(--sp-9)">
         <div class="grid-2-1">
@@ -24,6 +24,17 @@
                 <Skeleton Kind="card" />
             </div>
         </div>
+    </div>
+}
+else if (product is null)
+{
+    @* پاسخِ سرور «پیدا نشد» بوده (۴۰۴) — پیش‌تر این‌جا اسکلتِ بارگیری تا ابد
+       می‌ماند و کاربر فکر می‌کرد صفحه هنوز در حالِ آمدن است. *@
+    <div class="wrap" style="padding-block:var(--sp-10)">
+        <EmptyState Icon="package" Title="این محصول پیدا نشد"
+                    Text="ممکن است حذف شده باشد یا نشانیِ صفحه اشتباه باشد.">
+            <a class="btn btn--primary btn--sm" href="/catalog">بازگشت به فهرستِ محصولات</a>
+        </EmptyState>
     </div>
 }
 else
@@ -344,6 +355,9 @@ else
     [Parameter] public string Slug { get; set; } = "";
 
     private ProductDetailDto? product;
+    /// <summary>پاسخِ سرور آمده است (حتی اگر «پیدا نشد» باشد) — برایِ جدا کردنِ
+    /// حالتِ «در حالِ بارگیری» از «چنین محصولی نیست».</summary>
+    private bool loaded;
     private bool videoPlaying;
     private string? selectedPlanId;
 
@@ -357,8 +371,10 @@ else
 
     protected override async Task OnParametersSetAsync()
     {
+        loaded = false;
         product = await Api.GetProductBySlugAsync(Slug);
         selectedPlanId = product?.Plans.FirstOrDefault(p => p.IsPopular)?.Id ?? product?.Plans.FirstOrDefault()?.Id;
+        loaded = true;
     }
 
     private string TypeLabel => product?.Type switch

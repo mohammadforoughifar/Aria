@@ -26,10 +26,21 @@
     </div>
 </div>
 
-@if (product is null)
+@if (product is null && !loaded)
 {
     <div class="stack-4">
         <Skeleton Kind="card" /><Skeleton Kind="card" />
+    </div>
+}
+else if (product is null)
+{
+    @* شناسهٔ نامعتبر یا محصولِ حذف‌شده: پیش‌تر صفحه اسکلتِ بی‌پایان نشان
+       می‌داد. حالا پیامِ روشن + راهِ بازگشت. *@
+    <div class="card">
+        <EmptyState Icon="package" Title="این محصول پیدا نشد"
+                    Text="شناسهٔ محصول معتبر نیست یا حذف شده است.">
+            <a class="btn btn--primary btn--sm" href="/dashboard/admin/products">بازگشت به فهرستِ محصولات</a>
+        </EmptyState>
     </div>
 }
 else
@@ -554,6 +565,9 @@ else
 
     /* ------------------------------ بارگذاری ----------------------------- */
 
+    /// <summary>پاسخِ سرور رسیده است (حتی اگر محصولی پیدا نشود).</summary>
+    private bool loaded;
+
     protected override async Task OnInitializedAsync()
     {
         categories = await Api.GetCategoriesAsync(true);
@@ -570,7 +584,7 @@ else
         else
         {
             product = await Api.GetProductByIdAsync(Id);
-            if (product is null) return;
+            if (product is null) { loaded = true; return; }
 
             draft = new ProductEdit
             {

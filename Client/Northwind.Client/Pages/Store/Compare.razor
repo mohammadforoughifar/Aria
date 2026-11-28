@@ -125,16 +125,37 @@
         _ = Load();
     }
 
+    /// <summary>جلوگیری از حلقهٔ بارگذاری هنگامِ پاک‌کردنِ شناسه‌هایِ مرده.</summary>
+    private bool pruning;
+
     private async Task Load()
     {
         var ids = CompareState.Ids.ToList();
         items = ids.Count == 0
             ? Array.Empty<ProductDetailDto>()
             : await Api.GetProductsByIdsAsync(ids);
+
+        /* فهرستِ مقایسه در مرورگر ذخیره می‌شود؛ اگر محصولی حذف شده باشد یا
+           شناسه‌اش از پیشینهٔ دیتابیسِ قبلی مانده باشد، هر بار یک درخواستِ
+           ۴۰۴ به سرور می‌رفت. این‌جا همان شناسه‌هایِ مرده پاک می‌شوند. */
+        var alive = items.Select(i => i.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var dead = ids.Where(id => !alive.Contains(id)).ToList();
+
+        if (dead.Count > 0)
+        {
+            pruning = true;
+            foreach (var id in dead) CompareState.Remove(id);
+            pruning = false;
+        }
+
         StateHasChanged();
     }
 
-    private void OnCompareChanged() => _ = Load();
+    private void OnCompareChanged()
+    {
+        if (pruning) return;
+        _ = Load();
+    }
 
     public void Dispose() => CompareState.OnChange -= OnCompareChanged;
 
