@@ -65,6 +65,16 @@ public sealed class JsInterop
         catch { /* نادیده گرفتن */ }
     }
 
+    /// <summary>
+    /// ستونِ محتوایِ پنل را به بالا برمی‌گرداند. پوستهٔ پنل ارتفاعِ ثابت دارد
+    /// و اسکرولِ خودش را دارد، پس صفر کردنِ اسکرولِ سند کافی نیست.
+    /// </summary>
+    public async Task ScrollPanelTop()
+    {
+        try { await _js.InvokeVoidAsync("nw.scrollPanelTop"); }
+        catch { /* نادیده گرفتن */ }
+    }
+
     /* ------------------- دیاگرامِ اکوسیستم ------------------- */
 
     /// <summary>آیا کاربر ترجیحِ «کاهشِ حرکت» را فعال کرده است؟</summary>

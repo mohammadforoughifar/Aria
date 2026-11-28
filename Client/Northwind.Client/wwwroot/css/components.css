@@ -59,6 +59,7 @@
   border: 1px solid var(--line-soft);
   border-radius: var(--r-lg);
   box-shadow: var(--sh-sm);
+  min-width: 0;   /* جدولِ پهن کارت را پهن‌تر از ستونِ خودش نمی‌کند */
   transition: box-shadow var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease),
               transform var(--dur-2) var(--ease-out);
 }

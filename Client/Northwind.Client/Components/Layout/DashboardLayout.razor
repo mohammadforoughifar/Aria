@@ -1,5 +1,6 @@
 @inherits LayoutComponentBase
 @inject Services.AuthState Auth
+@inject Services.JsInterop Js
 @inject NavigationManager Nav
 @implements IDisposable
 
@@ -91,7 +92,19 @@
 
     private void RetrySection() => boundary?.Recover();
 
-    protected override void OnInitialized() => Auth.OnChange += StateHasChanged;
+    protected override void OnInitialized()
+    {
+        Auth.OnChange += StateHasChanged;
+
+        /* پوستهٔ پنل اسکرولِ درونی دارد؛ مرورگر هنگامِ تغییرِ مسیر آن را صفر
+           نمی‌کند، پس صفحهٔ تازه از بالای خودش شروع نمی‌شد. */
+        Nav.LocationChanged += OnLocationChanged;
+    }
+
+    private async void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        await Js.ScrollPanelTop();
+    }
 
     protected override void OnParametersSet()
     {
@@ -121,5 +134,9 @@
         Nav.NavigateTo("/");
     }
 
-    public void Dispose() => Auth.OnChange -= StateHasChanged;
+    public void Dispose()
+    {
+        Auth.OnChange -= StateHasChanged;
+        Nav.LocationChanged -= OnLocationChanged;
+    }
 }

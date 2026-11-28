@@ -96,17 +96,31 @@ code, kbd, pre, samp, .ltr {
 }
 :focus:not(:focus-visible) { outline: none; }
 
-/* ------------------------------ Scrollbar ------------------------------- */
-* { scrollbar-width: thin; scrollbar-color: var(--ink-300) transparent; }
-*::-webkit-scrollbar { width: 10px; height: 10px; }
-*::-webkit-scrollbar-track { background: transparent; }
+/* ------------------------------ Scrollbar -------------------------------
+   پیش‌تر ضخامتِ نوار ۱۰px بود با حاشیهٔ شفافِ ۳px، پس دستهٔ دیداری فقط ۴px
+   می‌شد و رنگش (--ink-300) تقریباً هم‌رنگِ پس‌زمینهٔ سفید. نتیجه: در پنل،
+   صفحه‌هایی که از کادرِ دید بلندتر بودند «انگار اسکرول نداشتند» — کاربر
+   دستهٔ نوار را نمی‌دید. اکنون ریل یک پله تیره‌تر از پس‌زمینه است و دسته
+   هم ضخیم‌تر و پرکنتراست‌تر؛ روی هر دو تم دیده می‌شود.                     */
+*::-webkit-scrollbar { width: 12px; height: 12px; }        /* Chrome/Edge/Safari */
+*::-webkit-scrollbar-track { background: var(--sb-track); }
 *::-webkit-scrollbar-thumb {
-  background: var(--ink-300);
-  border: 3px solid transparent;
+  background: var(--sb-thumb);
+  border: 2px solid transparent;        /* ۲px از هر طرف ⇒ دستهٔ دیداری ۸px */
   border-radius: var(--r-full);
   background-clip: content-box;
 }
-*::-webkit-scrollbar-thumb:hover { background: var(--ink-400); background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:active { background: var(--ink-500); background-clip: content-box; }
+*::-webkit-scrollbar-corner { background: transparent; }
+
+/* فایرفاکس تنها جایی است که این دو ویژگی را می‌فهمد؛ داخلِ @supports نگه
+   داشته شده چون کروم هم به‌تازگی آن‌ها را می‌شناسد و «اگر scrollbar-color
+   ست شده باشد، قواعدِ ::-webkit-scrollbar را نادیده می‌گیرد» — یعنی همین
+   دو خط، نوارِ ۱۲px بالا را در کروم بی‌اثر می‌کرد. */
+@supports (-moz-appearance: none) {
+  * { scrollbar-width: thin; scrollbar-color: var(--sb-thumb) var(--sb-track); }
+}
 
 /* ------------------------------ Utilities ------------------------------- */
 .wrap      { width: 100%; max-width: var(--wrap);    margin-inline: auto; padding-inline: var(--sp-5); }

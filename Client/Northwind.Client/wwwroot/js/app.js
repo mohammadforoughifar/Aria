@@ -30,6 +30,15 @@ window.nw = {
   },
   scrollTop: () => { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch { } },
 
+  /* پوستهٔ پنل خودش اسکرول دارد (.dash__content)؛ مرورگر هنگامِ تغییرِ مسیر
+     فقط اسکرولِ سند را صفر می‌کند، پس این یکی را باید خودمان برگردانیم. */
+  scrollPanelTop: () => {
+    try {
+      const el = document.querySelector('.dash__content');
+      if (el) el.scrollTop = 0;
+    } catch (e) { }
+  },
+
   /* هدرِ چسبان: وقتی صفحه اسکرول می‌خورد، خطِ زیر هدر ظاهر می‌شود */
   watchScroll: (selector, className) => {
     const el = document.querySelector(selector);

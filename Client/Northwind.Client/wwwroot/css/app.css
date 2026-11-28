@@ -326,11 +326,27 @@ main { min-height: calc(100dvh - var(--header-h)); }
   display: grid; gap: 4px;
 }
 
-/* ============================ Dashboard shell =========================== */
-.dash { display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); min-height: 100dvh; background: var(--bg); }
+/* ============================ Dashboard shell ===========================
+   پنل یک «پوستهٔ برنامه» است، نه یک سندِ بلند: ارتفاعِ صفحه قفل می‌شود و
+   فقط ستونِ محتوا اسکرول می‌خورد.
+
+   چرا این تغییر لازم بود؟ پیش‌تر کلِ سند اسکرول می‌خورد و نوارِ اسکرولِ
+   مرورگر در چیدمانِ راست‌به‌چپ روی لبهٔ راستِ پنجره — یعنی رویِ همان
+   نوارِ سرمه‌ایِ کنارِ صفحه — می‌نشست؛ ضمناً ریلِ نوار هم آن‌قدر کم‌رنگ
+   بود که کاربر حس می‌کرد صفحه اصلاً اسکرول ندارد. با اسکرولِ درونیِ
+   ستونِ محتوا، نوارِ اسکرول روی زمینهٔ روشنِ خودِ محتوا می‌افتد، جای
+   ثابتی دارد و در هیچ صفحه‌ای ناپدید نمی‌شود.                            */
+.dash {
+  display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  height: 100dvh; overflow: hidden; background: var(--bg);
+}
 
 .side { position: sticky; top: 0; height: 100dvh; display: flex; flex-direction: column;
-  background: var(--surface); border-left: 1px solid var(--line-soft); z-index: var(--z-sticky); }
+  background: var(--surface); border-left: 1px solid var(--line-soft); z-index: var(--z-sticky);
+  /* نوارِ کنارِ پنل در هر دو تم سرمه‌ای است؛ نوارِ اسکرولش هم روشن بماند،
+     وگرنه رویِ زمینهٔ تیره یک ریلِ شیریِ ناهمگون می‌شود. */
+  --sb-thumb: rgba(255, 255, 255, .42);
+  --sb-track: rgba(255, 255, 255, .09); }
 .side__head { height: var(--header-h); display: flex; align-items: center; gap: 10px; padding: 0 var(--sp-5); border-bottom: 1px solid var(--line-soft); }
 .side__body { flex: 1; overflow-y: auto; padding: var(--sp-4) var(--sp-3); }
 .side__group { margin-bottom: var(--sp-5); }
@@ -361,7 +377,7 @@ main { min-height: calc(100dvh - var(--header-h)); }
 .side__user-name { font-size: var(--fs-sm); font-weight: var(--fw-semi); color: var(--ink-900); }
 .side__user-mail { font-size: 10.5px; color: var(--text-4); direction: ltr; text-align: right; }
 
-.dash__main { min-width: 0; display: flex; flex-direction: column; }
+.dash__main { min-width: 0; min-height: 0; height: 100dvh; display: flex; flex-direction: column; }
 .topbar {
   position: sticky; top: 0; z-index: var(--z-header);
   height: var(--header-h); display: flex; align-items: center; gap: var(--sp-3);
@@ -378,7 +394,15 @@ main { min-height: calc(100dvh - var(--header-h)); }
 .icon-btn:hover { background: var(--ink-100); color: var(--ink-900); }
 .icon-btn__dot { position: absolute; top: 8px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: var(--bad-500); border: 2px solid var(--surface); }
 
-.dash__content { padding: var(--sp-7) var(--sp-6) var(--sp-11); }
+/* تنها ناحیهٔ اسکرولِ پنل. scrollbar-gutter جایِ نوار را همیشه رزرو
+   می‌کند تا رفت‌وآمد بینِ صفحهٔ کوتاه و بلند، محتوا را ۱۲px جابه‌جا نکند. */
+.dash__content {
+  flex: 1 1 auto; min-width: 0; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
+  padding: var(--sp-7) var(--sp-6) var(--sp-11);
+}
 
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--sp-4); margin-bottom: var(--sp-6); flex-wrap: wrap; }
 .page-title { font-size: var(--fs-2xl); font-weight: 800; letter-spacing: -.02em; }
@@ -389,6 +413,14 @@ main { min-height: calc(100dvh - var(--header-h)); }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(268px, 100%), 1fr)); gap: var(--sp-4); }
 .grid-2-1 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--sp-4); }
 .grid-1-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--sp-4); }
+
+/* فرزندانِ شبکه‌ها و ستون‌هایِ flex به‌طورِ پیش‌فرض min-width:auto دارند؛
+   یعنی یک جدولِ پهن یا نمودار می‌تواند کارت را از عرضِ صفحه بیرون بزند و
+   در موبایل اسکرولِ افقیِ ناخواسته بسازد. با صفر کردنِ این کمینه، خودِ
+   .table-scroll داخلِ کارت می‌لغزد و صفحه سالم می‌ماند. */
+.stack-5 > *, .stack-4 > *, .stack-3 > *,
+.stat-grid > *, .grid-2 > *, .grid-3 > *, .grid-2-1 > *, .grid-1-2 > *,
+.checkout-grid > *, .dash__main > * { min-width: 0; }
 
 /* ============================== Cart / checkout ========================== */
 .checkout-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(300px, .95fr); gap: var(--sp-6); align-items: start; }
