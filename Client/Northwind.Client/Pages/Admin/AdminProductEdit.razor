@@ -238,12 +238,17 @@ else
                 }
 
                 <div class="grid-2" style="gap:var(--sp-4);margin-top:var(--sp-4)">
-                    <label class="field">
+                    <div class="field">
                         <span class="field__label">تصویرِ شاخص (Hero)</span>
-                        <input class="input input--ltr" style="text-align:left" @bind="draft.HeroImage"
-                               placeholder="/img/products/sepidaar.png" />
-                        <span class="field__hint">نشانیِ تصویری که بالایِ صفحهٔ محصول و در کارت‌ها دیده می‌شود.</span>
-                    </label>
+                        <FileUploadField Value="@draft.HeroImage"
+                                         ValueChanged="@(v => draft.HeroImage = v)"
+                                         Alt="@($"تصویرِ شاخصِ {draft.Name}")"
+                                         Hint="PNG، JPG یا WEBP — حداکثر ۴ مگابایت؛ در پوشهٔ فایل‌هایِ سایت ذخیره می‌شود." />
+                        <span class="field__hint">
+                            فایل را از سیستمِ خودت انتخاب کن؛ بالایِ صفحهٔ محصول نشان داده می‌شود.
+                            نشانیِ ذخیره‌شده با <span class="num--lat">/files/…</span> شروع می‌شود.
+                        </span>
+                    </div>
                 </div>
             </section>
 

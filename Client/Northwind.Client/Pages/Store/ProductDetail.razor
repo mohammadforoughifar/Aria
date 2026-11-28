@@ -50,9 +50,20 @@ else
         <!-- ======== Header ======== -->
         <div class="card card--pad-lg" style="margin-bottom:var(--sp-5)">
             <div class="row-top" style="gap:var(--sp-5);flex-wrap:wrap">
-                <span class="prod-card__icon" style="width:64px;height:64px;border-radius:var(--r-lg);font-size:22px;background:@(product.AccentColor)1a;color:@product.AccentColor">
-                    <Icon Name="@IconOf(product.CategorySlug)" Size="28" />
-                </span>
+                @* اگر مدیر برایِ محصول تصویرِ شاخص بارگذاری کرده باشد، همان
+                   تصویر (از مسیرِ /files) جایِ آیکونِ دسته را می‌گیرد. *@
+                @if (!string.IsNullOrWhiteSpace(product.HeroImage))
+                {
+                    <img src="@product.HeroImage" alt="@product.Name" loading="lazy"
+                         style="width:96px;height:96px;border-radius:var(--r-lg);object-fit:cover;
+                                border:1px solid var(--line);flex:none;background:var(--ink-100)" />
+                }
+                else
+                {
+                    <span class="prod-card__icon" style="width:64px;height:64px;border-radius:var(--r-lg);font-size:22px;background:@(product.AccentColor)1a;color:@product.AccentColor">
+                        <Icon Name="@IconOf(product.CategorySlug)" Size="28" />
+                    </span>
+                }
 
                 <div class="grow" style="min-width:260px">
                     <div class="row-2" style="flex-wrap:wrap;margin-bottom:6px">

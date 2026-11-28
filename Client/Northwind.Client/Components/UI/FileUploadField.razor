@@ -1,0 +1,150 @@
+@* بارگذاریِ فایل با انتخاب از سیستمِ کاربر.
+   فایل به API می‌رود، در wwwroot/files ذخیره می‌شود و نشانیِ /files/<نام>
+   برمی‌گردد؛ همان نشانی در رکورد ذخیره و از همان مسیر هم نمایش داده می‌شود. *@
+@inject Services.V1.IV1Api Api
+
+<div class="upload">
+    @if (!string.IsNullOrWhiteSpace(Value))
+    {
+        <div class="upload__preview">
+            <img src="@Value" alt="@Alt" loading="lazy" />
+
+            <div class="upload__meta">
+                <span class="tiny muted upload__path" dir="ltr" title="@Value">@Value</span>
+                <div class="row-2" style="flex-wrap:wrap">
+                    <label class="btn btn--ghost btn--sm upload__pick">
+                        <Icon Name="upload" Size="14" /> @(Busy ? "در حالِ بارگذاری…" : "تغییرِ تصویر")
+                        <InputFile OnChange="OnFile" accept="@Accept" disabled="@Busy" />
+                    </label>
+                    <button class="btn btn--ghost btn--sm" type="button" @onclick="Clear" disabled="@Busy">
+                        <Icon Name="x" Size="14" /> حذف
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <label class="upload__drop @(Busy ? "is-busy" : "")">
+            <span class="upload__ico"><Icon Name="upload" Size="20" /></span>
+            <span class="upload__title">@(Busy ? "در حالِ بارگذاری…" : "انتخاب فایل از سیستم")</span>
+            <span class="upload__hint">@Hint</span>
+            <InputFile OnChange="OnFile" accept="@Accept" disabled="@Busy" />
+        </label>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Error))
+    {
+        <div class="upload__error"><Icon Name="alert" Size="14" /> @Error</div>
+    }
+
+    @if (AllowManual)
+    {
+        <button class="upload__manual" type="button" @onclick="() => manual = !manual">
+            <Icon Name="@(manual ? "chevron-up" : "chevron-down")" Size="13" />
+            @(manual ? "بستنِ ورودِ دستیِ نشانی" : "یا نشانیِ تصویر را دستی وارد کن")
+        </button>
+
+        @if (manual)
+        {
+            <input class="input input--ltr" style="text-align:left" dir="ltr"
+                   value="@Value"
+                   placeholder="/files/…"
+                   @onchange="OnManual" />
+        }
+    }
+</div>
+
+@code {
+    /// <summary>نشانیِ تصویر (خالی = تصویری انتخاب نشده).</summary>
+    [Parameter] public string? Value { get; set; }
+
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+
+    /// <summary>متنِ راهنمایِ کادرِ انتخابِ فایل.</summary>
+    [Parameter] public string Hint { get; set; } = "PNG، JPG یا WEBP — حداکثر ۴ مگابایت";
+
+    [Parameter] public string Accept { get; set; } =
+        "image/png,image/jpeg,image/webp,image/avif,image/gif";
+
+    [Parameter] public string Alt { get; set; } = "";
+
+    /// <summary>آیا ورودِ دستیِ نشانی هم ممکن باشد؟ (برایِ تصویرهایی که از قبل نشانی دارند)</summary>
+    [Parameter] public bool AllowManual { get; set; } = true;
+
+    private bool Busy;
+    private bool manual;
+    private string? Error;
+
+    private async Task OnFile(InputFileChangeEventArgs e)
+    {
+        Error = null;
+
+        // فقط یک فایل؛ و همان محدودیتِ حجمی که سرور هم دارد.
+        var file = e.File;
+        if (file is null) return;
+
+        if (file.Size > MaxBytes)
+        {
+            Error = "حجمِ فایل بیش از ۴ مگابایت است؛ تصویرِ کوچک‌تری انتخاب کن.";
+            return;
+        }
+
+        Busy = true;
+        try
+        {
+            await using var stream = file.OpenReadStream(MaxBytes);
+            var result = await Api.UploadAsync<UploadResult>(
+                "/api/v1/admin/files", stream, file.Name, file.ContentType);
+
+            if (!string.IsNullOrWhiteSpace(result?.Url))
+            {
+                Value = result.Url;
+                await ValueChanged.InvokeAsync(Value);
+            }
+            else
+            {
+                Error = "سرور نشانیِ فایل را برنگرداند؛ دوباره تلاش کن.";
+            }
+        }
+        catch (Services.V1.V1ApiException ex)
+        {
+            // پیامِ خودِ سرور، نه متنِ ساختگی
+            Error = ex.Message;
+        }
+        catch (Exception)
+        {
+            Error = "بارگذاری انجام نشد؛ ارتباط با سرور را بررسی کنید.";
+        }
+        finally
+        {
+            Busy = false;
+        }
+    }
+
+    private async Task Clear()
+    {
+        Error = null;
+        Value = null;
+        await ValueChanged.InvokeAsync(null);
+    }
+
+    private async Task OnManual(ChangeEventArgs e)
+    {
+        Error = null;
+        var text = e.Value?.ToString()?.Trim();
+        Value = string.IsNullOrWhiteSpace(text) ? null : text;
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    private const long MaxBytes = 4 * 1024 * 1024;
+
+    /// <summary>پاسخِ API برایِ فایلِ بارگذاری‌شده.</summary>
+    public sealed class UploadResult
+    {
+        public string Url { get; set; } = "";
+        public string FileName { get; set; } = "";
+        public long SizeBytes { get; set; }
+        public string ContentType { get; set; } = "";
+    }
+}

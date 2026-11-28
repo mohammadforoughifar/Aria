@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Northwind.Core;
 using Northwind.Core.Models.Common;
 using Northwind.Core.Services.Common;
+using Northwind.Api.Storage;
 using Northwind.Core.Services.Security;
 
 namespace Northwind.Api;
@@ -45,6 +46,11 @@ public static class DependencyInjection
             });
 
         services.AddAuthorization();
+
+        /* --------------------------- فایل‌هایِ بارگذاری‌شده --------------------------- */
+        // پوشهٔ wwwroot/files پشتِ همین سرویس است؛ هم کنترلرِ بارگذاری و هم
+        // میان‌افزارِ فایل‌هایِ ایستا از یک مسیر می‌خوانند.
+        services.AddSingleton<IFileStorage, FileStorage>();
 
         /* ----------------------------- کنترلرها ----------------------------- */
         services.AddControllers()

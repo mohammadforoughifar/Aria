@@ -4,6 +4,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.EntityFrameworkCore;
 using Northwind.Api;
 using Northwind.Api.Middleware;
+using Northwind.Api.Storage;
 using Northwind.Core.Services.Security;
 using Northwind.Core.Services.Seed;
 using Northwind.Data;
@@ -159,6 +160,22 @@ if (clientFrameworkRoot is not null)
             ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable"
     });
 }
+/* ------------------- سروِ فایل‌هایِ بارگذاری‌شده (/files) -------------------
+   کاربر (مدیر) تصویر را از سیستمِ خودش انتخاب می‌کند، سرور آن را در
+   wwwroot/files ذخیره می‌کند و همین میان‌افزار همان پوشه را رویِ نشانیِ
+   /files سرو می‌کند. پس فایلِ تازه بلافاصله با /files/<نام> خوانده می‌شود،
+   بدونِ نیاز به ری‌استارت. (پوشه در FileStorage ساخته می‌شود.)            */
+var filesRoot = app.Services.GetRequiredService<IFileStorage>().RootPath;
+Directory.CreateDirectory(filesRoot);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(filesRoot),
+    RequestPath = FileStorage.RequestPath,
+    // تصویرها با نامِ یکتا ذخیره می‌شوند؛ پس کشِ بلندمدت امن است.
+    OnPrepareResponse = ctx =>
+        ctx.Context.Response.Headers.CacheControl = "public, max-age=604800"
+});
+
 app.UseDefaultFiles();
 
 /* ------------------------- حافظهٔ مرورگر -------------------------

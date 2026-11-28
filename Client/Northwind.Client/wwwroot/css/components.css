@@ -1155,3 +1155,83 @@
 :root[data-theme="dark"] .cat-item:hover { background: rgba(255, 255, 255, .04); }
 :root[data-theme="dark"] .cat-item.is-active { background: color-mix(in srgb, var(--brand-500, #6366f1) 22%, transparent); border-color: color-mix(in srgb, var(--brand-500, #6366f1) 40%, transparent); }
 :root[data-theme="dark"] .buy-bar { background: color-mix(in srgb, var(--surface, #14213d) 92%, transparent); border-top-color: var(--line, #22304f); }
+
+/* ═══════════════════ بارگذاریِ فایل (انتخاب از سیستم) ═══════════════════ */
+.upload { display: grid; gap: 8px; }
+
+/* کادرِ انتخابِ فایل وقتی هنوز تصویری نیست */
+.upload__drop {
+  display: grid; justify-items: center; gap: 4px;
+  padding: 22px 16px;
+  border: 1.5px dashed color-mix(in srgb, var(--brand-500, #6366f1) 40%, var(--line, #e2e8f0));
+  border-radius: var(--r-lg, 14px);
+  background: color-mix(in srgb, var(--brand-500, #6366f1) 5%, var(--surface, #fff));
+  cursor: pointer; text-align: center;
+  transition: border-color .15s, background .15s, transform .15s;
+}
+.upload__drop:hover { border-color: var(--brand-500, #6366f1); background: color-mix(in srgb, var(--brand-500, #6366f1) 9%, var(--surface, #fff)); }
+.upload__drop.is-busy { opacity: .7; pointer-events: none; }
+.upload__ico {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--brand-500, #6366f1) 15%, transparent);
+  color: var(--brand-700, #4338ca);
+  margin-bottom: 2px;
+}
+.upload__title { font-size: var(--fs-sm, 13px); font-weight: 700; color: var(--ink-800, #1e293b); }
+.upload__hint { font-size: 11px; color: var(--text-3, #64748b); }
+
+/* ورودیِ خامِ فایل دیده نمی‌شود؛ کلِ کادر/دکمه نقشِ دکمه را بازی می‌کند */
+.upload input[type="file"] { display: none; }
+
+/* پیش‌نمایشِ تصویرِ بارگذاری‌شده */
+.upload__preview {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: var(--r-lg, 14px);
+  background: var(--surface, #fff);
+}
+.upload__preview img {
+  width: 108px; height: 72px; flex: none;
+  object-fit: cover;
+  border-radius: var(--r-md, 10px);
+  border: 1px solid var(--line-soft, #eef2f8);
+  background: var(--ink-100, #f1f5f9);
+}
+.upload__meta { display: grid; gap: 8px; min-width: 0; }
+.upload__path {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  max-width: 100%;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.upload__pick { cursor: pointer; }
+.upload__error {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--bad-700, #b91c1c);
+  background: var(--bad-50, #fef2f2);
+  border: 1px solid color-mix(in srgb, var(--bad-600, #dc2626) 30%, transparent);
+  border-radius: var(--r-md, 10px);
+  padding: 8px 10px;
+}
+.upload__manual {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: none; border: 0; padding: 0;
+  font-size: 11.5px; color: var(--text-3, #64748b); cursor: pointer;
+}
+.upload__manual:hover { color: var(--brand-700, #4338ca); }
+
+:root[data-theme="dark"] .upload__drop {
+  background: color-mix(in srgb, var(--brand-500, #6366f1) 12%, var(--surface-sunk, #0f1830));
+  border-color: color-mix(in srgb, var(--brand-400, #5b76c4) 55%, transparent);
+}
+:root[data-theme="dark"] .upload__title { color: var(--ink-800, #dce4f2); }
+:root[data-theme="dark"] .upload__ico { color: var(--brand-800, #a5b4fc); }
+:root[data-theme="dark"] .upload__preview { background: var(--surface, #14213d); }
+:root[data-theme="dark"] .upload__error { background: color-mix(in srgb, var(--bad-600, #dc2626) 18%, transparent); color: #fecaca; }
+
+@media (max-width: 720px) {
+  .upload__preview { flex-direction: column; align-items: stretch; }
+  .upload__preview img { width: 100%; height: 140px; }
+}

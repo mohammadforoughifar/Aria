@@ -39,6 +39,12 @@ public interface IV1Api
 {
     Task<T?> GetAsync<T>(string path, CancellationToken ct = default);
     Task<T> SendAsync<T>(string method, string path, object? body = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// بارگذاریِ فایل (multipart/form-data). فایل به همان API می‌رود و نشانیِ
+    /// ذخیره‌شده برمی‌گردد؛ پیامِ خطایِ سرور هم مثلِ بقیهٔ نوشتن‌ها پرتاب می‌شود.
+    /// </summary>
+    Task<T> UploadAsync<T>(string path, Stream content, string fileName, string contentType, CancellationToken ct = default);
     Task SendAsync(string method, string path, object? body = null, CancellationToken ct = default);
 
     /// <summary>کلیدِ سبد برایِ کاربرِ مهمان؛ با احرازِ هویت لازم نیست.</summary>
@@ -170,6 +176,28 @@ public sealed class V1Api : IV1Api
         using var res = await SendAsync(Build(new HttpMethod(method), path, body), ct);
         await EnsureOkAsync(res, path, ct);
         _health.ReportSuccess();
+    }
+
+    /* ------------------------------ بارگذاری ----------------------------- */
+
+    public async Task<T> UploadAsync<T>(string path, Stream content, string fileName, string contentType, CancellationToken ct = default)
+    {
+        // بدنهٔ multipart نباید مثلِ بقیهٔ فراخوانی‌ها JSON بسته‌بندی شود، پس
+        // درخواست را دستی می‌سازیم و همان مسیرِ احرازِ هویت را به کار می‌بریم.
+        using var form = new MultipartFormDataContent();
+        var part = new StreamContent(content);
+        part.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+            string.IsNullOrWhiteSpace(contentType) ? "application/octet-stream" : contentType);
+        form.Add(part, "file", fileName);
+
+        using var req = new HttpRequestMessage(HttpMethod.Post, path.TrimStart('/')) { Content = form };
+        using var res = await SendAsync(req, ct);
+        await EnsureOkAsync(res, path, ct);
+
+        if (res.Content.Headers.ContentLength == 0) return default!;
+        var value = await res.Content.ReadFromJsonAsync<T>(ApiJson.Options, ct);
+        _health.ReportSuccess();
+        return value!;
     }
 
     /// <summary>پاسخِ ناموفق را به استثنایی با پیامِ فارسیِ سرور تبدیل می‌کند.</summary>
