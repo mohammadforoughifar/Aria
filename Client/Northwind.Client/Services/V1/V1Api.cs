@@ -60,6 +60,12 @@ public interface IV1Api
     int LastStatus { get; }
 
     /// <summary>
+    /// نشست دیگر معتبر نیست (سرور ۴۰۱ داد یا گفت کاربر پیدا نشد). مشترکان
+    /// باید کاربر را بیرون کنند و به صفحهٔ ورود ببرند.
+    /// </summary>
+    event Action? SessionExpired;
+
+    /// <summary>
     /// اعلامِ اینکه بازیابیِ نشست تمام شد. تا این لحظه هیچ درخواستی بیرون نمی‌رود،
     /// چون ممکن است توکن هنوز از localStorage خوانده نشده باشد.
     /// </summary>
@@ -83,6 +89,8 @@ public sealed class V1Api : IV1Api
 
     public string SessionKey { get; set; } = "demo";
     public string? AccessToken { get; set; }
+
+    public event Action? SessionExpired;
 
     public int LastStatus { get; private set; }
 
@@ -242,7 +250,17 @@ public sealed class V1Api : IV1Api
     private void ReportHttp(HttpResponseMessage res, V1Error? error, string path)
     {
         var status = (int)res.StatusCode;
-        if (status == 401 && string.IsNullOrWhiteSpace(AccessToken)) return;
+
+        // توکن داشتیم و سرور گفت «شناسنامه‌ات معتبر نیست» → نشست مرده است.
+        // نه بنرِ خطا، نه تلاشِ دوباره: فقط خروج و بازگشت به صفحهٔ ورود.
+        if (status == 401 && !string.IsNullOrWhiteSpace(AccessToken))
+        {
+            AccessToken = null;
+            SessionExpired?.Invoke();
+            return;
+        }
+
+        if (status == 401) return;
 
         _errors.ReportHttp(status, error?.Code, error?.Message,
             error?.TraceId ?? TraceIdHeader(res), path);

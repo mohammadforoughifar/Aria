@@ -48,7 +48,10 @@ public sealed class ToastService
 ///
 /// چرا عوض شد؟ پیش‌تر کاربر با هدرِ <c>X-User-Id</c> به پشتهٔ قدیمی معرفی می‌شد
 /// و هیچ توکنی وجود نداشت. نسخهٔ ۱ با JWT کار می‌کند، پس:
-///   · توکن پس از ورود/ثبت‌نام در localStorage ذخیره می‌شود؛
+///   · توکن پس از ورود/ثبت‌نام در **sessionStorage** ذخیره می‌شود (نه
+///     localStorage): با بستنِ مرورگر/تب پاک می‌شود و کاربر برایِ ورود به
+///     پنل باید دوباره لاگین کند؛ ولی تازه‌سازیِ همین صفحه نشست را نمی‌شکند؛
+///   · اگر سرور ۴۰۱ بدهد یا بگوید کاربر پیدا نشد، نشست همان‌جا پاک می‌شود؛
 ///   · در همان لحظه رویِ <see cref="V1.IV1Api"/> ست می‌شود تا همهٔ درخواست‌هایِ
 ///     بعدی خودکار با «Bearer» بروند؛
 ///   · با باز شدنِ دوبارهٔ برنامه، توکن بازیابی و با <c>GET /account/me</c> بررسی
@@ -88,18 +91,34 @@ public sealed class AuthState
     {
         _api = api;
         _js = js;
+
+        // سرور هر وقت نشست را نامعتبر دید (۴۰۱ / کاربرِ ناموجود) خبر می‌دهد؛
+        // اینجا فقط پاک‌سازی می‌کنیم — چیدمانِ داشبورد خودش به /login می‌برد.
+        _api.SessionExpired += OnSessionExpired;
+    }
+
+    private void OnSessionExpired()
+    {
+        User = null;
+        _api.AccessToken = null;
+        LastError = null;
+        _ = ClearTokenAsync();          // حافظهٔ مرورگر هم پاک شود
+        OnChange?.Invoke();
     }
 
     public async Task InitializeAsync()
     {
-        // نشستِ پشتهٔ قدیمی دیگر معتبر نیست.
+        // نشستِ پشتهٔ قدیمی و توکن‌هایِ localStorage دیگر معتبر نیستند؛
+        // از این نسخه، نشست فقط در sessionStorage می‌مانَد تا با بستنِ سایت
+        // پاک شود و کاربر دوباره لاگین کند.
         try
         {
             if (!string.IsNullOrWhiteSpace(await _js.Get(LegacyKey))) await _js.Remove(LegacyKey);
+            if (!string.IsNullOrWhiteSpace(await _js.Get(TokenKey))) await _js.Remove(TokenKey);
         }
         catch { /* localStorage در دسترس نیست — بی‌اهمیت */ }
 
-        var token = await SafeGet(TokenKey);
+        var token = await SafeSessionGet(TokenKey);
         if (!string.IsNullOrWhiteSpace(token))
         {
             _api.AccessToken = token;
@@ -186,19 +205,21 @@ public sealed class AuthState
     {
         _api.AccessToken = result.Token;
         User = ToDto(result.User);
-        try { await _js.Set(TokenKey, result.Token); } catch { /* بی‌اهمیت */ }
+        try { await _js.SessionSet(TokenKey, result.Token); } catch { /* بی‌اهمیت */ }
         OnChange?.Invoke();
     }
 
     private async Task ClearTokenAsync()
     {
         _api.AccessToken = null;
+        try { await _js.SessionRemove(TokenKey); } catch { /* بی‌اهمیت */ }
+        // اگر نسخهٔ قدیمی توکن را در localStorage جا گذاشته باشد، آن هم می‌رود.
         try { await _js.Remove(TokenKey); } catch { /* بی‌اهمیت */ }
     }
 
-    private async Task<string?> SafeGet(string key)
+    private async Task<string?> SafeSessionGet(string key)
     {
-        try { return await _js.Get(key); } catch { return null; }
+        try { return await _js.SessionGet(key); } catch { return null; }
     }
 
     private static UserDto ToDto(V1.V1User u) => new(

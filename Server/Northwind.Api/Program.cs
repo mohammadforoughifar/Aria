@@ -197,6 +197,12 @@ app.UseStaticFiles(new StaticFileOptions
     }
 });
 app.UseAuthentication();
+
+/* نگهبانِ نشست — کاربرِ توکن باید در پایگاه‌داده باشد. اگر نباشد (مثلاً
+   پایگاه‌داده بازنشانی شده و توکنِ کهنه در مرورگر مانده)، پاسخ ۴۰۱ با کدِ
+   session_expired می‌رود، نه استثنایِ «کاربر پیدا نشد». */
+app.UseMiddleware<SessionGuardMiddleware>();
+
 app.UseAuthorization();
 
 app.MapControllers();

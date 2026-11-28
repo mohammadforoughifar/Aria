@@ -32,6 +32,26 @@ public sealed class JsInterop
         catch { /* نادیده گرفتن */ }
     }
 
+    /* ------- حافظهٔ نشست (sessionStorage) — با بستنِ مرورگر پاک می‌شود ------- */
+
+    public async Task<string?> SessionGet(string key)
+    {
+        try { return await _js.InvokeAsync<string?>("nw.sget", key); }
+        catch { return null; }
+    }
+
+    public async Task SessionSet(string key, string value)
+    {
+        try { await _js.InvokeVoidAsync("nw.sset", key, value); }
+        catch { /* نادیده گرفتن */ }
+    }
+
+    public async Task SessionRemove(string key)
+    {
+        try { await _js.InvokeVoidAsync("nw.sremove", key); }
+        catch { /* نادیده گرفتن */ }
+    }
+
     /// <summary>خواندنِ تمِ ذخیره‌شده (light/dark).</summary>
     public async Task<bool> GetThemeAsync()
     {

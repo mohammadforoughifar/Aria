@@ -4,6 +4,13 @@ window.nw = {
   set: (key, value) => { try { localStorage.setItem(key, value); } catch { } },
   remove: (key) => { try { localStorage.removeItem(key); } catch { } },
 
+  /* نشست (توکنِ ورود) در sessionStorage می‌نشیند، نه localStorage:
+     با بستنِ مرورگر/تب پاک می‌شود و کاربر باید دوباره وارد شود؛
+     ولی با تازه‌سازیِ همین صفحه پاک نمی‌شود. */
+  sget: (key) => { try { return sessionStorage.getItem(key); } catch { return null; } },
+  sset: (key, value) => { try { sessionStorage.setItem(key, value); } catch { } },
+  sremove: (key) => { try { sessionStorage.removeItem(key); } catch { } },
+
   copy: async (text) => {
     try {
       if (navigator.clipboard && window.isSecureContext) {
