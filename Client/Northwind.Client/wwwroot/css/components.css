@@ -608,3 +608,23 @@
   font-size: var(--fs-xs, 12px);
   line-height: 1.7;
 }
+
+/* ورودیِ مبلغ — عددِ سه‌رقم‌سه‌رقم با یکایِ پول در کنارِ کادر */
+.money-input { position: relative; display: flex; align-items: center; }
+.money-input__field {
+  width: 100%;
+  padding-left: var(--sp-5);
+  padding-right: 3.9rem;              /* جایِ یکای پول */
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+}
+.money-input__unit {
+  position: absolute;
+  right: var(--sp-4);
+  font-size: var(--fs-xs, 12px);
+  color: var(--text-3);
+  pointer-events: none;
+  user-select: none;
+}
+.money-input.is-disabled .money-input__unit { opacity: .5; }

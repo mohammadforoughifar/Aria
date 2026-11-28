@@ -1,0 +1,90 @@
+@* ورودیِ مبلغ — عدد همان‌طور که تایپ می‌شود سه‌رقم‌سه‌رقم جدا و با ارقامِ فارسی
+   نمایش داده می‌شود. ارقامِ لاتین و فارسی (و عربی) هر دو پذیرفته می‌شوند؛
+   هر چیزِ دیگری نادیده گرفته می‌شود. مقدارِ خروجی همیشه عددِ خالص است. *@
+@inject Services.JsInterop Js
+
+<div class="money-input @(Disabled ? "is-disabled" : "")">
+    <input id="@_id"
+           class="input money-input__field"
+           type="text"
+           dir="ltr"
+           inputmode="numeric"
+           autocomplete="off"
+           value="@_text"
+           placeholder="@Placeholder"
+           disabled="@Disabled"
+           @oninput="OnInput" />
+
+    @if (!string.IsNullOrWhiteSpace(Unit))
+    {
+        <span class="money-input__unit">@Unit</span>
+    }
+</div>
+
+@code {
+    /// <summary>مقدارِ عددی (بدونِ جداکننده).</summary>
+    [Parameter] public decimal Value { get; set; }
+
+    [Parameter] public EventCallback<decimal> ValueChanged { get; set; }
+
+    /// <summary>یکای پول در کنارِ کادر: «تومان» یا «ریال».</summary>
+    [Parameter] public string Unit { get; set; } = "تومان";
+
+    [Parameter] public string Placeholder { get; set; } = "";
+
+    [Parameter] public bool Disabled { get; set; }
+
+    private readonly string _id = "mi-" + Guid.NewGuid().ToString("n")[..8];
+    private string _text = "";
+
+    protected override void OnParametersSet()
+    {
+        // مقدار از بیرون عوض شد (بارگذاریِ رکورد، بازنشانیِ فرم) → نمایش را همگام کن
+        if (Parse(_text) != Value) _text = Format(Value);
+    }
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? "";
+        var number = Parse(raw);
+        _text = raw.Length == 0 ? "" : Format(number);
+
+        // اگر کاربر نویسهٔ غیرعددی زد یا جداکنندهٔ دیگری گذاشت، کادر باید دقیقاً
+        // همان متنِ قالب‌بندی‌شده را نشان بدهد (Blazor وقتی مقدار عوض نشود
+        // دام را دست نمی‌زند، پس از مسیرِ JS مقدار را جایگزین می‌کنیم).
+        if (!string.Equals(raw, _text, StringComparison.Ordinal))
+        {
+            await Js.SetInputValue(_id, _text);
+        }
+
+        if (number != Value) await ValueChanged.InvokeAsync(number);
+    }
+
+    /// <summary>صفر در کادر خالی نشان داده می‌شود تا فرمِ تازه تمیز بماند.</summary>
+    private static string Format(decimal number) => number == 0 ? "" : Fa.Num(number);
+
+    /// <summary>هر رشته‌ای را به عدد تبدیل می‌کند: ارقامِ فارسی/عربی/لاتین، بقیه نادیده.</summary>
+    private static decimal Parse(string? raw)
+    {
+        if (string.IsNullOrEmpty(raw)) return 0;
+
+        var buffer = new System.Text.StringBuilder(raw.Length);
+        foreach (var ch in raw)
+        {
+            var digit = ch switch
+            {
+                >= '0' and <= '9' => ch - '0',
+                >= '\u06F0' and <= '\u06F9' => ch - '\u06F0',   // ۰..۹ فارسی
+                >= '\u0660' and <= '\u0669' => ch - '\u0660',   // ٠..٩ عربی
+                _ => -1
+            };
+            if (digit >= 0) buffer.Append((char)('0' + digit));
+        }
+
+        if (buffer.Length == 0) return 0;
+        return decimal.TryParse(buffer.ToString(), System.Globalization.NumberStyles.None,
+                                System.Globalization.CultureInfo.InvariantCulture, out var value)
+            ? value
+            : 0;
+    }
+}

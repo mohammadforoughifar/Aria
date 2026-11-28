@@ -112,23 +112,19 @@ else
                 <div class="grid-2" style="gap:var(--sp-4)">
                     <label class="field">
                         <span class="field__label">هر کاربرِ اضافه</span>
-                        <input class="input input--ltr" style="text-align:left" type="number" min="0" step="100000"
-                               @bind="form.PricePerUserToman" />
+                        <MoneyInput @bind-Value="form.PricePerUserToman" Placeholder="۲٬۴۰۰٬۰۰۰" />
                     </label>
                     <label class="field">
                         <span class="field__label">هر شرکتِ اضافه</span>
-                        <input class="input input--ltr" style="text-align:left" type="number" min="0" step="100000"
-                               @bind="form.PricePerExtraCompanyToman" />
+                        <MoneyInput @bind-Value="form.PricePerExtraCompanyToman" Placeholder="۶٬۵۰۰٬۰۰۰" />
                     </label>
                     <label class="field">
                         <span class="field__label">نسخهٔ اندروید</span>
-                        <input class="input input--ltr" style="text-align:left" type="number" min="0" step="100000"
-                               @bind="form.PriceAndroidToman" />
+                        <MoneyInput @bind-Value="form.PriceAndroidToman" Placeholder="۲٬۹۰۰٬۰۰۰" />
                     </label>
                     <label class="field">
                         <span class="field__label">نسخهٔ iOS</span>
-                        <input class="input input--ltr" style="text-align:left" type="number" min="0" step="100000"
-                               @bind="form.PriceIosToman" />
+                        <MoneyInput @bind-Value="form.PriceIosToman" Placeholder="۳٬۹۰۰٬۰۰۰" />
                     </label>
                 </div>
 
@@ -303,5 +299,5 @@ else
     private static string Money(decimal toman) => Helpers.Fa.Money(toman);
 
     /// <summary>مبلغِ فشرده برایِ ردیف‌هایِ کارت (بدونِ تکرارِ «تومان»)</summary>
-    private static string Short(decimal toman) => Helpers.Fa.MoneyCompact(toman);
+    private static string Short(decimal toman) => Helpers.Fa.Money(toman);
 }

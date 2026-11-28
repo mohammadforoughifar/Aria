@@ -22,6 +22,20 @@ window.nw = {
     } catch { return false; }
   },
 
+  /* جایگزینیِ مقدارِ ورودی + بردنِ مکان‌نما به آخر (ورودیِ مبلغ) */
+  setInputValue: (id, value) => {
+    try {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.value === value) return;
+      el.value = value;
+      if (document.activeElement === el) {
+        const end = value.length;
+        el.setSelectionRange(end, end);
+      }
+    } catch (e) { }
+  },
+
   focusById: (id) => {
     try {
       const el = document.getElementById(id);

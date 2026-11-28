@@ -30,7 +30,7 @@ else
 {
     <!-- ===== KPIs ===== -->
     <div class="stat-grid" style="margin-bottom:var(--sp-5)">
-        <StatCard Label="درآمدِ این ماه" Value="@Helpers.Fa.MoneyCompact(data.RevenueThisMonthToman)" Icon="trending-up"
+        <StatCard Label="درآمدِ این ماه" Value="@Helpers.Fa.Money(data.RevenueThisMonthToman)" Icon="trending-up"
                   Tone="ok" Delta="@RevenueDelta" Hint="نسبت به ماه قبل" />
         <StatCard Label="لایسنس‌های فعال" Value="@Helpers.Fa.Num(data.ActiveLicenses)" Icon="key" Tone="violet"
                   Hint="@($"{Helpers.Fa.Num(data.ExpiringLicenses)} مورد تا ۴۵ روز آینده")" />
@@ -49,7 +49,7 @@ else
                     </div>
                     <span class="badge badge--ok"><Icon Name="trending-up" Size="11" /> @Helpers.Fa.SignedPercent(RevenueDelta)</span>
                 </div>
-                <BarChart Data="@Chart" Height="200" Formatter="@(v => Helpers.Fa.MoneyCompact((int)v))" />
+                <BarChart Data="@Chart" Height="200" Formatter="@(v => Helpers.Fa.Money(v))" />
             </div>
 
             <!-- ===== Recent orders ===== -->

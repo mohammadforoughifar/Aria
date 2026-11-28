@@ -58,8 +58,15 @@ public static class Fa
 
     public static string MoneyCompact(int toman) => MoneyCompact((decimal)toman);
 
+    /// <summary>
+    /// تاریخِ شمسی. سال با جداکنندهٔ هزارگان نمی‌آید (۱۴۰۵، نه ۱٬۴۰۵)؛ جداکننده
+    /// فقط برایِ مبلغ و مقدار است، نه برایِ شمارهٔ سال.
+    /// </summary>
     public static string Date(DateTime? value) =>
-        value is null ? "—" : $"{Num(Pc.GetDayOfMonth(value.Value))} {Months[Pc.GetMonth(value.Value)]} {Num(Pc.GetYear(value.Value))}";
+        value is null
+            ? "—"
+            : $"{Num(Pc.GetDayOfMonth(value.Value))} {Months[Pc.GetMonth(value.Value)]} " +
+              DigitsOf(Pc.GetYear(value.Value).ToString(System.Globalization.CultureInfo.InvariantCulture));
 
     private static string Num2(int value) => DigitsOf(value.ToString("00", System.Globalization.CultureInfo.InvariantCulture));
 

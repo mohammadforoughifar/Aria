@@ -46,6 +46,13 @@ public sealed class JsInterop
         catch { /* نادیده گرفتن */ }
     }
 
+    /// <summary>جایگزینیِ مقدارِ یک ورودی از سمتِ کد (برایِ قالب‌بندیِ مبلغ).</summary>
+    public async Task SetInputValue(string id, string value)
+    {
+        try { await _js.InvokeVoidAsync("nw.setInputValue", id, value); }
+        catch { /* نادیده گرفتن */ }
+    }
+
     public async Task<bool> Copy(string text)
     {
         try { return await _js.InvokeAsync<bool>("nw.copy", text); }

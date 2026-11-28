@@ -67,8 +67,17 @@ public sealed class AuthState
 
     public event Action? OnChange;
 
+    private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     public UserDto? User { get; private set; }
     public bool IsReady { get; private set; }
+
+    /// <summary>
+    /// تا وقتی وضعیتِ نشست از حافظهٔ مرورگر خوانده نشده، صفحه‌هایی که کارشان به
+    /// «کاربر وارد شده است؟» بند است باید منتظرِ این تسک بمانند؛ وگرنه یک بار
+    /// با نشستِ خالی اجرا می‌شوند و همان‌طور خالی می‌مانند.
+    /// </summary>
+    public Task Ready => _ready.Task;
     public bool IsAuthenticated => User is not null;
     public bool IsAdmin => User?.Role == Role.Admin;
 
@@ -108,6 +117,7 @@ public sealed class AuthState
         }
 
         IsReady = true;
+        _ready.TrySetResult();
         _api.MarkSessionResolved();
         OnChange?.Invoke();
     }

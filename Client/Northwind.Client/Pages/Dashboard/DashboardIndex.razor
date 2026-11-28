@@ -53,7 +53,7 @@ else
                 <div class="meter__fill meter__fill--ok" style="width:@(Percent(overview.ActiveLicenses, overview.ActiveLicenses + overview.ExpiringLicenses))%"></div>
             </div>
         </StatCard>
-        <StatCard Label="مجموع خرید" Value="@Helpers.Fa.MoneyCompact(overview.TotalSpentToman)" Icon="credit-card" Tone="violet" Hint="بدون احتسابِ مرجوعی" />
+        <StatCard Label="مجموع خرید" Value="@Helpers.Fa.Money(overview.TotalSpentToman)" Icon="credit-card" Tone="violet" Hint="بدون احتسابِ مرجوعی" />
         <StatCard Label="تیکت‌های باز" Value="@Helpers.Fa.Num(overview.OpenTickets)" Icon="ticket" Tone="warn" Hint="در انتظارِ پاسخ" />
     </div>
 
@@ -154,6 +154,10 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // نشست اول از حافظهٔ مرورگر بازخوانی می‌شود؛ بدونِ این انتظار، صفحه یک بار
+        // «وارد نشده» می‌بیند و برایِ همیشه رویِ اسکلتِ بارگذاری می‌ماند.
+        await Auth.Ready;
+
         if (Auth.IsAuthenticated) overview = await Api.GetCustomerOverviewAsync();
     }
 

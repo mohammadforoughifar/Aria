@@ -54,7 +54,7 @@
         </div>
 
         <div class="site-footer__bar">
-            <span>© @Helpers.Fa.Num(DateTime.UtcNow.Year) @Settings.SiteName — تمامی حقوق محفوظ است.</span>
+            <span>© @Helpers.Fa.DigitsOf(DateTime.UtcNow.Year.ToString()) @Settings.SiteName — تمامی حقوق محفوظ است.</span>
             <span class="row-3">
                 <span class="row-2"><Icon Name="mail" Size="12" /> @Settings.SupportEmail</span>
                 <span class="row-2"><Icon Name="phone" Size="12" /> @Settings.SupportPhone</span>

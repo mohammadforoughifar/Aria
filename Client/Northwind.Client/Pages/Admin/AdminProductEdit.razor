@@ -160,8 +160,7 @@ else
                 <div class="grid-2" style="gap:var(--sp-4)">
                     <label class="field">
                         <span class="field__label">قیمتِ پایه (ریال)</span>
-                        <input class="input input--ltr" style="text-align:left" type="number" min="0" step="1000"
-                               @bind="basePriceRial" @bind:event="oninput" />
+                        <MoneyInput @bind-Value="basePriceRial" Unit="ریال" Placeholder="۱۸۹٬۰۰۰٬۰۰۰" />
                         <span class="field__hint">معادل: <b>@Helpers.Fa.Money(RialToToman(basePriceRial))</b></span>
                     </label>
                     <label class="field">
@@ -436,8 +435,7 @@ else
                     </label>
 
                     <label class="field">
-                        <input class="input input--ltr" style="text-align:left" type="number" min="0" step="1000"
-                               placeholder="قیمتِ طرح (ریال)" @bind="newPlanRial" @bind:event="oninput" />
+                        <MoneyInput @bind-Value="newPlanRial" Unit="ریال" Placeholder="قیمتِ طرح (ریال)" />
                         <span class="field__hint">معادل: <b>@Helpers.Fa.Money(RialToToman(newPlanRial))</b></span>
                     </label>
 
