@@ -518,6 +518,9 @@ public sealed class MockStoreApi : IStoreApi
 
     /* ----------------------------- Dashboard ----------------------------- */
 
+    /// <summary>حالتِ نمایشیِ درون‌حافظه‌ای پایگاه‌داده ندارد.</summary>
+    public Task<DatabaseStatusDto?> GetDatabaseStatusAsync() => Task.FromResult<DatabaseStatusDto?>(null);
+
     public Task<AdminOverviewDto> GetAdminOverviewAsync()
     {
         var now = DateTime.UtcNow;

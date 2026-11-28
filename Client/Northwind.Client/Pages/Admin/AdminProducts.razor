@@ -133,7 +133,9 @@
             Search = string.IsNullOrWhiteSpace(q) ? null : q,
             Type = type,
             IncludeInactive = true,
-            SortBy = "popular",
+            // تازه‌ترین‌ها اول: محصولی که همین حالا ساخته شده باید در صفحهٔ اولِ
+            // همین فهرست دیده شود، نه آخرِ صفحه‌ها (که شبیهِ ناپدیدشدن است).
+            SortBy = "newest",
         });
     }
 

@@ -656,6 +656,18 @@ public sealed class StoreApiRouter : IStoreApi
 
     /* ============================== داشبورد ============================== */
 
+    /// <summary>وضعیتِ پایگاه‌داده؛ اگر سرور پاسخ نداد، کارت در پنل پنهان می‌مانَد.</summary>
+    public async Task<DatabaseStatusDto?> GetDatabaseStatusAsync()
+    {
+        var status = await _v1.GetAsync<V1DatabaseStatus>("api/v1/admin/system/database");
+        if (status?.Counts is null) return null;
+
+        return new DatabaseStatusDto(
+            status.Provider ?? "—", status.Location, status.SizeBytes, status.Reachable,
+            status.Counts.Products, status.Counts.Categories, status.Counts.Users,
+            status.Counts.Orders, status.Counts.Licenses, status.Counts.Articles);
+    }
+
     public async Task<AdminOverviewDto> GetAdminOverviewAsync()
     {
         var o = await _v1.GetAsync<V1AdminOverview>("api/v1/admin/overview");

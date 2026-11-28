@@ -107,12 +107,71 @@ else
                     </div>
                 }
             </section>
+
+            @* پرسشِ همیشگی: «محصولی که ساختم کجاست؟» این کارت نشان می‌دهد داده
+               در کدام پایگاه‌داده و کدام فایل ذخیره شده و همین حالا چند رکورد
+               از آن خوانده می‌شود. اگر پس از راه‌اندازیِ دوباره شمارش‌ها صفر شد،
+               یعنی مسیرِ فایل عوض شده است. *@
+            @if (dbStatus is not null)
+            {
+                <section class="card card--pad">
+                    <div class="section-label">پایگاه‌دادهٔ سرور</div>
+                    <div style="display:grid;gap:var(--sp-2);margin-top:var(--sp-2)">
+                        <div class="kv">
+                            <span class="kv__k">نوع</span>
+                            <span class="kv__v">@dbStatus.Provider</span>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(dbStatus.Location))
+                        {
+                            <div class="kv">
+                                <span class="kv__k">فایل / نشانی</span>
+                                <span class="kv__v num--lat" style="direction:ltr;text-align:left;word-break:break-all">
+                                    @dbStatus.Location
+                                </span>
+                            </div>
+                        }
+                        <div class="kv">
+                            <span class="kv__k">وضعیتِ اتصال</span>
+                            <span class="kv__v">
+                                @if (dbStatus.Reachable)
+                                {
+                                    <span class="badge badge--ok">متصل</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge--bad">قطع</span>
+                                }
+                            </span>
+                        </div>
+                        <div class="kv">
+                            <span class="kv__k">حجمِ فایل</span>
+                            <span class="kv__v num--lat">@((dbStatus.SizeBytes / 1024d).ToString("0")) کیلوبایت</span>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;flex-wrap:wrap;gap:var(--sp-2);justify-content:flex-start;margin-top:var(--sp-3)">
+                        <span class="chip">@dbStatus.Products محصول</span>
+                        <span class="chip">@dbStatus.Categories دسته</span>
+                        <span class="chip">@dbStatus.Users کاربر</span>
+                        <span class="chip">@dbStatus.Orders سفارش</span>
+                        <span class="chip">@dbStatus.Licenses لایسنس</span>
+                        <span class="chip">@dbStatus.Articles مقاله</span>
+                    </div>
+
+                    <p class="small muted" style="margin:var(--sp-3) 0 0">
+                        این شمارش‌ها مستقیم از پایگاه‌داده خوانده می‌شوند؛ هر محصول یا سفارشی که
+                        در پنل ثبت شود در همین‌جا ذخیره می‌مانَد و پس از راه‌اندازیِ دوبارهٔ سرور
+                        هم سرِ جایش است.
+                    </p>
+                </section>
+            }
         </div>
     </div>
 }
 
 @code {
     private SettingsForm? f;
+    private DatabaseStatusDto? dbStatus;
     private bool busy;
 
     private sealed class SettingsForm
@@ -145,6 +204,8 @@ else
             TaxRateBps = s.TaxRateBps, TrialDays = s.TrialDays,
             MaintenanceMode = s.MaintenanceMode, Announcement = s.Announcement ?? "",
         };
+
+        dbStatus = await Api.GetDatabaseStatusAsync();
     }
 
     private async Task Save()

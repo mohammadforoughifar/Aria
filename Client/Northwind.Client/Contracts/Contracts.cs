@@ -153,6 +153,11 @@ public sealed record FaqDto(string Id, string Question, string Answer);
 public sealed record RevenuePointDto(string Label, decimal TotalToman);
 public sealed record TopProductDto(string ProductId, string Name, string Slug, int UnitsSold, decimal RevenueToman, string AccentColor);
 
+/// <summary>وضعیتِ پایگاه‌دادهٔ سرور: کجا ذخیره می‌شود و هم‌اکنون چه چیزی در آن است.</summary>
+public sealed record DatabaseStatusDto(
+    string Provider, string? Location, long SizeBytes, bool Reachable,
+    int Products, int Categories, int Users, int Orders, int Licenses, int Articles);
+
 public sealed record AdminOverviewDto(
     int TotalProducts, int TotalCustomers, int OpenTickets, int PendingReviews,
     int ActiveLicenses, int ExpiringLicenses,

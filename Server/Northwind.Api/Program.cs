@@ -48,8 +48,18 @@ var builder = clientWebRoot is null
    است. اگر رشتهٔ اتصالِ SQL Server تنظیم شده باشد مهاجرت‌ها رویِ آن اعمال
    می‌شود؛ وگرنه برایِ دیدنِ سایت رویِ SQLite (حالتِ نمایشی) بالا می‌آید.        */
 var dbOptions = builder.Configuration.ReadDatabaseOptions();
+
+// مسیرِ پیش‌فرض باید جایِ ثابتی باشد، نه داخلِ پوشهٔ ساخت. اگر برنامه از
+// bin/Debug یا پوشهٔ publish اجرا شود، ContentRoot همان‌جاست و پاک‌کردنِ ساخت
+// فایلِ پایگاه‌داده را با خودش می‌بَرد؛ StableRoot از آن پوشه‌ها بیرون می‌زند.
 if (!dbOptions.HasSqlServer && !Path.IsPathRooted(dbOptions.SqlitePath))
-    dbOptions.SqlitePath = Path.Combine(builder.Environment.ContentRootPath, "data", "northwind-api.db");
+    dbOptions.SqlitePath = Path.Combine(
+        Northwind.Data.DataRegistration.StableRoot(), "data", "northwind-api.db");
+
+// راهِ صریح برایِ تعیینِ محلِ فایلِ داده (مثلاً برایِ نگه‌داشتنِ آن بیرون از مخزن)
+var dbPathOverride = Environment.GetEnvironmentVariable("ARIA_DB_PATH");
+if (!string.IsNullOrWhiteSpace(dbPathOverride))
+    dbOptions.SqlitePath = Path.GetFullPath(dbPathOverride);
 
 builder.Services.AddNorthwindData(builder.Configuration, dbOptions);
 builder.Services.AddNorthwindApi(builder.Configuration);

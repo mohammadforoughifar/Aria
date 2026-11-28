@@ -203,3 +203,25 @@ public sealed record V1ContactMessage(
 /// <summary>بدنهٔ ۴۰۰ اعتبارسنجی: فیلد‌به‌فیلد.</summary>
 public sealed record V1ValidationProblem(
     string? Code, string? Message, int Status, IDictionary<string, string[]>? Errors);
+
+/* ------------------------- وضعیتِ پایگاه‌داده ------------------------- */
+
+/// <summary>پاسخِ api/v1/admin/system/database.</summary>
+public sealed class V1DatabaseStatus
+{
+    public string? Provider { get; set; }
+    public string? Location { get; set; }
+    public long SizeBytes { get; set; }
+    public bool Reachable { get; set; }
+    public V1DatabaseCounts? Counts { get; set; }
+}
+
+public sealed class V1DatabaseCounts
+{
+    public int Products { get; set; }
+    public int Categories { get; set; }
+    public int Users { get; set; }
+    public int Orders { get; set; }
+    public int Licenses { get; set; }
+    public int Articles { get; set; }
+}

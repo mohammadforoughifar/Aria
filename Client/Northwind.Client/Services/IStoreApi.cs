@@ -101,6 +101,9 @@ public interface IStoreApi
     Task<AdminOverviewDto> GetAdminOverviewAsync();
     Task<CustomerOverviewDto> GetCustomerOverviewAsync();
 
+    /// <summary>وضعیتِ پایگاه‌دادهٔ سرور (فقط برایِ پنلِ مدیر).</summary>
+    Task<DatabaseStatusDto?> GetDatabaseStatusAsync();
+
     /* -------------------- Admin: فهرست‌هایِ سراسری (موج ۳) ---------------- */
     Task<Paged<OrderDto>> GetAdminOrdersAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null);
     Task<Paged<LicenseDto>> GetAdminLicensesAsync(int page = 1, int pageSize = 12, string? status = null, string? search = null);
