@@ -24,13 +24,33 @@ public sealed class DownloadService : IDownloadService
 
     public async Task<IReadOnlyList<AvailableDownloadViewModel>> AvailableAsync(Guid? userId, CancellationToken ct = default)
     {
-        var licensedProducts = userId is null
-            ? new HashSet<Guid>()
-            : (await _db.Licenses
+        /* حقِ دانلود از دو جا می‌آید:
+             ۱) سفارشِ پرداخت‌شده‌ای که این محصول در آن باشد — چون لایسنس
+                دیگر در این سایت صادر نمی‌شود و خرید باید دسترسی بدهد.
+             ۲) لایسنسِ فعالی که از سامانهٔ صدور برای این کاربر ثبت شده باشد. */
+        HashSet<Guid> entitled;
+        if (userId is null)
+        {
+            entitled = new HashSet<Guid>();
+        }
+        else
+        {
+            var purchased = await _db.OrderItems
+                .Where(i => i.Order!.UserId == userId
+                         && i.Order.Payment != null
+                         && i.Order.Payment.Status == PaymentStatus.Succeeded)
+                .Select(i => i.ProductId)
+                .Distinct()
+                .ToListAsync(ct);
+
+            var licensed = await _db.Licenses
                 .Where(l => l.UserId == userId && l.Status == LicenseStatus.Active)
                 .Select(l => l.ProductId)
                 .Distinct()
-                .ToListAsync(ct)).ToHashSet();
+                .ToListAsync(ct);
+
+            entitled = purchased.Concat(licensed).ToHashSet();
+        }
 
         var products = await _db.Products.AsNoTracking()
             .Include(p => p.Versions)
@@ -40,7 +60,7 @@ public sealed class DownloadService : IDownloadService
 
         return products.Select(p => new AvailableDownloadViewModel(
             p.Id, p.Name, p.Slug, p.AccentColor,
-            licensedProducts.Contains(p.Id),
+            entitled.Contains(p.Id),
             p.Versions.OrderByDescending(v => v.ReleasedAt).Select(v => new AvailableVersionViewModel(
                 v.Id, v.Version, v.ReleasedAt, v.Platform, v.SizeMb,
                 $"{p.Slug}-{v.Version}-{v.Platform.ToLowerInvariant()}.exe",
@@ -69,8 +89,18 @@ public sealed class DownloadService : IDownloadService
             : await _db.ProductVersions.FirstOrDefaultAsync(v => v.Id == input.VersionId, ct)
               ?? throw new NotFoundException("نسخه", input.VersionId);
 
+        // همان قاعدهٔ AvailableAsync: خریدِ پرداخت‌شده یا لایسنسِ فعال.
         var licensed = userId is not null && await _db.Licenses
             .AnyAsync(l => l.UserId == userId && l.ProductId == product.Id && l.Status == LicenseStatus.Active, ct);
+
+        if (!licensed && userId is not null)
+        {
+            licensed = await _db.OrderItems
+                .AnyAsync(i => i.ProductId == product.Id
+                            && i.Order!.UserId == userId
+                            && i.Order.Payment != null
+                            && i.Order.Payment.Status == PaymentStatus.Succeeded, ct);
+        }
 
         var download = new Download
         {

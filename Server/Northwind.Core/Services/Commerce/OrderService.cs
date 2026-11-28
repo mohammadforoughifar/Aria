@@ -196,27 +196,12 @@ public sealed class OrderService : IOrderService
 
             _db.Orders.Add(order);
 
-            // ---- لایسنس برایِ هر ردیفِ سفارش ----
-            var licenses = new List<License>();
-            foreach (var line in lines)
-            {
-                for (var n = 0; n < line.Item.Quantity; n++)
-                {
-                    licenses.Add(new License
-                    {
-                        LicenseKey = await NextLicenseKeyAsync(ct),
-                        UserId = buyerId,
-                        ProductId = line.Product.Id,
-                        PlanId = line.Plan.Id,
-                        Seats = line.Plan.Seats,
-                        Status = LicenseStatus.Active,
-                        IssuedAt = now,
-                        ExpiresAt = line.Plan.LicenseMonths <= 0 ? null : now.AddMonths(line.Plan.LicenseMonths)
-                    });
-                }
-            }
-
-            _db.Licenses.AddRange(licenses);
+            /* ---- لایسنس این‌جا ساخته نمی‌شود ----
+               کلیدِ لایسنس در سامانهٔ جداگانهٔ صدور صادر می‌شود و این سایت
+               فقط فروشگاه است؛ پس پرداخت، سفارش و فاکتور می‌سازد و حقِ
+               دانلود را باز می‌کند (DownloadService بر پایهٔ سفارش‌هایِ
+               پرداخت‌شده). کلیدها اگر از بیرون ثبت شوند، همان‌جا در پنل
+               دیده و مدیریت می‌شوند.                                        */
 
             if (discount is not null) discount.TimesRedeemed += 1;
 
@@ -226,7 +211,7 @@ public sealed class OrderService : IOrderService
             {
                 UserId = buyerId,
                 Title = "سفارشِ شما ثبت شد",
-                Body = $"سفارش {order.OrderNumber} با موفقیت پرداخت شد و لایسنس‌ها صادر شدند.",
+                Body = $"سفارش {order.OrderNumber} با موفقیت پرداخت شد و فاکتور آن صادر شد.",
                 Kind = "success",
                 Link = "/dashboard/orders"
             });
@@ -380,16 +365,6 @@ public sealed class OrderService : IOrderService
         return $"INV-{year}-{Guid.NewGuid():N}"[..16];
     }
 
-    private async Task<string> NextLicenseKeyAsync(CancellationToken ct)
-    {
-        for (var attempt = 0; attempt < 20; attempt++)
-        {
-            var key = LicenseKeyGenerator.New();
-            if (!await _db.Licenses.AnyAsync(l => l.LicenseKey == key, ct)) return key;
-        }
-
-        return LicenseKeyGenerator.New();
-    }
 }
 
 /// <summary>سازندهٔ کلیدِ لایسنس به شکلِ <c>XXXX-XXXX-XXXX-XXXX</c>.</summary>
