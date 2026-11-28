@@ -22,4 +22,10 @@ public class OrderItem : EntityBase
     public decimal UnitPriceToman { get; set; }
     public int Quantity { get; set; } = 1;
     public decimal LineTotalToman { get; set; }
+
+    /* پیکربندیِ خریداری‌شده — برایِ فاکتور، گزارش و پشتیبانی. */
+    public int Users { get; set; } = 1;
+    public int ExtraCompanies { get; set; }
+    public bool IncludeAndroid { get; set; }
+    public bool IncludeIos { get; set; }
 }

@@ -3,12 +3,15 @@
 @inject Services.IStoreApi Api
 @inject Services.ToastService Toast
 
-<PageTitle>دسته‌بندی‌ها — فروغ آریا پارسیان</PageTitle>
+<PageTitle>دسته‌بندی‌ها و ماژول‌ها — فروغ آریا پارسیان</PageTitle>
 
 <div class="page-head">
     <div>
-        <h1 class="page-title">دسته‌بندی‌ها</h1>
-        <p class="page-sub">ساختارِ کاتالوگ و تعدادِ محصولاتِ هر گروه.</p>
+        <h1 class="page-title">دسته‌بندی‌ها و ماژول‌ها</h1>
+        <p class="page-sub">
+            هر دسته یک خانوادهٔ ماژول است. قیمتِ امکاناتِ جانبی (کاربر، شرکتِ اضافه، اندروید، iOS)
+            همین‌جا برایِ همهٔ ماژول‌های همان دسته تعیین می‌شود.
+        </p>
     </div>
     <button class="btn btn--primary btn--sm" @onclick="New">
         <Icon Name="plus" Size="15" /> دستهٔ جدید
@@ -26,6 +29,7 @@ else
     <div class="cat-grid">
         @foreach (var c in items)
         {
+            var p = c.Pricing ?? CategoryPricingDto.Free;
             <div class="card card--pad card--hover">
                 <div class="between" style="align-items:flex-start">
                     <span class="cat-tile__icon"><Icon Name="@c.Icon" Size="19" /></span>
@@ -40,16 +44,35 @@ else
                 </div>
                 <div class="cat-tile__name" style="margin-top:var(--sp-3)">@c.Name</div>
                 <p class="cat-tile__desc">@c.Description</p>
-                <div class="row-2 tiny muted" style="margin-top:var(--sp-3)">
-                    <span class="flag flag--brand">@Helpers.Fa.Num(c.ProductCount) محصول</span>
-                    <code class="num--lat">@c.Slug</code>
+
+                <div class="stack-2" style="margin-top:var(--sp-3)">
+                    <div class="between tiny">
+                        <span class="muted">هر کاربرِ اضافه</span>
+                        <b class="num">@Short(p.PricePerUserToman)</b>
+                    </div>
+                    <div class="between tiny">
+                        <span class="muted">هر شرکتِ اضافه</span>
+                        <b class="num">@Short(p.PricePerExtraCompanyToman)</b>
+                    </div>
+                    <div class="between tiny">
+                        <span class="muted">اندروید / iOS</span>
+                        <b class="num">@Short(p.PriceAndroidToman) / @Short(p.PriceIosToman)</b>
+                    </div>
+                </div>
+
+                <div class="row-2 tiny muted" style="margin-top:var(--sp-3);flex-wrap:wrap">
+                    <span class="flag flag--brand">@Helpers.Fa.Num(c.ProductCount) ماژول</span>
+                    <span class="flag">شاملِ @Helpers.Fa.Num(p.UsersIncluded) کاربر</span>
+                    <span class="flag">سقفِ @Helpers.Fa.Num(p.MaxUsers) کاربر</span>
+                    @if (!p.AllowMultiCompany) { <span class="flag flag--warn">بدونِ چندشرکتی</span> }
+                    @if (!p.AllowMobileAddons) { <span class="flag flag--warn">بدونِ موبایل</span> }
                 </div>
             </div>
         }
     </div>
 }
 
-<Modal IsOpen="@open" Title="@(editing is null ? "دستهٔ جدید" : "ویرایش دسته")" OnClose="@(() => open = false)">
+<Modal IsOpen="@open" Title="@(editing is null ? "دستهٔ جدید" : "ویرایش دسته و قیمت‌ها")" OnClose="@(() => open = false)" Wide="true">
     <ChildContent>
         <div class="stack-4">
             <label class="field">
@@ -63,7 +86,7 @@ else
             </label>
             <label class="field">
                 <span class="field__label">توضیحات</span>
-                <textarea class="textarea" style="min-height:84px" @bind="form.Description"></textarea>
+                <textarea class="textarea" style="min-height:80px" @bind="form.Description"></textarea>
             </label>
             <label class="field">
                 <span class="field__label">آیکون</span>
@@ -77,6 +100,71 @@ else
                     <option value="puzzle">puzzle</option>
                 </select>
             </label>
+
+            @* ------------------- قیمت‌گذاریِ امکاناتِ جانبی ------------------- *@
+            <section class="card card--pad" style="background:var(--surface-sunk)">
+                <div class="section-label">قیمت‌هایِ امکاناتِ جانبی (تومان)</div>
+                <p class="small muted" style="margin:var(--sp-2) 0 var(--sp-3)">
+                    این عددها به قیمتِ پایهٔ هر ماژول اضافه می‌شوند. کاربرانِ هر شرکت، همان
+                    تعدادِ خریداری‌شده است؛ پس با ۵ کاربر و ۲ شرکت، هر شرکت ۵ کاربر دارد.
+                </p>
+
+                <div class="grid-2" style="gap:var(--sp-4)">
+                    <label class="field">
+                        <span class="field__label">هر کاربرِ اضافه</span>
+                        <input class="input input--ltr" style="text-align:left" type="number" min="0" step="100000"
+                               @bind="form.PricePerUserToman" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">هر شرکتِ اضافه</span>
+                        <input class="input input--ltr" style="text-align:left" type="number" min="0" step="100000"
+                               @bind="form.PricePerExtraCompanyToman" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">نسخهٔ اندروید</span>
+                        <input class="input input--ltr" style="text-align:left" type="number" min="0" step="100000"
+                               @bind="form.PriceAndroidToman" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">نسخهٔ iOS</span>
+                        <input class="input input--ltr" style="text-align:left" type="number" min="0" step="100000"
+                               @bind="form.PriceIosToman" />
+                    </label>
+                </div>
+
+                <div class="grid-2" style="gap:var(--sp-4);margin-top:var(--sp-3)">
+                    <label class="field">
+                        <span class="field__label">کاربرِ شاملِ قیمتِ پایه</span>
+                        <input class="input input--ltr" style="text-align:left" type="number" min="1" max="1000"
+                               @bind="form.UsersIncluded" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">شرکتِ شاملِ قیمتِ پایه</span>
+                        <input class="input input--ltr" style="text-align:left" type="number" min="1" max="100"
+                               @bind="form.CompaniesIncluded" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">سقفِ کاربر</span>
+                        <input class="input input--ltr" style="text-align:left" type="number" min="1" max="1000"
+                               @bind="form.MaxUsers" />
+                    </label>
+                    <label class="field">
+                        <span class="field__label">سقفِ شرکتِ اضافه</span>
+                        <input class="input input--ltr" style="text-align:left" type="number" min="0" max="100"
+                               @bind="form.MaxExtraCompanies" />
+                    </label>
+                </div>
+
+                <div class="stack-3" style="margin-top:var(--sp-3)">
+                    <Switch @bind-Value="form.AllowMultiCompany" Text="فروشِ نسخهٔ چندشرکتی" />
+                    <Switch @bind-Value="form.AllowMobileAddons" Text="فروشِ نسخهٔ اندروید و iOS" />
+                </div>
+
+                <p class="small muted" style="margin-top:var(--sp-3)">
+                    نمونه برایِ این دسته: ماژولِ ۲۰ میلیون تومانی با ۵ کاربر و ۲ شرکتِ اضافه و هر دو نسخهٔ موبایل
+                    می‌شود <b class="num">@Money(Preview())</b>.
+                </p>
+            </section>
         </div>
     </ChildContent>
     <Footer>
@@ -86,6 +174,8 @@ else
 </Modal>
 
 @code {
+    private const decimal SampleBasePrice = 20_000_000;
+
     private IReadOnlyList<CategoryDto>? items;
     private bool open;
     private CategoryDto? editing;
@@ -97,6 +187,17 @@ else
         public string Slug { get; set; } = "";
         public string? Description { get; set; }
         public string Icon { get; set; } = "package";
+
+        public decimal PricePerUserToman { get; set; }
+        public decimal PricePerExtraCompanyToman { get; set; }
+        public decimal PriceAndroidToman { get; set; }
+        public decimal PriceIosToman { get; set; }
+        public int UsersIncluded { get; set; } = 1;
+        public int CompaniesIncluded { get; set; } = 1;
+        public int MaxUsers { get; set; } = 50;
+        public int MaxExtraCompanies { get; set; } = 10;
+        public bool AllowMultiCompany { get; set; } = true;
+        public bool AllowMobileAddons { get; set; } = true;
     }
 
     protected override async Task OnInitializedAsync() => await Reload();
@@ -113,7 +214,25 @@ else
     private void Edit(CategoryDto c)
     {
         editing = c;
-        form = new CategoryForm { Name = c.Name, Slug = c.Slug, Description = c.Description, Icon = c.Icon };
+        var p = c.Pricing ?? CategoryPricingDto.Free;
+
+        form = new CategoryForm
+        {
+            Name = c.Name,
+            Slug = c.Slug,
+            Description = c.Description,
+            Icon = c.Icon,
+            PricePerUserToman = p.PricePerUserToman,
+            PricePerExtraCompanyToman = p.PricePerExtraCompanyToman,
+            PriceAndroidToman = p.PriceAndroidToman,
+            PriceIosToman = p.PriceIosToman,
+            UsersIncluded = p.UsersIncluded,
+            CompaniesIncluded = p.CompaniesIncluded,
+            MaxUsers = p.MaxUsers,
+            MaxExtraCompanies = p.MaxExtraCompanies,
+            AllowMultiCompany = p.AllowMultiCompany,
+            AllowMobileAddons = p.AllowMobileAddons
+        };
         open = true;
     }
 
@@ -121,9 +240,10 @@ else
     {
         if (c.ProductCount > 0)
         {
-            Toast.Push("امکان حذف نیست", $"این دسته {Helpers.Fa.Num(c.ProductCount)} محصول دارد.", ToastTone.Warn);
+            Toast.Push("امکان حذف نیست", $"این دسته {Helpers.Fa.Num(c.ProductCount)} ماژول دارد.", ToastTone.Warn);
             return;
         }
+
         await Api.DeleteCategoryAsync(c.Id);
         Toast.Push("دسته حذف شد", c.Name, ToastTone.Info);
         await Reload();
@@ -137,10 +257,28 @@ else
             return;
         }
 
+        if (form.UsersIncluded < 1 || form.MaxUsers < form.UsersIncluded)
+        {
+            Toast.Push("تعدادِ کاربر نامعتبر است",
+                "کاربرِ شاملِ قیمتِ پایه دست‌کم ۱ است و سقفِ کاربر نباید کمتر از آن باشد.", ToastTone.Warn);
+            return;
+        }
+
         var dto = new CategoryDto(
             editing?.Id ?? "c-" + Guid.NewGuid().ToString("N")[..8],
             form.Name.Trim(), form.Slug.Trim(), form.Description, form.Icon,
-            editing?.ProductCount ?? 0);
+            editing?.ProductCount ?? 0,
+            new CategoryPricingDto(
+                Math.Max(0, form.PricePerUserToman),
+                Math.Max(0, form.PricePerExtraCompanyToman),
+                Math.Max(0, form.PriceAndroidToman),
+                Math.Max(0, form.PriceIosToman),
+                Math.Max(1, form.UsersIncluded),
+                Math.Max(1, form.CompaniesIncluded),
+                Math.Max(1, form.MaxUsers),
+                Math.Max(0, form.MaxExtraCompanies),
+                form.AllowMultiCompany,
+                form.AllowMobileAddons));
 
         await Api.UpsertCategoryAsync(dto);
         open = false;
@@ -148,4 +286,22 @@ else
         Toast.Push("ذخیره شد", dto.Name, ToastTone.Ok);
         await Reload();
     }
+
+    /// <summary>نمونهٔ قیمت: ماژولِ ۲۰ میلیونی، ۵ کاربر، ۲ شرکتِ اضافه، اندروید و iOS.</summary>
+    private decimal Preview()
+    {
+        var users = Math.Max(form.UsersIncluded + 4, 5);
+        var extraCompanies = 2;
+
+        return SampleBasePrice
+             + Math.Max(0, users - Math.Max(1, form.UsersIncluded)) * Math.Max(0, form.PricePerUserToman)
+             + extraCompanies * Math.Max(0, form.PricePerExtraCompanyToman)
+             + Math.Max(0, form.PriceAndroidToman)
+             + Math.Max(0, form.PriceIosToman);
+    }
+
+    private static string Money(decimal toman) => Helpers.Fa.Money(toman);
+
+    /// <summary>مبلغِ فشرده برایِ ردیف‌هایِ کارت (بدونِ تکرارِ «تومان»)</summary>
+    private static string Short(decimal toman) => Helpers.Fa.MoneyCompact(toman);
 }

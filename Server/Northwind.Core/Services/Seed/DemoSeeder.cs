@@ -25,7 +25,14 @@ public static class DemoSeeder
     {
         if (await db.Products.AnyAsync(ct))
         {
-            logger.LogInformation("دادهٔ نمایشی از پیش هست — رد شد.");
+            // دادهٔ نمایشی از پیش هست، اما دسته‌هایِ قدیمی قیمتِ امکاناتِ جانبی
+            // ندارند (این ستون‌ها بعداً اضافه شدند). یک‌بار پر می‌شوند تا صفحهٔ
+            // نرم‌افزارها از روزِ اول عددِ واقعی نشان دهد؛ اگر مدیر بعداً عوض
+            // کند، دیگر دست نمی‌خورند.
+            var filled = await BackfillCategoryPricingAsync(db, ct);
+            logger.LogInformation(filled > 0
+                ? $"دادهٔ نمایشی از پیش هست — قیمتِ امکاناتِ جانبی برایِ {filled} دسته تنظیم شد."
+                : "دادهٔ نمایشی از پیش هست — رد شد.");
             return false;
         }
 
@@ -48,17 +55,21 @@ public static class DemoSeeder
                 Announcement = "ارسال رایگانِ لایسنسِ آزمایشی تا پایانِ ماه"
             });
 
-            /* ------------------------------ دسته‌ها ------------------------------ */
+            /* ------------------------------ دسته‌ها ------------------------------
+               هر دسته، «خانوادهٔ ماژول‌ها» است و قیمتِ امکاناتِ جانبی‌اش را با
+               خودش دارد: هر کاربرِ اضافه، هر شرکتِ اضافه، اندروید و iOS. مدیر
+               همین عددها را از پنل عوض می‌کند و صفحهٔ نرم‌افزارها همان را
+               حساب می‌کند.                                                     */
             var categories = new[]
             {
-                new Category { Name = "مالی و حسابداری", Slug = "finance", Icon = "wallet", SortOrder = 1 },
-                new Category { Name = "فروش و بازاریابی", Slug = "sales", Icon = "chart", SortOrder = 2 },
-                new Category { Name = "منابع انسانی", Slug = "hr", Icon = "users", SortOrder = 3 },
-                new Category { Name = "انبار و لجستیک", Slug = "warehouse", Icon = "package", SortOrder = 4 },
-                new Category { Name = "تولید و کارخانه", Slug = "manufacturing", Icon = "factory", SortOrder = 5 },
-                new Category { Name = "ابزارهایِ مدیریتی", Slug = "tools", Icon = "settings", SortOrder = 6 },
-                new Category { Name = "دستیار و موبایل", Slug = "mobile", Icon = "smartphone", SortOrder = 7 },
-                new Category { Name = "زیرساخت و امنیت", Slug = "infra", Icon = "shield", SortOrder = 8 }
+                SeedCategory("مالی و حسابداری", "finance", "wallet", 1, perUser: 2_400_000, perCompany: 6_500_000, android: 2_900_000, ios: 3_900_000),
+                SeedCategory("فروش و بازاریابی", "sales", "chart", 2, perUser: 1_900_000, perCompany: 5_400_000, android: 2_400_000, ios: 3_200_000),
+                SeedCategory("منابع انسانی", "hr", "users", 3, perUser: 1_600_000, perCompany: 4_800_000, android: 1_900_000, ios: 2_600_000),
+                SeedCategory("انبار و لجستیک", "warehouse", "package", 4, perUser: 1_800_000, perCompany: 5_100_000, android: 2_600_000, ios: 3_400_000),
+                SeedCategory("تولید و کارخانه", "manufacturing", "factory", 5, perUser: 2_100_000, perCompany: 5_900_000, android: 2_200_000, ios: 3_000_000),
+                SeedCategory("ابزارهایِ مدیریتی", "tools", "settings", 6, perUser: 1_200_000, perCompany: 3_200_000, android: 1_500_000, ios: 2_100_000),
+                SeedCategory("دستیار و موبایل", "mobile", "smartphone", 7, perUser: 900_000, perCompany: 2_400_000, android: 1_200_000, ios: 1_800_000),
+                SeedCategory("زیرساخت و امنیت", "infra", "shield", 8, perUser: 2_700_000, perCompany: 7_200_000, android: 3_100_000, ios: 4_200_000)
             };
             db.Categories.AddRange(categories);
             await db.SaveChangesAsync(ct);
@@ -393,6 +404,74 @@ public static class DemoSeeder
             return false;
         }
     }
+
+    /// <summary>
+    /// دسته‌هایی که هیچ‌کدام از چهار قیمتِ امکاناتِ جانبی‌شان تنظیم نشده،
+    /// مقدارِ پیش‌فرض می‌گیرند. اگر مدیر عددی گذاشته باشد، همان می‌ماند.
+    /// </summary>
+    private static async Task<int> BackfillCategoryPricingAsync(NorthwindDbContext db, CancellationToken ct)
+    {
+        var defaults = new Dictionary<string, (decimal PerUser, decimal PerCompany, decimal Android, decimal Ios)>
+        {
+            ["finance"] = (2_400_000, 6_500_000, 2_900_000, 3_900_000),
+            ["sales"] = (1_900_000, 5_400_000, 2_400_000, 3_200_000),
+            ["hr"] = (1_600_000, 4_800_000, 1_900_000, 2_600_000),
+            ["warehouse"] = (1_800_000, 5_100_000, 2_600_000, 3_400_000),
+            ["manufacturing"] = (2_100_000, 5_900_000, 2_200_000, 3_000_000),
+            ["tools"] = (1_200_000, 3_200_000, 1_500_000, 2_100_000),
+            ["mobile"] = (900_000, 2_400_000, 1_200_000, 1_800_000),
+            ["infra"] = (2_700_000, 7_200_000, 3_100_000, 4_200_000)
+        };
+
+        var categories = await db.Categories
+            .Where(c => defaults.Keys.Contains(c.Slug))
+            .ToListAsync(ct);
+
+        var changed = 0;
+        foreach (var category in categories)
+        {
+            var untouched = category.PricePerUserToman == 0
+                         && category.PricePerExtraCompanyToman == 0
+                         && category.PriceAndroidToman == 0
+                         && category.PriceIosToman == 0;
+
+            if (!untouched) continue;
+
+            var d = defaults[category.Slug];
+            category.PricePerUserToman = d.PerUser;
+            category.PricePerExtraCompanyToman = d.PerCompany;
+            category.PriceAndroidToman = d.Android;
+            category.PriceIosToman = d.Ios;
+            category.UsersIncluded = Math.Max(1, category.UsersIncluded);
+            category.CompaniesIncluded = Math.Max(1, category.CompaniesIncluded);
+            category.MaxUsers = category.MaxUsers <= 0 ? 50 : category.MaxUsers;
+            category.MaxExtraCompanies = category.MaxExtraCompanies <= 0 ? 10 : category.MaxExtraCompanies;
+            changed++;
+        }
+
+        if (changed > 0) await db.SaveChangesAsync(ct);
+        return changed;
+    }
+
+    /// <summary>دستهٔ نمایشی با قیمت‌هایِ پیش‌فرضِ امکاناتِ جانبی.</summary>
+    private static Category SeedCategory(string name, string slug, string icon, int sortOrder,
+        decimal perUser, decimal perCompany, decimal android, decimal ios) => new()
+    {
+        Name = name,
+        Slug = slug,
+        Icon = icon,
+        SortOrder = sortOrder,
+        PricePerUserToman = perUser,
+        PricePerExtraCompanyToman = perCompany,
+        PriceAndroidToman = android,
+        PriceIosToman = ios,
+        UsersIncluded = 1,
+        CompaniesIncluded = 1,
+        MaxUsers = 50,
+        MaxExtraCompanies = 10,
+        AllowMultiCompany = true,
+        AllowMobileAddons = true
+    };
 
     private static string LicenseKeyFor(int seed, int customer)
     {

@@ -28,6 +28,8 @@ public static class DependencyInjection
 
         /* ----------------------------- سرویس‌ها ----------------------------- */
         services.AddScoped<ICategoryService, CategoryService>();
+        // قیمت‌گذاریِ ماژول با پیکربندیِ خریدار (کاربر، شرکت، اندروید/iOS)
+        services.AddScoped<IModulePricingService, ModulePricingService>();
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<ICartService, CartService>();

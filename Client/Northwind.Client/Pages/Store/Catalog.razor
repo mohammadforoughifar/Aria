@@ -1,5 +1,6 @@
 @page "/catalog"
 @implements IAsyncDisposable
+@* ?cat=slug — پیوندِ مستقیم از پنلِ مدیر به یک دستهٔ مشخص *@
 @inject Services.IStoreApi Api
 @inject Services.CartState Cart
 @inject Services.ToastService Toast
@@ -8,218 +9,368 @@
 
 <PageTitle>نرم‌افزارها — فروغ آریا پارسیان</PageTitle>
 
-<!-- ============ ۱. سرصفحه ============ -->
+<!-- ============================ ۱. سرصفحه ============================ -->
 <section class="hero hero--split">
     <div class="wrap hero__inner">
-
-        <!-- ستونِ متن: در راست‌چین سمتِ راست می‌نشیند -->
         <div class="hero__copy">
             <span class="hero__eyebrow">
                 <b>نرم‌افزارها</b>
-                برای هر بخشِ کسب‌وکار، یک راه‌حلِ آماده
+                هر دسته، چند ماژول؛ خودتان بچینید
             </span>
 
             <h1 class="hero__title">
-                نرم‌افزارهای <span>فروغ آریا پارسیان</span>؛ از حسابداری تا حقوق و دستمزد
+                ماژول‌های <span>فروغ آریا پارسیان</span> را بر اساسِ دسته انتخاب کنید
             </h1>
 
             <p class="hero__sub">
-                هر سیستم را جداگانه بخرید یا کنار هم بچینید. همهٔ آن‌ها روی یک پایگاهِ دادهٔ
-                مشترک کار می‌کنند، بنابراین اطلاعات یک‌بار ثبت می‌شود و در همه‌جا در دسترس است.
+                ماژول را انتخاب کنید، تعدادِ کاربر و شرکتِ اضافه را مشخص کنید و اگر لازم است
+                نسخهٔ اندروید و iOS را هم بیفزایید. قیمت همان لحظه حساب می‌شود — همهٔ عددها
+                را مدیر در پنل تعیین کرده است.
             </p>
 
             <div class="hero__cta">
-                <a class="btn btn--buy btn--lg" href="#software">
-                    <Icon Name="grid" Size="18" /> مشاهدهٔ نرم‌افزارها
+                <a class="btn btn--buy btn--lg" href="#configurator">
+                    <Icon Name="sliders" Size="18" /> انتخابِ ماژول و خرید
                 </a>
-                <a class="btn btn--outline-light btn--lg" href="#consult">
-                    <Icon Name="headphones" Size="18" /> مشاورهٔ رایگان
+                <a class="btn btn--outline-light btn--lg" href="/compare">
+                    <Icon Name="layers" Size="18" /> مقایسهٔ ماژول‌ها
                 </a>
             </div>
         </div>
 
-        <!-- گرافیکِ متحرک: در راست‌چین سمتِ چپ.
-             درونش را جاوااسکریپت می‌سازد تا بازرندرهایِ بلِیزر انیمیشن را از نو نکند. -->
         <div class="hero__visual">
             <div class="orb" @ref="OrbEl" role="img"
                  aria-label="ماژول‌های نرم‌افزار که به یک پایگاه داده مشترک وصل می‌شوند"></div>
         </div>
 
-        @* آمار: مقدارِ نهایی در نشانه‌گذاری حاضر است. سرصفحه هیچ وابستگی‌ای
-           به API ندارد و در صورت نرسیدنِ داده، «۰» نشان نمی‌دهد. *@
         <div class="hero__stats" @ref="StatsEl">
             <div class="hero__stat">
-                <b class="num" data-stat data-n="@statModules">@statModulesText</b>
-                <span>ماژول یکپارچه</span>
+                <b class="num" data-stat data-n="@statModules">@Helpers.Fa.Num(statModules)</b>
+                <span>ماژول قابلِ خرید</span>
             </div>
             <div class="hero__stat">
-                <b class="num" data-stat data-n="@statDatabase">@statDatabaseText</b>
-                <span>پایگاه داده مشترک</span>
+                <b class="num" data-stat data-n="@statCategories">@Helpers.Fa.Num(statCategories)</b>
+                <span>دستهٔ کاری</span>
             </div>
             <div class="hero__stat">
-                <b class="num" data-stat data-n="@statTrial">@statTrialText</b>
+                <b class="num" data-stat data-n="@statTrial">@Helpers.Fa.Num(statTrial)</b>
                 <span>روز نسخه آزمایشی</span>
             </div>
         </div>
-
     </div>
 </section>
 
-<!-- ============ ۲. دسته‌بندی‌ها ============ -->
-<section class="section section--tight" id="software">
+<!-- ==================== ۲. انتخاب‌گرِ ماژول و امکانات ==================== -->
+<section class="section section--tight" id="configurator">
     <div class="wrap">
         <div class="section__head">
-            <div class="section__eyebrow">گروه‌ها</div>
+            <div class="section__eyebrow">گامِ ۱ — دسته</div>
             <h2 class="section__title">کدام بخشِ کسب‌وکارتان را سامان می‌دهید؟</h2>
-            <p class="section__sub">روی هر گروه بزنید تا نرم‌افزارهایش را ببینید.</p>
+            <p class="section__sub">
+                ماژول‌های هر دسته را ببینید؛ امکاناتِ جانبیِ همان دسته (کاربر، شرکت، موبایل)
+                زیرِ هر ماژول ظاهر می‌شود.
+            </p>
         </div>
 
-        <div class="cat-grid">
-            <button class="cat-card @(category is null ? "is-active" : "")"
-                    @onclick='() => SetCategory(null)' type="button">
-                <span class="cat-card__icon" style="background:rgba(37,99,235,.12);color:var(--blue-600)">
-                    <Icon Name="layers" Size="20" />
-                </span>
-                <b class="cat-card__name">همهٔ نرم‌افزارها</b>
-                <span class="cat-card__desc">نمایِ کاملِ مجموعه</span>
-                <span class="cat-card__count num">@Helpers.Fa.Num(result?.Meta.TotalCount ?? 0)</span>
-            </button>
-
-            @foreach (var cat in categories)
-            {
-                <button class="cat-card @(category == cat.Slug ? "is-active" : "")"
-                        @onclick="() => SetCategory(cat.Slug)" type="button">
-                    <span class="cat-card__icon">
-                        <Icon Name="@IconOf(cat.Slug)" Size="20" />
-                    </span>
-                    <b class="cat-card__name">@cat.Name</b>
-                    <span class="cat-card__desc clamp-2">@(cat.Description ?? "—")</span>
-                    <span class="cat-card__count num">@Helpers.Fa.Num(cat.ProductCount) نرم‌افزار</span>
-                </button>
-            }
-        </div>
-    </div>
-</section>
-
-<!-- ============ ۳. جست‌وجو و مرتب‌سازی ============ -->
-<section class="section section--sunk">
-    <div class="wrap">
-        <div class="filters">
-            <div class="filters__search">
-                <div class="input-group">
-                    <span class="input-group__icon"><Icon Name="search" Size="16" /></span>
-                    <input class="input" placeholder="جست‌وجو در نام یا توضیحاتِ نرم‌افزار…"
-                           value="@search" @oninput="OnSearchInput" @onkeyup="OnSearchKey" />
-                </div>
-            </div>
-
-            <span class="filters__sep"></span>
-
-            <Segmented TValue="string" Items="@sortItems" Value="@sortBy" ValueChanged="OnSortChanged" />
-
-            @if (category is not null || !string.IsNullOrWhiteSpace(search))
-            {
-                <button class="btn btn--secondary btn--sm" @onclick="Reset">
-                    <Icon Name="refresh" Size="14" /> پاک کردن
-                </button>
-            }
-        </div>
-
-        <div class="row" style="justify-content:space-between;margin-top:var(--sp-4)">
-            <span class="small muted">
-                @if (result is not null)
-                {
-                    <text><span class="num">@Helpers.Fa.Num(result.Meta.TotalCount)</span> نرم‌افزار یافت شد</text>
-                }
-                else
-                {
-                    <text>در حال جست‌وجو…</text>
-                }
-            </span>
-            @if (category is not null)
-            {
-                <span class="badge badge--plain badge--brand">
-                    @(categories.FirstOrDefault(c => c.Slug == category)?.Name ?? category)
-                </span>
-            }
-        </div>
-    </div>
-</section>
-
-<!-- ============ ۴. شبکهٔ نرم‌افزارها ============ -->
-<section class="section">
-    <div class="wrap">
-        @if (result is null)
+        @if (categories.Count == 0 && loading)
         {
-            <div class="prod-grid">
-                @for (var i = 0; i < 6; i++) { <Skeleton Kind="card" /> }
-            </div>
-        }
-        else if (result.Items.Count == 0)
-        {
-            <div class="card">
-                <EmptyState Icon="search" Title="نرم‌افزاری با این فیلتر پیدا نشد"
-                            Text="فیلترها را تغییر دهید یا عبارتِ جست‌وجو را کوتاه‌تر کنید.">
-                    <button class="btn btn--secondary btn--sm" @onclick="Reset">پاک کردن فیلترها</button>
-                </EmptyState>
+            <div class="row-2" style="gap:var(--sp-3)">
+                @for (var i = 0; i < 6; i++) { <Skeleton Kind="line" /> }
             </div>
         }
         else
         {
-            <div class="prod-grid">
-                @foreach (var p in result.Items)
+            <div class="cat-grid">
+                @foreach (var cat in categories)
                 {
-                    <SoftwareCard Product="@p" Detail="@DetailOf(p.Id)" />
+                    <button class="cat-card @(activeCategory?.Id == cat.Id ? "is-active" : "")"
+                            @onclick="() => SelectCategory(cat)" type="button">
+                        <span class="cat-card__icon">
+                            <Icon Name="@(string.IsNullOrWhiteSpace(cat.Icon) ? "package" : cat.Icon)" Size="20" />
+                        </span>
+                        <b class="cat-card__name">@cat.Name</b>
+                        <span class="cat-card__desc clamp-2">@(cat.Description ?? "—")</span>
+                        <span class="cat-card__count num">@Helpers.Fa.Num(cat.ProductCount) ماژول</span>
+                    </button>
                 }
             </div>
-
-            <Pager Meta="@result.Meta" OnPage="GoPage" />
         }
     </div>
 </section>
 
-<!-- ============ ۵. راهنمایِ انتخاب ============ -->
-<section class="section section--sunk">
-    <div class="wrap grid-3">
-        <div class="card card--pad card--hover">
-            <span class="stat__icon" style="background:rgba(245,158,11,.14);color:var(--warning)">
-                <Icon Name="sliders" Size="20" />
-            </span>
-            <h3 class="card__title">نمی‌دانید کدام مناسب است؟</h3>
-            <p class="muted small">
-                ویژگی‌ها و قیمتِ چند نرم‌افزار را کنار هم ببینید و آگاهانه انتخاب کنید.
-            </p>
-            <a class="btn btn--secondary btn--sm" href="/compare">مقایسهٔ نرم‌افزارها</a>
-        </div>
+@if (activeCategory is not null)
+{
+    <section class="section section--sunk">
+        <div class="wrap">
+            <div class="section__head">
+                <div class="section__eyebrow">گامِ ۲ — ماژول و امکانات</div>
+                <h2 class="section__title">@activeCategory.Name</h2>
+                <p class="section__sub">
+                    رویِ هر ماژول بزنید تا انتخاب شود؛ بعد تعدادِ کاربر، شرکتِ اضافه و نسخه‌ها را تنظیم کنید.
+                    پیش‌فرضِ هر ماژول، نسخهٔ دسکتاپ است.
+                </p>
+            </div>
 
-        <div class="card card--pad card--hover">
-            <span class="stat__icon" style="background:rgba(22,163,74,.13);color:var(--success)">
-                <Icon Name="package" Size="20" />
-            </span>
-            <h3 class="card__title">چند سیستم را با هم می‌خواهید؟</h3>
-            <p class="muted small">
-                بسته‌هایِ آماده ارزان‌تر از خریدِ جداگانه‌اند و از همان روزِ اول هماهنگ‌اند.
-            </p>
-            <a class="btn btn--secondary btn--sm" href="/pricing">دیدنِ بسته‌ها</a>
-        </div>
+            @if (modules.Count == 0 && loading)
+            {
+                <div class="prod-grid">
+                    @for (var i = 0; i < 3; i++) { <Skeleton Kind="card" /> }
+                </div>
+            }
+            else if (modules.Count == 0)
+            {
+                <div class="card">
+                    <EmptyState Icon="package" Title="برایِ این دسته ماژولی ثبت نشده"
+                                Text="از پنلِ مدیر، محصولی در این دسته بسازید تا همین‌جا نمایش داده شود." />
+                </div>
+            }
+            else
+            {
+                <div class="stack-4">
+                    @foreach (var m in modules)
+                    {
+                        var sel = SelectionOf(m);
+                        var pricing = PricingOf(m);
+                        <div class="card card--pad @(sel is not null ? "card--selected" : "")">
+                            <div class="between" style="gap:var(--sp-4);align-items:flex-start;flex-wrap:wrap">
+                                <div class="row-3" style="align-items:flex-start">
+                                    <button class="pick @(sel is not null ? "is-on" : "")"
+                                            @onclick="() => ToggleModule(m)" type="button"
+                                            aria-label="@(sel is not null ? "حذفِ ماژول از انتخاب" : "افزودنِ ماژول به انتخاب")">
+                                        @if (sel is not null) { <Icon Name="check" Size="14" /> }
+                                    </button>
 
-        <div class="card card--pad card--hover">
-            <span class="stat__icon" style="background:rgba(37,99,235,.12);color:var(--blue-600)">
-                <Icon Name="headphones" Size="20" />
-            </span>
-            <h3 class="card__title">مشاورهٔ رایگان</h3>
-            <p class="muted small">
-                نیازِ کسب‌وکارتان را بگویید تا دقیقاً همان چیزی را پیشنهاد دهیم که لازم دارید.
-            </p>
-            <a class="btn btn--secondary btn--sm" href="/contact">درخواست مشاوره</a>
-        </div>
-    </div>
-</section>
+                                    <div>
+                                        <div class="row-2" style="gap:var(--sp-2)">
+                                            <b>@m.Name</b>
+                                            <span class="tag tag--sm">@m.Platform</span>
+                                        </div>
+                                        <p class="small muted" style="margin:4px 0 6px">@m.Tagline</p>
+                                        <div class="row-2" style="gap:var(--sp-2);flex-wrap:wrap">
+                                            <span class="flag flag--brand">قیمتِ پایه: <b class="num">@Helpers.Fa.Money(m.BasePriceToman)</b></span>
+                                            <span class="flag">دسکتاپ شامل است</span>
+                                            @if (m.PlanCount > 0)
+                                            {
+                                                <span class="flag flag--ok">@Helpers.Fa.Num(m.PlanCount) طرحِ قیمت</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
 
-<!-- ============ ۶. پرسش‌های پرتکرار ============ -->
+                                <div style="text-align:left;min-width:180px">
+                                    <div class="tiny muted">مبلغِ این ماژول</div>
+                                    <div class="num" style="font-weight:800;font-size:var(--fs-lg)">
+                                        @Helpers.Fa.Money(UnitPriceOf(m))
+                                    </div>
+                                    @if (sel is not null)
+                                    {
+                                        <div class="tiny muted" style="margin-top:2px">@SummaryFor(m, sel)</div>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (sel is not null)
+                            {
+                                @* ---------------- امکاناتِ جانبیِ همین ماژول ---------------- *@
+                                <div class="config" style="margin-top:var(--sp-4)">
+                                    <div class="config__row">
+                                        <div>
+                                            <b class="small">تعدادِ کاربر</b>
+                                            <div class="tiny muted">
+                                                قیمتِ هر کاربرِ اضافه:
+                                                <span class="num">@Helpers.Fa.Money(pricing.PricePerUserToman)</span>
+                                                @if (pricing.UsersIncluded > 1)
+                                                {
+                                                    <text> — @Helpers.Fa.Num(pricing.UsersIncluded) کاربر شاملِ قیمتِ پایه</text>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="stepper">
+                                            <button class="stepper__btn" type="button"
+                                                    disabled="@(sel.Users <= MinUsersFor(m))"
+                                                    @onclick="() => StepUsers(m, sel, -1)">−</button>
+                                            <span class="stepper__value num">@Helpers.Fa.Num(sel.Users)</span>
+                                            <button class="stepper__btn" type="button"
+                                                    disabled="@(sel.Users >= Math.Max(MinUsersFor(m), pricing.MaxUsers))"
+                                                    @onclick="() => StepUsers(m, sel, +1)">+</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="config__row">
+                                        <div>
+                                            <b class="small">شرکتِ اضافه</b>
+                                            <div class="tiny muted">
+                                                @if (!pricing.AllowMultiCompany)
+                                                {
+                                                    <text>نسخهٔ چندشرکتی برایِ این دسته فعال نیست.</text>
+                                                }
+                                                else
+                                                {
+                                                    <text>
+                                                        هر شرکتِ اضافه <span class="num">@Helpers.Fa.Money(pricing.PricePerExtraCompanyToman)</span>
+                                                        — هر شرکت همان @Helpers.Fa.Num(sel.Users) کاربر را دارد
+                                                    </text>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="stepper">
+                                            <button class="stepper__btn" type="button"
+                                                    disabled="@(!pricing.AllowMultiCompany || sel.ExtraCompanies <= 0)"
+                                                    @onclick="() => StepCompanies(m, sel, -1)">−</button>
+                                            <span class="stepper__value num">@Helpers.Fa.Num(sel.ExtraCompanies)</span>
+                                            <button class="stepper__btn" type="button"
+                                                    disabled="@(!pricing.AllowMultiCompany || sel.ExtraCompanies >= pricing.MaxExtraCompanies)"
+                                                    @onclick="() => StepCompanies(m, sel, +1)">+</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="config__row">
+                                        <div>
+                                            <b class="small">نسخه‌ها</b>
+                                            <div class="tiny muted">دسکتاپ همیشه شامل است؛ موبایل افزونه است.</div>
+                                        </div>
+                                        <div class="row-2" style="gap:var(--sp-2);flex-wrap:wrap">
+                                            <span class="flag flag--ok">دسکتاپ <Icon Name="check" Size="12" /></span>
+
+                                            <button class="toggle-chip @(sel.IncludeAndroid ? "is-on" : "")"
+                                                    type="button"
+                                                    disabled="@(!pricing.AllowMobileAddons || pricing.PriceAndroidToman <= 0)"
+                                                    @onclick='() => TogglePlatform(sel, "android")'>
+                                                <Icon Name="phone" Size="13" />
+                                                اندروید
+                                                <span class="num">@Helpers.Fa.Money(pricing.PriceAndroidToman)</span>
+                                            </button>
+
+                                            <button class="toggle-chip @(sel.IncludeIos ? "is-on" : "")"
+                                                    type="button"
+                                                    disabled="@(!pricing.AllowMobileAddons || pricing.PriceIosToman <= 0)"
+                                                    @onclick='() => TogglePlatform(sel, "ios")'>
+                                                <Icon Name="phone" Size="13" />
+                                                iOS
+                                                <span class="num">@Helpers.Fa.Money(pricing.PriceIosToman)</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="config__breakdown">
+                                        <span>پایهٔ ماژول <b class="num">@Helpers.Fa.Money(m.BasePriceToman)</b></span>
+                                        <span>کاربران <b class="num">@Helpers.Fa.Money(UsersCost(m, sel))</b></span>
+                                        <span>شرکت‌ها <b class="num">@Helpers.Fa.Money(CompaniesCost(m, sel))</b></span>
+                                        <span>موبایل <b class="num">@Helpers.Fa.Money(MobileCost(m, sel))</b></span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+}
+
+<!-- ==================== ۳. خلاصهٔ خرید (چسبیده به پایین) ==================== -->
+@if (selected.Count > 0)
+{
+    <section class="section section--tight">
+        <div class="wrap">
+            <div class="card card--pad" id="summary">
+                <div class="between" style="align-items:flex-start;gap:var(--sp-4);flex-wrap:wrap">
+                    <div>
+                        <div class="section__eyebrow">گامِ ۳ — خلاصهٔ خرید</div>
+                        <h2 class="section__title" style="margin-top:4px">آنچه انتخاب کرده‌اید</h2>
+                    </div>
+                    <button class="btn btn--ghost btn--sm" @onclick="ClearSelection" type="button">
+                        <Icon Name="trash" Size="14" /> خالی کردنِ انتخاب
+                    </button>
+                </div>
+
+                <div class="table-wrap" style="margin-top:var(--sp-4)">
+                    <div class="table-scroll">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>ماژول</th>
+                                    <th>پیکربندی</th>
+                                    <th>کاربر</th>
+                                    <th>شرکتِ اضافه</th>
+                                    <th>نسخه‌ها</th>
+                                    <th style="text-align:left">مبلغ</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var line in SelectedLines())
+                                {
+                                    <tr>
+                                        <td>
+                                            <b>@line.Product.Name</b>
+                                            <div class="tiny muted">@line.Product.Platform</div>
+                                        </td>
+                                        <td class="small">@line.Summary</td>
+                                        <td class="num">@Helpers.Fa.Num(line.Selection.Users)</td>
+                                        <td class="num">@Helpers.Fa.Num(line.Selection.ExtraCompanies)</td>
+                                        <td class="small">
+                                            دسکتاپ@(line.Selection.IncludeAndroid ? " + اندروید" : "")@(line.Selection.IncludeIos ? " + iOS" : "")
+                                        </td>
+                                        <td style="text-align:left" class="num">@Helpers.Fa.Money(line.UnitPrice)</td>
+                                        <td>
+                                            <button class="icon-btn" style="width:28px;height:28px;color:var(--bad-600)"
+                                                    title="حذف از انتخاب" @onclick="() => RemoveLine(line.Product.Id)" type="button">
+                                                <Icon Name="trash" Size="13" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="gap:var(--sp-5);align-items:start;margin-top:var(--sp-4)">
+                    <div class="stack-3">
+                        <p class="small muted" style="margin:0">
+                            مبلغِ بالا پیش از مالیات است؛ مالیات و کدِ تخفیف در صفحهٔ تسویه اعمال می‌شود.
+                            همهٔ مبلغ‌ها را سرور بر اساسِ قیمت‌هایِ تنظیم‌شده در پنلِ مدیر حساب می‌کند.
+                        </p>
+                        @if (quote is not null)
+                        {
+                            <p class="tiny muted" style="margin:0">
+                                <Icon Name="check" Size="12" /> قیمت با سرور تطبیق داده شد
+                                (@Helpers.Fa.Num(quote.ModuleCount) ماژول).
+                            </p>
+                        }
+                    </div>
+
+                    <div class="card card--pad" style="background:var(--surface-sunk)">
+                        <div class="between">
+                            <span class="muted">تعدادِ ماژول</span>
+                            <b class="num">@Helpers.Fa.Num(selected.Count)</b>
+                        </div>
+                        <div class="between" style="margin-top:var(--sp-2)">
+                            <span class="muted">جمعِ کل (پیش از مالیات)</span>
+                            <b class="num" style="font-size:var(--fs-lg)">@Helpers.Fa.Money(TotalToman())</b>
+                        </div>
+
+                        <div class="stack-2" style="margin-top:var(--sp-4)">
+                            <button class="btn btn--primary btn--block" @onclick="AddAllToCart" disabled="@busy" type="button">
+                                @if (busy) { <span class="btn__spinner"></span> } else { <Icon Name="cart" Size="16" /> }
+                                افزودنِ همه به سبد خرید
+                            </button>
+                            <button class="btn btn--buy btn--block" @onclick="PayNow" disabled="@busy" type="button">
+                                <Icon Name="credit-card" Size="16" /> پرداخت و ثبتِ سفارش
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+
+<!-- ==================== ۴. پرسش‌های پرتکرار ==================== -->
 @if (faqs.Count > 0)
 {
-    <section class="section">
+    <section class="section section--sunk">
         <div class="wrap wrap-sm">
             <div class="section__head">
                 <div class="section__eyebrow">پرسش‌های پرتکرار</div>
@@ -245,125 +396,313 @@
     </section>
 }
 
-<!-- ============ ۷. فراخوانِ پایانی ============ -->
-<section class="section section--tight" id="consult">
-    <div class="wrap">
-        <div class="card card--pad card--accent" style="text-align:center;padding-block:var(--sp-8)">
-            <h2 class="section__title">۱۴ روز، رایگان امتحان کنید</h2>
-            <p class="muted" style="max-width:52ch;margin-inline:auto">
-                نسخهٔ آزمایشیِ کامل است؛ نیازی به کارتِ اعتباری ندارد و داده‌هایتان
-                در پایانِ دوره پاک نمی‌شود.
-            </p>
-            <div class="cta-row">
-                <a class="btn btn--buy btn--lg" href="/contact">
-                    <Icon Name="play" Size="17" /> دریافت نسخهٔ آزمایشی
-                </a>
-                <a class="btn btn--ghost btn--lg" href="/support">
-                    <Icon Name="message" Size="17" /> گفتگو با پشتیبانی
-                </a>
-            </div>
-        </div>
-    </div>
-</section>
-
 @code {
-    private Paged<ProductListItemDto>? result;
+    /* ------------------------------ دادهٔ صفحه ------------------------------ */
     private IReadOnlyList<CategoryDto> categories = Array.Empty<CategoryDto>();
+    private IReadOnlyList<CategoryDto> allCategories = Array.Empty<CategoryDto>();
+    private IReadOnlyList<ProductListItemDto> modules = Array.Empty<ProductListItemDto>();
     private IReadOnlyList<FaqDto> faqs = Array.Empty<FaqDto>();
-    private Dictionary<string, ProductDetailDto> details = new();
-    private string? openFaq;
+    /// <summary>دستهٔ بازشده از نشانیِ صفحه (?cat=slug).</summary>
+    [Microsoft.AspNetCore.Components.SupplyParameterFromQuery(Name = "cat")]
+    public string? CatSlug { get; set; }
 
-    private string? category;
-    private string search = "";
-    private string sortBy = "popular";
-    private int page = 1;
+    private CategoryDto? activeCategory;
+    private ModuleQuoteDto? quote;
+
+    private string? openFaq;
+    private bool loading = true;
+    private bool busy;
+
+    /* ------------------------ انتخاب‌هایِ مشتری (به ترتیبِ انتخاب) ------------------------ */
+    private sealed class Picked
+    {
+        public required ProductListItemDto Product { get; set; }
+        public int Users { get; set; } = 1;
+        public int ExtraCompanies { get; set; }
+        public bool IncludeAndroid { get; set; }
+        public bool IncludeIos { get; set; }
+    }
+
+    private readonly List<Picked> selected = new();
 
     private ElementReference OrbEl;
     private ElementReference StatsEl;
     private bool statsDirty;
 
-    /* ---------------- آمارِ سرصفحه ----------------
-       سرصفحه هرگز منتظرِ API نمی‌ماند: مقدارهایِ جایگزین همان ابتدا در
-       نشانه‌گذاری حاضرند. اگر دادهٔ واقعی رسید، جایگزین می‌شود — و هرگز
-       «۰» به‌عنوانِ نشانهٔ شکست نشان داده نمی‌شود.                        */
-    private const int FallbackModules = 28;
     private const int FallbackTrial = 14;
-
-    private int statModules = FallbackModules;
-    private int statDatabase = 1;
+    private int statModules = 12;
+    private int statCategories = 8;
     private int statTrial = FallbackTrial;
 
-    // متن یک‌بار رندر می‌شود و بعداً تغییر نمی‌کند تا بلِیزر مالکِ شمارش نماند
-    private readonly string statModulesText = Helpers.Fa.Num(FallbackModules);
-    private readonly string statDatabaseText = Helpers.Fa.Num(1);
-    private readonly string statTrialText = Helpers.Fa.Num(FallbackTrial);
 
-    private IReadOnlyList<SegItem<string>> sortItems => new[]
-    {
-        new SegItem<string>("پرطرفدار", "popular"),
-        new SegItem<string>("جدیدترین", "newest"),
-        new SegItem<string>("امتیاز", "rating"),
-        new SegItem<string>("ارزان‌تر", "price-asc"),
-    };
+    /* ------------------------------ راه‌اندازی ------------------------------ */
 
     protected override async Task OnInitializedAsync()
     {
-        ParseQuery();
-
-        // همه با هم — صفحه منتظرِ زنجیره‌ای از درخواست‌ها نمی‌ماند
         var catTask = Api.GetCategoriesAsync();
         var faqTask = Api.GetFaqsAsync();
-        var prodTask = Api.GetProductsAsync(new ProductQuery
-        {
-            Page = page,
-            PageSize = 12,
-            Search = string.IsNullOrWhiteSpace(search) ? null : search,
-            Category = category,
-            SortBy = sortBy,
-        });
+        await Task.WhenAll(catTask, faqTask);
 
-        await Task.WhenAll(catTask, faqTask, prodTask);
-
-        categories = await catTask;
+        allCategories = await catTask;
+        categories = allCategories;
         faqs = (await faqTask).Take(6).ToList();
         openFaq = faqs.FirstOrDefault()?.Id;
-        result = await prodTask;
 
-        /* فقط وقتی عددِ معناداری رسیده جایگزین کن — والا همان مقدارِ جایگزین
-           می‌ماند تا کاربر صفر نبیند. */
-        var total = result?.Meta.TotalCount ?? 0;
-        if (total > 0 && total != statModules) { statModules = total; statsDirty = true; }
+        if (categories.Count > 0)
+        {
+            statCategories = categories.Count;
+            statsDirty = true;
+        }
+
+        // ?cat=slug از پنلِ مدیر می‌آید؛ اگر بود همان دسته باز می‌شود
+        activeCategory = (string.IsNullOrWhiteSpace(CatSlug) ? null : categories.FirstOrDefault(c => c.Slug == CatSlug))
+                         ?? categories.FirstOrDefault();
+        if (activeCategory is not null) await LoadModules(activeCategory);
+
+        loading = false;
+
+        var total = categories.Sum(c => c.ProductCount);
+        if (total > 0) statModules = total;
 
         StateHasChanged();
-        _ = LoadDetails();      // ویژگی‌هایِ هر کارت، در پس‌زمینه
     }
 
-    private ProductDetailDto? DetailOf(string id)
-        => details.TryGetValue(id, out var d) ? d : null;
+    private async Task LoadModules(CategoryDto category)
+    {
+        modules = Array.Empty<ProductListItemDto>();
+
+        // همهٔ ماژول‌هایِ دسته (تا ۵۰ مورد — فهرستِ دسته کوچک است)
+        var page = await Api.GetProductsAsync(new ProductQuery
+        {
+            Page = 1,
+            PageSize = 50,
+            Category = category.Slug,
+            SortBy = "newest"
+        });
+
+        modules = page.Items;
+
+    }
+
+    private async Task SelectCategory(CategoryDto category)
+    {
+        activeCategory = category;
+        await LoadModules(category);
+        StateHasChanged();
+    }
+
+    /* ------------------------------ انتخاب ------------------------------ */
 
     /// <summary>
-    /// ویژگی‌هایِ هر نرم‌افزار با یک درخواستِ دسته‌ای گرفته می‌شود،
-    /// نه با دوازده درخواستِ جداگانه.
+    /// قیمتِ امکاناتِ جانبی از آنِ دستهٔ خودِ ماژول است، نه دستهٔ بازِ فعلی؛
+    /// بنابراین می‌توان از چند دسته ماژول انتخاب کرد و خلاصه همه را یک‌جا دید.
     /// </summary>
-    private async Task LoadDetails()
+    private CategoryPricingDto PricingOf(ProductListItemDto product)
+        => allCategories.FirstOrDefault(c => c.Slug == product.CategorySlug)?.Pricing
+           ?? activeCategory?.Pricing
+           ?? CategoryPricingDto.Free;
+
+    private int MinUsersFor(ProductListItemDto product) => Math.Max(1, PricingOf(product).UsersIncluded);
+
+    private Picked? SelectionOf(ProductListItemDto p)
+        => selected.FirstOrDefault(s => s.Product.Id == p.Id);
+
+    private void ToggleModule(ProductListItemDto product)
     {
-        if (result is null || result.Items.Count == 0) return;
-        try
+        var existing = SelectionOf(product);
+        if (existing is not null)
         {
-            var list = await Api.GetProductsByIdsAsync(result.Items.Select(x => x.Id));
-            details = list.ToDictionary(x => x.Id);
-            StateHasChanged();
+            selected.Remove(existing);
         }
-        catch (Exception ex) { Console.WriteLine("[details] " + ex.Message); }
+        else
+        {
+            var pricing = PricingOf(product);
+            selected.Add(new Picked
+            {
+                Product = product,
+                Users = Math.Max(1, pricing.UsersIncluded),
+                ExtraCompanies = 0
+            });
+        }
+
+        _ = RefreshQuoteAsync();
     }
 
-    private void ParseQuery()
+    private void RemoveLine(string productId)
     {
-        var query = Helpers.QueryString.Parse(Nav.Uri);
-        if (query.TryGetValue("category", out var c)) category = c;
-        if (query.TryGetValue("search", out var s)) search = s;
-        if (query.TryGetValue("sortBy", out var so)) sortBy = so;
+        var line = selected.FirstOrDefault(s => s.Product.Id == productId);
+        if (line is not null) selected.Remove(line);
+        _ = RefreshQuoteAsync();
     }
+
+    private void ClearSelection()
+    {
+        selected.Clear();
+        quote = null;
+    }
+
+    private void StepUsers(ProductListItemDto product, Picked sel, int delta)
+    {
+        var pricing = PricingOf(product);
+        var min = MinUsersFor(product);
+        var max = Math.Max(min, pricing.MaxUsers);
+        sel.Users = Math.Clamp(sel.Users + delta, min, max);
+        _ = RefreshQuoteAsync();
+    }
+
+    private void StepCompanies(ProductListItemDto product, Picked sel, int delta)
+    {
+        var pricing = PricingOf(product);
+        var max = pricing.AllowMultiCompany ? Math.Max(0, pricing.MaxExtraCompanies) : 0;
+        sel.ExtraCompanies = Math.Clamp(sel.ExtraCompanies + delta, 0, max);
+        _ = RefreshQuoteAsync();
+    }
+
+    private void TogglePlatform(Picked sel, string platform)
+    {
+        if (platform == "android") sel.IncludeAndroid = !sel.IncludeAndroid;
+        else sel.IncludeIos = !sel.IncludeIos;
+        _ = RefreshQuoteAsync();
+    }
+
+    /* --------------------------- محاسبهٔ قیمت ---------------------------
+       نمایش فوری از رویِ همان قیمت‌هایِ دسته (که از پایگاه‌داده آمده) انجام
+       می‌شود و هم‌زمان قیمتِ رسمی از سرور گرفته می‌شود؛ اگر برگشت، همان
+       جای‌گزین می‌شود. سرور هنگامِ افزودن به سبد دوباره حساب می‌کند.        */
+
+    private decimal UsersCost(ProductListItemDto p, Picked sel)
+    {
+        var pricing = PricingOf(p);
+        var included = Math.Max(1, pricing.UsersIncluded);
+        return Math.Max(0, sel.Users - included) * Math.Max(0, pricing.PricePerUserToman);
+    }
+
+    private decimal CompaniesCost(ProductListItemDto p, Picked sel)
+        => Math.Max(0, sel.ExtraCompanies) * Math.Max(0, PricingOf(p).PricePerExtraCompanyToman);
+
+    private decimal MobileCost(ProductListItemDto p, Picked sel)
+    {
+        var pricing = PricingOf(p);
+        return (sel.IncludeAndroid ? Math.Max(0, pricing.PriceAndroidToman) : 0)
+             + (sel.IncludeIos ? Math.Max(0, pricing.PriceIosToman) : 0);
+    }
+
+    private decimal UnitPriceOf(ProductListItemDto p)
+    {
+        var sel = SelectionOf(p);
+        if (sel is null) return p.BasePriceToman;
+
+        // اگر سرور قیمت داده باشد، همان معتبر است
+        var server = quote?.Lines.FirstOrDefault(l => l.ProductId == p.Id);
+        if (server is not null) return server.Price.TotalToman;
+
+        return p.BasePriceToman + UsersCost(p, sel) + CompaniesCost(p, sel) + MobileCost(p, sel);
+    }
+
+    private decimal TotalToman() => quote?.TotalToman ?? selected.Sum(s => UnitPriceOf(s.Product));
+
+    private string SummaryFor(ProductListItemDto p, Picked sel)
+    {
+        var server = quote?.Lines.FirstOrDefault(l => l.ProductId == p.Id);
+        if (server is not null) return server.Summary;
+
+        var parts = new List<string>
+        {
+            sel.Users <= MinUsersFor(p) ? "نسخهٔ دسکتاپ، ۱ کاربر" : $"نسخهٔ دسکتاپ، {Helpers.Fa.Num(sel.Users)} کاربر"
+        };
+
+        if (sel.ExtraCompanies > 0)
+            parts.Add($"{Helpers.Fa.Num(sel.ExtraCompanies)} شرکتِ اضافه (هر شرکت {Helpers.Fa.Num(sel.Users)} کاربر)");
+
+        if (sel.IncludeAndroid) parts.Add("اندروید");
+        if (sel.IncludeIos) parts.Add("iOS");
+
+        return string.Join(" • ", parts);
+    }
+
+    private sealed record Line(Picked Selection, ProductListItemDto Product, string Summary, decimal UnitPrice);
+
+    private List<Line> SelectedLines() => selected
+        .Select(s => new Line(s, s.Product, SummaryFor(s.Product, s), UnitPriceOf(s.Product)))
+        .ToList();
+
+    private async Task RefreshQuoteAsync()
+    {
+        if (selected.Count == 0)
+        {
+            quote = null;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        try
+        {
+            var items = selected.Select(s => new ModuleSelectionDto
+            {
+                ProductId = s.Product.Id,
+                Users = s.Users,
+                ExtraCompanies = s.ExtraCompanies,
+                IncludeAndroid = s.IncludeAndroid,
+                IncludeIos = s.IncludeIos
+            }).ToList();
+
+            var result = await Api.QuoteModulesAsync(items);
+            if (result is not null) quote = result;
+        }
+        catch
+        {
+            // قیمتِ محلی همان می‌ماند؛ افزودن به سبد هم دوباره از سرور می‌پرسد.
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    /* ------------------------------ خرید ------------------------------ */
+
+    private async Task<bool> AddAllToCart()
+    {
+        if (selected.Count == 0) return false;
+
+        busy = true;
+        var added = 0;
+
+        foreach (var s in selected.ToList())
+        {
+            var ok = await Cart.AddConfiguredAsync(new ModuleSelectionDto
+            {
+                ProductId = s.Product.Id,
+                Users = s.Users,
+                ExtraCompanies = s.ExtraCompanies,
+                IncludeAndroid = s.IncludeAndroid,
+                IncludeIos = s.IncludeIos
+            });
+
+            if (!ok)
+            {
+                Toast.Push("افزودن به سبد انجام نشد", Cart.Error ?? "دوباره تلاش کنید.", ToastTone.Bad);
+                busy = false;
+                return false;
+            }
+
+            added++;
+        }
+
+        busy = false;
+        Toast.Push("به سبد اضافه شد",
+            $"{Helpers.Fa.Num(added)} ماژول با همان پیکربندی به سبدِ خرید رفت.", ToastTone.Ok);
+
+        return true;
+    }
+
+    private async Task PayNow()
+    {
+        var ok = await AddAllToCart();
+        if (ok) Nav.NavigateTo("/checkout");
+    }
+
+    private void ToggleFaq(string id) => openFaq = openFaq == id ? null : id;
+
+    /* ------------------------------ گرافیک ------------------------------ */
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -373,7 +712,6 @@
             catch { /* اگر نشد، گرافیک همان حالتِ ایستا می‌ماند */ }
         }
 
-        // مقدارِ واقعی رسیده است: از عددِ کنونی به آن می‌رویم، نه از صفر
         if (statsDirty)
         {
             statsDirty = false;
@@ -385,64 +723,4 @@
     {
         try { await Js.HeroOrbitDispose(); } catch { }
     }
-
-    private async Task Load()
-    {
-        result = await Api.GetProductsAsync(new ProductQuery
-        {
-            Page = page,
-            PageSize = 12,
-            Search = string.IsNullOrWhiteSpace(search) ? null : search,
-            Category = category,
-            SortBy = sortBy,
-        });
-        details = new();
-        StateHasChanged();
-        _ = LoadDetails();
-    }
-
-    private async Task GoPage(int p) { page = p; await Load(); }
-
-    private async Task OnSortChanged(string? value)
-    {
-        sortBy = value ?? "popular";
-        page = 1;
-        await Load();
-    }
-
-    private async Task SetCategory(string? slug)
-    {
-        category = slug;
-        page = 1;
-        await Load();
-    }
-
-    private async Task OnSearchInput(ChangeEventArgs e)
-    {
-        search = e.Value?.ToString() ?? "";
-        if (string.IsNullOrWhiteSpace(search)) { page = 1; await Load(); }
-    }
-
-    private async Task OnSearchKey(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter") { page = 1; await Load(); }
-    }
-
-    private async Task Reset()
-    {
-        category = null; search = ""; sortBy = "popular"; page = 1;
-        await Load();
-    }
-
-    private void ToggleFaq(string id) => openFaq = openFaq == id ? null : id;
-
-    private static string IconOf(string slug) => slug switch
-    {
-        "erp-suite" => "layers",
-        "finance-accounting" => "calculator",
-        "operations-inventory" => "boxes",
-        "desktop-productivity" => "monitor",
-        "addons-integrations" => "puzzle",
-        _ => "package",
-    };
 }

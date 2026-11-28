@@ -6,8 +6,27 @@ namespace Northwind.Core.Models.Catalog;
 
 /* ============================== دسته‌ها ============================== */
 
+/// <summary>
+/// دستهٔ محصولات = «خانوادهٔ ماژول‌ها» (مثلاً مالی و حسابداری). قیمت‌گذاریِ
+/// امکاناتِ جانبی (کاربرِ اضافه، شرکتِ اضافه، اندروید، iOS) رویِ خودِ دسته
+/// تعریف می‌شود و هنگامِ خرید به قیمتِ پایهٔ هر ماژول اضافه می‌گردد.
+/// </summary>
 public sealed record CategoryViewModel(
-    Guid Id, string Name, string Slug, string? Description, string Icon, int ProductCount);
+    Guid Id, string Name, string Slug, string? Description, string Icon, int ProductCount,
+    CategoryPricingViewModel Pricing);
+
+/// <summary>قیمت‌هایِ امکاناتِ جانبیِ یک دسته — همان چیزی که مدیر در پنل تنظیم می‌کند.</summary>
+public sealed record CategoryPricingViewModel(
+    decimal PricePerUserToman,
+    decimal PricePerExtraCompanyToman,
+    decimal PriceAndroidToman,
+    decimal PriceIosToman,
+    int UsersIncluded,
+    int CompaniesIncluded,
+    int MaxUsers,
+    int MaxExtraCompanies,
+    bool AllowMultiCompany,
+    bool AllowMobileAddons);
 
 /// <summary>بدنهٔ ساخت/ویرایشِ دسته — <c>POST /api/categories</c>، <c>PUT /api/categories/{id}</c>.</summary>
 public sealed class CategoryInput
@@ -26,6 +45,37 @@ public sealed class CategoryInput
     public string Icon { get; set; } = "package";
 
     public int SortOrder { get; set; }
+
+    /* ---------------- قیمت‌گذاریِ امکاناتِ جانبی (پنلِ مدیر) ---------------- */
+
+    /// <summary>قیمتِ هر کاربرِ اضافه بر کاربرانِ شاملِ قیمتِ پایه.</summary>
+    [Range(0, 10_000_000_000, ErrorMessage = "قیمتِ هر کاربر باید بین ۰ و ۱۰ میلیارد تومان باشد.")]
+    public decimal PricePerUserToman { get; set; }
+
+    /// <summary>قیمتِ هر شرکتِ اضافه.</summary>
+    [Range(0, 10_000_000_000, ErrorMessage = "قیمتِ هر شرکتِ اضافه باید بین ۰ و ۱۰ میلیارد تومان باشد.")]
+    public decimal PricePerExtraCompanyToman { get; set; }
+
+    [Range(0, 10_000_000_000, ErrorMessage = "قیمتِ نسخهٔ اندروید باید بین ۰ و ۱۰ میلیارد تومان باشد.")]
+    public decimal PriceAndroidToman { get; set; }
+
+    [Range(0, 10_000_000_000, ErrorMessage = "قیمتِ نسخهٔ iOS باید بین ۰ و ۱۰ میلیارد تومان باشد.")]
+    public decimal PriceIosToman { get; set; }
+
+    [Range(1, 1000, ErrorMessage = "تعدادِ کاربرِ شاملِ قیمتِ پایه بین ۱ و ۱۰۰۰ است.")]
+    public int UsersIncluded { get; set; } = 1;
+
+    [Range(1, 100, ErrorMessage = "تعدادِ شرکتِ شاملِ قیمتِ پایه بین ۱ و ۱۰۰ است.")]
+    public int CompaniesIncluded { get; set; } = 1;
+
+    [Range(1, 1000, ErrorMessage = "سقفِ کاربر بین ۱ و ۱۰۰۰ است.")]
+    public int MaxUsers { get; set; } = 50;
+
+    [Range(0, 100, ErrorMessage = "سقفِ شرکتِ اضافه بین ۰ و ۱۰۰ است.")]
+    public int MaxExtraCompanies { get; set; } = 10;
+
+    public bool AllowMultiCompany { get; set; } = true;
+    public bool AllowMobileAddons { get; set; } = true;
 }
 
 /* ============================== محصولات ============================== */

@@ -119,8 +119,7 @@ public sealed class StoreApiRouter : IStoreApi
             return Array.Empty<CategoryDto>();
         }
 
-        return list.Select(c => new CategoryDto(
-            c.Id.ToString(), c.Name, c.Slug, c.Description, c.Icon, c.ProductCount)).ToList();
+        return list.Select(ToCategory).ToList();
     }
 
     public async Task<CategoryDto> UpsertCategoryAsync(CategoryDto category)
@@ -173,6 +172,63 @@ public sealed class StoreApiRouter : IStoreApi
             MarkUnauthorized("سبدِ خرید");
             return EmptyCart;
         }
+        return ToCart(cart);
+    }
+
+    /* ------------------- قیمت‌گذاریِ پیکربندی و افزودن به سبد ------------------- */
+
+    /// <summary>قیمتِ انتخاب‌هایِ مشتری را از سرور می‌گیرد.</summary>
+    public async Task<ModuleQuoteDto?> QuoteModulesAsync(IReadOnlyList<ModuleSelectionDto> items)
+    {
+        if (items.Count == 0)
+            return new ModuleQuoteDto(Array.Empty<ModuleQuoteLineDto>(), 0, 0m, "IRT");
+
+        var quote = await _v1.SendAsync<V1ModuleQuote>("POST", "api/v1/catalog/quote",
+            new
+            {
+                items = items.Select(i => new
+                {
+                    productId = i.ProductId,
+                    users = i.Users,
+                    extraCompanies = i.ExtraCompanies,
+                    includeAndroid = i.IncludeAndroid,
+                    includeIos = i.IncludeIos
+                })
+            });
+
+        return new ModuleQuoteDto(
+            quote.Lines.Select(l => new ModuleQuoteLineDto(
+                l.ProductId.ToString(), l.ProductName, l.ProductSlug,
+                l.CategoryId, l.CategoryName, l.CategorySlug, l.AccentColor,
+                new ModulePriceDto(
+                    l.Price.BaseToman, l.Price.UsersToman, l.Price.CompaniesToman,
+                    l.Price.AndroidToman, l.Price.IosToman, l.Price.TotalToman,
+                    l.Price.Users, l.Price.ExtraCompanies,
+                    l.Price.IncludeAndroid, l.Price.IncludeIos,
+                    l.Price.IncludedUsers, l.Price.IncludedCompanies),
+                l.Summary)).ToList(),
+            quote.ModuleCount, quote.TotalToman, quote.Currency);
+    }
+
+    /// <summary>افزودنِ یک ماژولِ پیکربندی‌شده به سبد.</summary>
+    public async Task<CartDto> AddConfiguredToCartAsync(string sessionKey, ModuleSelectionDto selection, int quantity = 1)
+    {
+        _v1.SessionKey = sessionKey;
+
+        if (!Guid.TryParse(selection.ProductId, out var productId))
+            throw new V1ApiException("ماژولِ انتخاب‌شده معتبر نیست.", "invalid_product", 400);
+
+        var cart = await _v1.SendAsync<V1Cart>("POST", "api/v1/cart/items", new
+        {
+            productId,
+            quantity,
+            users = selection.Users,
+            extraCompanies = selection.ExtraCompanies,
+            includeAndroid = selection.IncludeAndroid,
+            includeIos = selection.IncludeIos,
+            sessionKey
+        });
+
         return ToCart(cart);
     }
 
@@ -954,7 +1010,13 @@ public sealed class StoreApiRouter : IStoreApi
         s.MaintenanceMode, s.Announcement);
 
     private static CategoryDto ToCategory(V1Category c) => new(
-        c.Id.ToString(), c.Name, c.Slug, c.Description, c.Icon, c.ProductCount);
+        c.Id.ToString(), c.Name, c.Slug, c.Description, c.Icon, c.ProductCount,
+        c.Pricing is null ? null : new CategoryPricingDto(
+            c.Pricing.PricePerUserToman, c.Pricing.PricePerExtraCompanyToman,
+            c.Pricing.PriceAndroidToman, c.Pricing.PriceIosToman,
+            c.Pricing.UsersIncluded, c.Pricing.CompaniesIncluded,
+            c.Pricing.MaxUsers, c.Pricing.MaxExtraCompanies,
+            c.Pricing.AllowMultiCompany, c.Pricing.AllowMobileAddons));
 
     private static CustomerDto ToCustomer(V1Customer c) => new(
         c.Id.ToString(), c.Email, c.FullName, c.Role, c.Company,
@@ -1010,7 +1072,9 @@ public sealed class StoreApiRouter : IStoreApi
         c.Items.Select(i => new CartItemDto(
             i.Id.ToString(), i.PlanId.ToString(), i.Quantity, i.ProductId.ToString(),
             i.ProductName, i.ProductSlug, i.PlanName, i.Tier, i.BillingType,
-            i.AccentColor, i.UnitPriceToman, i.LineTotalToman)).ToList(),
+            i.AccentColor, i.UnitPriceToman, i.LineTotalToman,
+            i.Users, i.ExtraCompanies, i.IncludeAndroid, i.IncludeIos,
+            i.ConfigurationSummary)).ToList(),
         c.ItemCount, c.SubtotalToman, c.DiscountToman, c.TaxToman, c.TotalToman,
         c.DiscountCode, c.Currency);
 

@@ -33,7 +33,20 @@ public sealed record UserDto(
 
 /* ------------------------------- Catalog -------------------------------- */
 
-public sealed record CategoryDto(string Id, string Name, string Slug, string? Description, string Icon, int ProductCount);
+/// <summary>قیمت‌هایِ امکاناتِ جانبیِ یک دسته — همان چیزی که مدیر در پنل می‌گذارد.</summary>
+public sealed record CategoryPricingDto(
+    decimal PricePerUserToman, decimal PricePerExtraCompanyToman,
+    decimal PriceAndroidToman, decimal PriceIosToman,
+    int UsersIncluded, int CompaniesIncluded, int MaxUsers, int MaxExtraCompanies,
+    bool AllowMultiCompany, bool AllowMobileAddons)
+{
+    public static readonly CategoryPricingDto Free = new(0, 0, 0, 0, 1, 1, 50, 10, true, true);
+}
+
+/// <summary>دستهٔ ماژول‌ها با قیمت‌گذاریِ امکاناتِ جانبی.</summary>
+public sealed record CategoryDto(
+    string Id, string Name, string Slug, string? Description, string Icon, int ProductCount,
+    CategoryPricingDto? Pricing = null);
 
 public sealed record PlanDto(
     string Id, string Name, PlanTier Tier, BillingType BillingType,
@@ -71,7 +84,9 @@ public sealed record ProductDetailDto(
 public sealed record CartItemDto(
     string Id, string PlanId, int Quantity, string ProductId, string ProductName,
     string ProductSlug, string PlanName, PlanTier Tier, BillingType BillingType,
-    string AccentColor, decimal UnitPriceToman, decimal LineTotalToman);
+    string AccentColor, decimal UnitPriceToman, decimal LineTotalToman,
+    int Users = 1, int ExtraCompanies = 0, bool IncludeAndroid = false, bool IncludeIos = false,
+    string? ConfigurationSummary = null);
 
 public sealed record CartDto(
     string Id, IReadOnlyList<CartItemDto> Items, int ItemCount,
@@ -231,3 +246,32 @@ public sealed record ArticleInput(
 
 /// <summary>تغییرِ وضعیتِ درخواستِ دمو توسط مدیر.</summary>
 public sealed record DemoStatusInput(DemoRequestStatus Status);
+
+/* ------------------------ پیکربندی و قیمت‌گذاریِ ماژول ------------------------ */
+
+/// <summary>ریزِ محاسبهٔ قیمتِ یک ماژول (همه از سرور می‌آید).</summary>
+public sealed record ModulePriceDto(
+    decimal BaseToman, decimal UsersToman, decimal CompaniesToman,
+    decimal AndroidToman, decimal IosToman, decimal TotalToman,
+    int Users, int ExtraCompanies, bool IncludeAndroid, bool IncludeIos,
+    int IncludedUsers, int IncludedCompanies);
+
+/// <summary>یک ردیفِ قیمت‌گذاری‌شده: کدام ماژول، با چه پیکربندی و چه مبلغی.</summary>
+public sealed record ModuleQuoteLineDto(
+    string ProductId, string ProductName, string ProductSlug,
+    string CategoryId, string CategoryName, string CategorySlug,
+    string AccentColor, ModulePriceDto Price, string Summary);
+
+/// <summary>جمعِ انتخاب‌هایِ مشتری در صفحهٔ نرم‌افزارها.</summary>
+public sealed record ModuleQuoteDto(
+    IReadOnlyList<ModuleQuoteLineDto> Lines, int ModuleCount, decimal TotalToman, string Currency);
+
+/// <summary>انتخابِ مشتری برایِ یک ماژول؛ به سرور فرستاده می‌شود تا قیمت بدهد.</summary>
+public sealed class ModuleSelectionDto
+{
+    public string ProductId { get; set; } = "";
+    public int Users { get; set; } = 1;
+    public int ExtraCompanies { get; set; }
+    public bool IncludeAndroid { get; set; }
+    public bool IncludeIos { get; set; }
+}

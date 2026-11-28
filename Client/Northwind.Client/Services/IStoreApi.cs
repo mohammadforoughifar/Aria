@@ -56,6 +56,12 @@ public interface IStoreApi
     /* ------------------------------- Cart -------------------------------- */
     Task<CartDto> GetCartAsync(string sessionKey, string? discountCode = null);
     Task<CartDto> AddToCartAsync(string sessionKey, string planId, int quantity = 1);
+
+    /// <summary>قیمتِ انتخاب‌هایِ پیکربندی (تعداد کاربر، شرکتِ اضافه، اندروید/iOS) — از سرور.</summary>
+    Task<ModuleQuoteDto?> QuoteModulesAsync(IReadOnlyList<ModuleSelectionDto> items);
+
+    /// <summary>افزودنِ ماژولِ پیکربندی‌شده به سبد.</summary>
+    Task<CartDto> AddConfiguredToCartAsync(string sessionKey, ModuleSelectionDto selection, int quantity = 1);
     Task<CartDto> UpdateCartItemAsync(string sessionKey, string itemId, int quantity);
     Task<CartDto> RemoveCartItemAsync(string sessionKey, string itemId);
     Task<CartDto> ApplyDiscountAsync(string sessionKey, string code);

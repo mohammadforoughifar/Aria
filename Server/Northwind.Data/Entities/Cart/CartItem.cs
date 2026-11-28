@@ -16,4 +16,24 @@ public class CartItem : EntityBase
     public Plan? Plan { get; set; }
 
     public int Quantity { get; set; } = 1;
+
+    /* -------------------- پیکربندیِ ماژول در سبد --------------------
+       مشتری رویِ صفحهٔ نرم‌افزارها تعدادِ کاربر، شرکتِ اضافه و نسخه‌هایِ موبایل
+       را انتخاب می‌کند. همان انتخاب‌ها این‌جا می‌مانند تا سبد، تسویه و فاکتور
+       دقیقاً همان چیزی را نشان دهند که خریدار چیده است.                     */
+
+    /// <summary>تعدادِ کاربر برایِ هر شرکت (پیش‌فرض: ۱).</summary>
+    public int Users { get; set; } = 1;
+
+    /// <summary>تعدادِ شرکتِ اضافه بر شرکتِ اصلی.</summary>
+    public int ExtraCompanies { get; set; }
+
+    public bool IncludeAndroid { get; set; }
+    public bool IncludeIos { get; set; }
+
+    /// <summary>
+    /// قیمتِ واحدِ محاسبه‌شده برایِ همین پیکربندی. اگر خالی باشد، ردیف از مسیرِ
+    /// قدیمیِ طرح‌هایِ قیمت آمده و قیمتش از <c>Plan.PriceToman</c> خوانده می‌شود.
+    /// </summary>
+    public decimal? ConfiguredUnitPriceToman { get; set; }
 }

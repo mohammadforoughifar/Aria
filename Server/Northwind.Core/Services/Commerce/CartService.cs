@@ -2,6 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Northwind.Core.Models.Commerce;
 using Northwind.Core.Models.Content;
 using Northwind.Data.Entities.Cart;
+using Northwind.Data.Entities.Catalog;
+using Northwind.Core.Services.Catalog;
 using Northwind.Data.Entities.Commerce;
 using Northwind.Data.Entities.Content;
 using Northwind.Data.Enums;
@@ -25,8 +27,13 @@ public interface ICartService
 public sealed class CartService : ICartService
 {
     private readonly NorthwindDbContext _db;
+    private readonly IModulePricingService _pricing;
 
-    public CartService(NorthwindDbContext db) => _db = db;
+    public CartService(NorthwindDbContext db, IModulePricingService pricing)
+    {
+        _db = db;
+        _pricing = pricing;
+    }
 
     public async Task<CartViewModel> GetAsync(string sessionKey, Guid? userId, string? discountCode = null, CancellationToken ct = default)
     {
@@ -38,15 +45,97 @@ public sealed class CartService : ICartService
     {
         var sessionKey = ResolveSession(input.SessionKey, userId);
 
-        var plan = await _db.Plans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == input.PlanId, ct)
-            ?? throw new NotFoundException("طرح", input.PlanId);
+        // مسیرِ پیکربندی: ماژول + تعدادِ کاربر + شرکتِ اضافه + اندروید/iOS
+        if (input.ProductId is { } productId)
+        {
+            await AddConfiguredAsync(input, productId, sessionKey, userId, ct);
+        }
+        else if (input.PlanId is { } planId)
+        {
+            // مسیرِ قدیمی: طرحِ قیمت
+            _ = await _db.Plans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == planId, ct)
+                ?? throw new NotFoundException("طرح", planId);
+
+            var existing = await _db.CartItems.FirstOrDefaultAsync(c =>
+                c.PlanId == planId && c.SessionKey == sessionKey && c.UserId == userId
+                && c.ConfiguredUnitPriceToman == null, ct);
+
+            if (existing is not null)
+            {
+                existing.Quantity = Math.Min(99, existing.Quantity + input.Quantity);
+            }
+            else
+            {
+                _db.CartItems.Add(new CartItem
+                {
+                    SessionKey = sessionKey,
+                    UserId = userId,
+                    PlanId = planId,
+                    Quantity = Math.Clamp(input.Quantity, 1, 99)
+                });
+            }
+        }
+        else
+        {
+            throw new BadRequestException("برایِ افزودن به سبد، یا شناسهٔ طرح یا شناسهٔ ماژول لازم است.",
+                "plan_or_product_required");
+        }
+
+        await _db.SaveChangesAsync(ct);
+        var items = await LoadItemsAsync(sessionKey, userId, ct);
+        return await BuildAsync(sessionKey, userId, items, null, ct);
+    }
+
+    /// <summary>
+    /// ردیفِ سبد از رویِ پیکربندیِ مشتری. قیمتِ واحد همین‌جا و تنها از رویِ
+    /// تنظیماتِ دسته در پایگاه‌داده حساب می‌شود.
+    /// </summary>
+    private async Task AddConfiguredAsync(AddToCartInput input, Guid productId,
+        string sessionKey, Guid? userId, CancellationToken ct)
+    {
+        var product = await _db.Products
+            .Include(p => p.Category)
+            .Include(p => p.Plans)
+            .FirstOrDefaultAsync(p => p.Id == productId, ct)
+            ?? throw new NotFoundException("ماژول", productId);
+
+        if (!product.IsActive)
+            throw new BusinessRuleException("این ماژول در حالِ حاضر قابلِ خرید نیست.", "product_inactive");
+
+        var category = product.Category
+            ?? throw new BadRequestException("این ماژول به هیچ دسته‌ای وصل نیست.", "category_missing");
+
+        var selection = new ModuleSelection
+        {
+            ProductId = product.Id,
+            Users = input.Users,
+            ExtraCompanies = input.ExtraCompanies,
+            IncludeAndroid = input.IncludeAndroid,
+            IncludeIos = input.IncludeIos
+        };
+
+        var price = _pricing.Calculate(product, category, selection);
+
+        // ردیفِ سبد به یک طرحِ قیمت نیاز دارد؛ نخستین (ارزان‌ترین) طرحِ محصول
+        // انتخاب می‌شود تا سبد و فاکتور همچنان به کاتالوگ وصل بمانند.
+        var plan = product.Plans
+            .OrderBy(p => p.SortOrder)
+            .ThenBy(p => p.PriceToman)
+            .FirstOrDefault()
+            ?? await EnsureDefaultPlanAsync(product, ct);
 
         var existing = await _db.CartItems.FirstOrDefaultAsync(c =>
-            c.PlanId == input.PlanId && c.SessionKey == sessionKey && c.UserId == userId, ct);
+            c.PlanId == plan.Id && c.SessionKey == sessionKey && c.UserId == userId
+            && c.ConfiguredUnitPriceToman != null
+            && c.Users == price.Users
+            && c.ExtraCompanies == price.ExtraCompanies
+            && c.IncludeAndroid == price.IncludeAndroid
+            && c.IncludeIos == price.IncludeIos, ct);
 
         if (existing is not null)
         {
             existing.Quantity = Math.Min(99, existing.Quantity + input.Quantity);
+            existing.ConfiguredUnitPriceToman = price.TotalToman;   // اگر مدیر قیمت را عوض کرده باشد
         }
         else
         {
@@ -54,14 +143,39 @@ public sealed class CartService : ICartService
             {
                 SessionKey = sessionKey,
                 UserId = userId,
-                PlanId = input.PlanId,
-                Quantity = Math.Clamp(input.Quantity, 1, 99)
+                PlanId = plan.Id,
+                Quantity = Math.Clamp(input.Quantity, 1, 99),
+                Users = price.Users,
+                ExtraCompanies = price.ExtraCompanies,
+                IncludeAndroid = price.IncludeAndroid,
+                IncludeIos = price.IncludeIos,
+                ConfiguredUnitPriceToman = price.TotalToman
             });
         }
+    }
 
+    /// <summary>
+    /// ماژولی که هیچ طرحی ندارد (مثلاً تازه در پنل ساخته شده) یک طرحِ پیش‌فرضِ
+    /// «دسکتاپ» می‌گیرد تا سبد بتواند همان ماژول را نگه دارد.
+    /// </summary>
+    private async Task<Plan> EnsureDefaultPlanAsync(Product product, CancellationToken ct)
+    {
+        var plan = new Plan
+        {
+            ProductId = product.Id,
+            Name = "دسکتاپ",
+            Tier = PlanTier.SingleUser,
+            BillingType = BillingType.OneTime,
+            PriceToman = product.BasePriceToman,
+            Seats = 1,
+            LicenseMonths = 12,
+            SortOrder = 0
+        };
+
+        _db.Plans.Add(plan);
         await _db.SaveChangesAsync(ct);
-        var items = await LoadItemsAsync(sessionKey, userId, ct);
-        return await BuildAsync(sessionKey, userId, items, null, ct);
+        product.Plans.Add(plan);
+        return plan;
     }
 
     public async Task<CartViewModel> UpdateQuantityAsync(string sessionKey, Guid? userId, Guid itemId, int quantity, string? discountCode = null, CancellationToken ct = default)
@@ -144,11 +258,29 @@ public sealed class CartService : ICartService
     {
         var rows = items
             .Where(i => i.Plan?.Product is not null)
-            .Select(i => new CartItemViewModel(
-                i.Id, i.PlanId, i.Quantity, i.Plan!.ProductId,
-                i.Plan.Product!.Name, i.Plan.Product.Slug, i.Plan.Name,
-                i.Plan.Tier, i.Plan.BillingType, i.Plan.Product.AccentColor,
-                i.Plan.PriceToman, i.Plan.PriceToman * i.Quantity))
+            .Select(i =>
+            {
+                // ردیفِ پیکربندی‌شده قیمتِ خودش را دارد؛ ردیفِ طرح‌محور از Plan.
+                var unit = i.ConfiguredUnitPriceToman ?? i.Plan!.PriceToman;
+
+                string? summary = null;
+                if (i.ConfiguredUnitPriceToman is not null)
+                {
+                    var parts = new List<string> { $"نسخهٔ دسکتاپ، {FaDigits.Of(i.Users)} کاربر" };
+                    if (i.ExtraCompanies > 0)
+                        parts.Add($"{FaDigits.Of(i.ExtraCompanies)} شرکتِ اضافه (هر شرکت {FaDigits.Of(i.Users)} کاربر)");
+                    if (i.IncludeAndroid) parts.Add("اندروید");
+                    if (i.IncludeIos) parts.Add("iOS");
+                    summary = string.Join(" • ", parts);
+                }
+
+                return new CartItemViewModel(
+                    i.Id, i.PlanId, i.Quantity, i.Plan!.ProductId,
+                    i.Plan.Product!.Name, i.Plan.Product.Slug, i.Plan.Name,
+                    i.Plan.Tier, i.Plan.BillingType, i.Plan.Product.AccentColor,
+                    unit, unit * i.Quantity,
+                    i.Users, i.ExtraCompanies, i.IncludeAndroid, i.IncludeIos, summary);
+            })
             .ToList();
 
         var subtotal = rows.Sum(r => r.LineTotalToman);

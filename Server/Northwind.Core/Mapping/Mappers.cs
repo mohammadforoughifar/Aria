@@ -5,6 +5,7 @@ using Northwind.Core.Models.Commerce;
 using Northwind.Core.Models.Common;
 using Northwind.Core.Models.Content;
 using Northwind.Core.Models.Support;
+using Northwind.Core.Services.Common;
 using Northwind.Data.Entities.Catalog;
 using Northwind.Data.Entities.Commerce;
 using Northwind.Data.Entities.Content;
@@ -36,7 +37,18 @@ public static class Mappers
     /* ------------------------------- دسته ------------------------------- */
 
     public static CategoryViewModel ToViewModel(this Category c, int productCount) =>
-        new(c.Id, c.Name, c.Slug, c.Description, c.Icon, productCount);
+        new(c.Id, c.Name, c.Slug, c.Description, c.Icon, productCount,
+            new CategoryPricingViewModel(
+                c.PricePerUserToman,
+                c.PricePerExtraCompanyToman,
+                c.PriceAndroidToman,
+                c.PriceIosToman,
+                c.UsersIncluded,
+                c.CompaniesIncluded,
+                c.MaxUsers,
+                c.MaxExtraCompanies,
+                c.AllowMultiCompany,
+                c.AllowMobileAddons));
 
     /* ------------------------------ محصول ------------------------------ */
 
@@ -72,9 +84,23 @@ public static class Mappers
 
     /* ------------------------------- تجارت ------------------------------- */
 
-    public static OrderItemViewModel ToViewModel(this OrderItem i) =>
-        new(i.Id, i.ProductId, i.PlanId, i.ProductName, i.PlanName, i.BillingType,
-            i.UnitPriceToman, i.Quantity, i.LineTotalToman);
+    public static OrderItemViewModel ToViewModel(this OrderItem i)
+    {
+        string? configuration = null;
+        if (i.Users > 1 || i.ExtraCompanies > 0 || i.IncludeAndroid || i.IncludeIos)
+        {
+            var parts = new List<string> { $"نسخهٔ دسکتاپ، {FaDigits.Of(i.Users)} کاربر" };
+            if (i.ExtraCompanies > 0)
+                parts.Add($"{FaDigits.Of(i.ExtraCompanies)} شرکتِ اضافه (هر شرکت {FaDigits.Of(i.Users)} کاربر)");
+            if (i.IncludeAndroid) parts.Add("اندروید");
+            if (i.IncludeIos) parts.Add("iOS");
+            configuration = string.Join(" • ", parts);
+        }
+
+        return new OrderItemViewModel(i.Id, i.ProductId, i.PlanId, i.ProductName, i.PlanName, i.BillingType,
+            i.UnitPriceToman, i.Quantity, i.LineTotalToman,
+            i.Users, i.ExtraCompanies, i.IncludeAndroid, i.IncludeIos, configuration);
+    }
 
     public static PaymentViewModel ToViewModel(this Payment p) =>
         new(p.Id, p.OrderId, p.Provider, p.Method, p.AmountToman, p.Status, p.TransactionRef, p.PaidAt);

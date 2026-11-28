@@ -271,6 +271,10 @@ public sealed class CartState
     public Task<bool> AddAsync(string planId, int quantity = 1)
         => Run(() => _api.AddToCartAsync(SessionKey, planId, quantity));
 
+    /// <summary>افزودنِ ماژولِ پیکربندی‌شده (کاربر، شرکتِ اضافه، اندروید/iOS).</summary>
+    public Task<bool> AddConfiguredAsync(ModuleSelectionDto selection, int quantity = 1)
+        => Run(() => _api.AddConfiguredToCartAsync(SessionKey, selection, quantity));
+
     public Task<bool> SetQuantityAsync(string itemId, int quantity)
         => Run(() => _api.UpdateCartItemAsync(SessionKey, itemId, quantity));
 

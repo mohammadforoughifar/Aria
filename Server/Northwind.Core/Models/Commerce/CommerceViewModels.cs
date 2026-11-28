@@ -8,19 +8,46 @@ namespace Northwind.Core.Models.Commerce;
 public sealed record CartItemViewModel(
     Guid Id, Guid PlanId, int Quantity, Guid ProductId, string ProductName,
     string ProductSlug, string PlanName, PlanTier Tier, BillingType BillingType,
-    string AccentColor, decimal UnitPriceToman, decimal LineTotalToman);
+    string AccentColor, decimal UnitPriceToman, decimal LineTotalToman,
+    // پیکربندیِ ماژول (صفحهٔ نرم‌افزارها) — برایِ مسیرِ طرحِ قیمت، مقدارهایِ پایه
+    int Users = 1, int ExtraCompanies = 0, bool IncludeAndroid = false, bool IncludeIos = false,
+    string? ConfigurationSummary = null);
 
 public sealed record CartViewModel(
     Guid Id, IReadOnlyList<CartItemViewModel> Items, int ItemCount,
     decimal SubtotalToman, decimal DiscountToman, decimal TaxToman, decimal TotalToman,
     string? DiscountCode, string Currency);
 
+/// <summary>
+/// افزودن به سبد، دو مسیر دارد:
+///   ۱) <b>طرحِ قیمت</b> (مسیرِ قدیمی): <c>PlanId</c>؛
+///   ۲) <b>پیکربندیِ ماژول</b> (صفحهٔ نرم‌افزارها): <c>ProductId</c> به‌همراهِ
+///      تعدادِ کاربر، شرکتِ اضافه و نسخه‌هایِ موبایل. قیمتِ واحد را سرور
+///      از رویِ تنظیماتِ دسته حساب می‌کند، نه از ورودیِ کلاینت.
+/// </summary>
 public sealed class AddToCartInput
 {
-    [Required] public Guid PlanId { get; set; }
+    /// <summary>طرحِ قیمت — برایِ مسیرِ قدیمی.</summary>
+    public Guid? PlanId { get; set; }
+
+    /// <summary>ماژول — برایِ مسیرِ پیکربندی.</summary>
+    public Guid? ProductId { get; set; }
 
     [Range(1, 99, ErrorMessage = "تعداد باید بین ۱ و ۹۹ باشد.")]
     public int Quantity { get; set; } = 1;
+
+    /* ------------------------- پیکربندیِ ماژول ------------------------- */
+
+    /// <summary>تعدادِ کاربر برایِ هر شرکت (شاملِ کاربرِ قیمتِ پایه).</summary>
+    [Range(1, 1000, ErrorMessage = "تعدادِ کاربر بین ۱ و ۱۰۰۰ است.")]
+    public int Users { get; set; } = 1;
+
+    /// <summary>تعدادِ شرکتِ اضافه بر شرکتِ اصلی.</summary>
+    [Range(0, 100, ErrorMessage = "تعدادِ شرکتِ اضافه بین ۰ و ۱۰۰ است.")]
+    public int ExtraCompanies { get; set; }
+
+    public bool IncludeAndroid { get; set; }
+    public bool IncludeIos { get; set; }
 
     /// <summary>کلیدِ سبدِ مهمان؛ برایِ کاربرِ واردشده لازم نیست.</summary>
     [MaxLength(64)] public string? SessionKey { get; set; }
@@ -88,7 +115,10 @@ public sealed record CheckoutResultViewModel(
 
 public sealed record OrderItemViewModel(
     Guid Id, Guid ProductId, Guid PlanId, string ProductName, string PlanName,
-    BillingType BillingType, decimal UnitPriceToman, int Quantity, decimal LineTotalToman);
+    BillingType BillingType, decimal UnitPriceToman, int Quantity, decimal LineTotalToman,
+    // پیکربندیِ خریداری‌شده (کاربر، شرکتِ اضافه، اندروید/iOS) + متنِ آمادهٔ نمایش
+    int Users = 1, int ExtraCompanies = 0, bool IncludeAndroid = false, bool IncludeIos = false,
+    string? Configuration = null);
 
 public sealed record OrderViewModel(
     Guid Id, string OrderNumber, Guid UserId, string? CustomerName, string? CustomerEmail,

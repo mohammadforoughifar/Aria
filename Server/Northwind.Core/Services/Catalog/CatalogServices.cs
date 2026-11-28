@@ -107,6 +107,7 @@ public sealed class CategoryService : ICategoryService
             Icon = input.Icon,
             SortOrder = input.SortOrder
         };
+        ApplyPricing(category, input);
 
         _db.Categories.Add(category);
         await _db.SaveChangesAsync(ct);
@@ -123,10 +124,26 @@ public sealed class CategoryService : ICategoryService
         category.Description = input.Description;
         category.Icon = input.Icon;
         category.SortOrder = input.SortOrder;
+        ApplyPricing(category, input);
 
         await _db.SaveChangesAsync(ct);
         var count = await _db.Products.CountAsync(p => p.CategoryId == id && p.IsActive, ct);
         return category.ToViewModel(count);
+    }
+
+    /// <summary>قیمت‌هایِ امکاناتِ جانبی را از ورودیِ مدیر رویِ دسته می‌نشاند.</summary>
+    private static void ApplyPricing(Category category, CategoryInput input)
+    {
+        category.PricePerUserToman = Math.Max(0, input.PricePerUserToman);
+        category.PricePerExtraCompanyToman = Math.Max(0, input.PricePerExtraCompanyToman);
+        category.PriceAndroidToman = Math.Max(0, input.PriceAndroidToman);
+        category.PriceIosToman = Math.Max(0, input.PriceIosToman);
+        category.UsersIncluded = Math.Clamp(input.UsersIncluded, 1, 1000);
+        category.CompaniesIncluded = Math.Clamp(input.CompaniesIncluded, 1, 100);
+        category.MaxUsers = Math.Max(category.UsersIncluded, Math.Clamp(input.MaxUsers, 1, 1000));
+        category.MaxExtraCompanies = Math.Clamp(input.MaxExtraCompanies, 0, 100);
+        category.AllowMultiCompany = input.AllowMultiCompany;
+        category.AllowMobileAddons = input.AllowMobileAddons;
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)

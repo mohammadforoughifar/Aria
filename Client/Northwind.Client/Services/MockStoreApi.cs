@@ -164,6 +164,14 @@ public sealed class MockStoreApi : IStoreApi
             subtotal, discount, tax, taxable + tax, applied, "USD");
     }
 
+    /// <summary>حالتِ نمایشیِ درون‌حافظه‌ای قیمت‌گذاریِ سروری ندارد.</summary>
+    public Task<ModuleQuoteDto?> QuoteModulesAsync(IReadOnlyList<ModuleSelectionDto> items)
+        => Task.FromResult<ModuleQuoteDto?>(new ModuleQuoteDto(
+            Array.Empty<ModuleQuoteLineDto>(), 0, 0m, "IRT"));
+
+    public Task<CartDto> AddConfiguredToCartAsync(string sessionKey, ModuleSelectionDto selection, int quantity = 1)
+        => AddToCartAsync(sessionKey, selection.ProductId, quantity);
+
     public Task<CartDto> AddToCartAsync(string sessionKey, string planId, int quantity = 1)
     {
         var existing = _s.CartLines.FirstOrDefault(c => c.SessionKey == sessionKey && c.PlanId == planId);

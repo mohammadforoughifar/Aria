@@ -466,3 +466,145 @@
 .chart__donut-value { font-family: var(--font-fa); font-weight: 700; fill: var(--ink-900); }
 .chart__donut-label { font-family: var(--font-fa); font-size: 11px; fill: var(--text-4); }
 .chart__ring { transition: stroke-dashoffset var(--dur-4) var(--ease-out); }
+
+/* ============================================================
+   انتخاب‌گرِ ماژول (صفحهٔ نرم‌افزارها) — انتخاب، امکاناتِ جانبی، خلاصه
+   ============================================================ */
+
+/* کارتِ ماژولِ انتخاب‌شده */
+.card--selected {
+  border-color: var(--brand-500, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, .12);
+}
+
+/* دکمهٔ گزینش (چک‌باکسِ گرد) */
+.pick {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: transparent;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.pick:hover { border-color: var(--brand-500, #6366f1); }
+.pick.is-on {
+  background: var(--brand-600, #4f46e5);
+  border-color: var(--brand-600, #4f46e5);
+  color: #fff;
+}
+
+/* پنلِ امکاناتِ جانبیِ هر ماژول */
+.config {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-lg, 14px);
+  background: var(--surface-sunk);
+}
+.config__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+.config__breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px dashed var(--line-soft);
+  font-size: var(--fs-xs, 12px);
+  color: var(--ink-500, #64748b);
+}
+.config__breakdown b { color: var(--ink-800, #1e293b); font-weight: 700; }
+
+/* شمارندهٔ کاربر/شرکت */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.stepper__btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-700, #334155);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+.stepper__btn:hover:not(:disabled) { background: var(--surface-sunk); }
+.stepper__btn:disabled { opacity: .38; cursor: not-allowed; }
+.stepper__value {
+  min-width: 34px;
+  text-align: center;
+  font-weight: 700;
+  font-size: var(--fs-sm, 13px);
+}
+
+/* چیپِ افزونهٔ موبایل */
+.toggle-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-600, #475569);
+  font-size: var(--fs-xs, 12px);
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.toggle-chip:hover:not(:disabled) { border-color: var(--brand-500, #6366f1); }
+.toggle-chip:disabled { opacity: .45; cursor: not-allowed; }
+.toggle-chip.is-on {
+  background: var(--brand-50, #eef2ff);
+  border-color: var(--brand-500, #6366f1);
+  color: var(--brand-700, #4338ca);
+  font-weight: 700;
+}
+
+/* برچسبِ کوچکِ پلتفرم */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--ink-100, #f1f5f9);
+  color: var(--ink-600, #475569);
+  font-size: var(--fs-xs, 12px);
+}
+.tag--sm { height: 20px; font-size: 10.5px; padding: 0 8px; }
+
+/* نشانِ پیکربندیِ ماژول در سبد خرید */
+.config-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--brand-50, #eef2ff);
+  color: var(--brand-700, #4338ca);
+  font-size: var(--fs-xs, 12px);
+  line-height: 1.7;
+}

@@ -72,6 +72,18 @@
                                 <StatusBadge Status="@item.BillingType.ToString()" Kind="billing" Small="true" />
                                 <span class="tiny muted">@item.PlanName</span>
                             </div>
+
+                            @* پیکربندیِ انتخابیِ مشتری رویِ صفحهٔ نرم‌افزارها *@
+                            @if (!string.IsNullOrWhiteSpace(item.ConfigurationSummary))
+                            {
+                                <div class="config-pill" style="margin-top:6px">
+                                    <Icon Name="sliders" Size="12" />
+                                    <span>@item.ConfigurationSummary</span>
+                                </div>
+                                <div class="tiny muted num" style="margin-top:4px">
+                                    واحد: @Helpers.Fa.Money(item.UnitPriceToman)
+                                </div>
+                            }
                         </div>
 
                         <div class="qty">

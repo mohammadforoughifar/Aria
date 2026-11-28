@@ -27,8 +27,20 @@ namespace Northwind.Data.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<decimal?>("ConfiguredUnitPriceToman")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2(3)");
+
+                    b.Property<int>("ExtraCompanies")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IncludeAndroid")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IncludeIos")
+                        .HasColumnType("bit");
 
                     b.Property<Guid>("PlanId")
                         .HasColumnType("uniqueidentifier");
@@ -51,6 +63,9 @@ namespace Northwind.Data.Migrations
 
                     b.Property<Guid?>("UserId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Users")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -75,6 +90,15 @@ namespace Northwind.Data.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("AllowMobileAddons")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("AllowMultiCompany")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("CompaniesIncluded")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -87,10 +111,32 @@ namespace Northwind.Data.Migrations
                         .HasMaxLength(64)
                         .HasColumnType("nvarchar(64)");
 
+                    b.Property<int>("MaxExtraCompanies")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MaxUsers")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
+
+                    b.Property<decimal>("PriceAndroidToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PriceIosToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PricePerExtraCompanyToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PricePerUserToman")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
@@ -107,6 +153,9 @@ namespace Northwind.Data.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("UsersIncluded")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -744,6 +793,15 @@ namespace Northwind.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2(3)");
 
+                    b.Property<int>("ExtraCompanies")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IncludeAndroid")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IncludeIos")
+                        .HasColumnType("bit");
+
                     b.Property<decimal>("LineTotalToman")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -781,6 +839,9 @@ namespace Northwind.Data.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("Users")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

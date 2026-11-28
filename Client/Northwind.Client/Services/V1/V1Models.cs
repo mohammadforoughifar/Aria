@@ -21,7 +21,14 @@ public sealed record V1Paged<T>(IReadOnlyList<T> Items, V1PageMeta Meta);
 /* ------------------------------- کاتالوگ ------------------------------ */
 
 public sealed record V1Category(
-    Guid Id, string Name, string Slug, string? Description, string Icon, int ProductCount);
+    Guid Id, string Name, string Slug, string? Description, string Icon, int ProductCount,
+    V1CategoryPricing? Pricing = null);
+
+public sealed record V1CategoryPricing(
+    decimal PricePerUserToman, decimal PricePerExtraCompanyToman,
+    decimal PriceAndroidToman, decimal PriceIosToman,
+    int UsersIncluded, int CompaniesIncluded, int MaxUsers, int MaxExtraCompanies,
+    bool AllowMultiCompany, bool AllowMobileAddons);
 
 public sealed record V1Plan(
     Guid Id, string Name, PlanTier Tier, BillingType BillingType,
@@ -57,7 +64,9 @@ public sealed record V1ProductDetail(
 public sealed record V1CartItem(
     Guid Id, Guid PlanId, int Quantity, Guid ProductId, string ProductName,
     string ProductSlug, string PlanName, PlanTier Tier, BillingType BillingType,
-    string AccentColor, decimal UnitPriceToman, decimal LineTotalToman);
+    string AccentColor, decimal UnitPriceToman, decimal LineTotalToman,
+    int Users = 1, int ExtraCompanies = 0, bool IncludeAndroid = false, bool IncludeIos = false,
+    string? ConfigurationSummary = null);
 
 public sealed record V1Cart(
     Guid Id, IReadOnlyList<V1CartItem> Items, int ItemCount,
@@ -225,3 +234,19 @@ public sealed class V1DatabaseCounts
     public int Licenses { get; set; }
     public int Articles { get; set; }
 }
+
+/* ---------------------- پیکربندی و قیمتِ ماژول ---------------------- */
+
+public sealed record V1ModulePrice(
+    decimal BaseToman, decimal UsersToman, decimal CompaniesToman,
+    decimal AndroidToman, decimal IosToman, decimal TotalToman,
+    int Users, int ExtraCompanies, bool IncludeAndroid, bool IncludeIos,
+    int IncludedUsers, int IncludedCompanies);
+
+public sealed record V1ModuleQuoteLine(
+    Guid ProductId, string ProductName, string ProductSlug,
+    string CategoryId, string CategoryName, string CategorySlug,
+    string AccentColor, V1ModulePrice Price, string Summary);
+
+public sealed record V1ModuleQuote(
+    IReadOnlyList<V1ModuleQuoteLine> Lines, int ModuleCount, decimal TotalToman, string Currency);

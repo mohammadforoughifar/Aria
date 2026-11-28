@@ -102,12 +102,18 @@ public sealed class OrderService : IOrderService
         // ---- مبالغ فقط این‌جا و از رویِ خودِ داده حساب می‌شوند، نه از ورودیِ کلاینت ----
         var lines = cartItems
             .Where(c => c.Plan?.Product is not null)
-            .Select(c => new
+            .Select(c =>
             {
-                Item = c,
-                Plan = c.Plan!,
-                Product = c.Plan!.Product!,
-                LineTotal = c.Plan.PriceToman * c.Quantity
+                // قیمتِ ردیفِ پیکربندی‌شده در همان ردیفِ سبد ذخیره شده است.
+                var unit = c.ConfiguredUnitPriceToman ?? c.Plan!.PriceToman;
+                return new
+                {
+                    Item = c,
+                    Plan = c.Plan!,
+                    Product = c.Plan!.Product!,
+                    UnitPrice = unit,
+                    LineTotal = unit * c.Quantity
+                };
             })
             .ToList();
 
@@ -169,9 +175,13 @@ public sealed class OrderService : IOrderService
                     ProductName = line.Product.Name,
                     PlanName = line.Plan.Name,
                     BillingType = line.Plan.BillingType,
-                    UnitPriceToman = line.Plan.PriceToman,
+                    UnitPriceToman = line.UnitPrice,
                     Quantity = line.Item.Quantity,
-                    LineTotalToman = line.LineTotal
+                    LineTotalToman = line.LineTotal,
+                    Users = line.Item.Users,
+                    ExtraCompanies = line.Item.ExtraCompanies,
+                    IncludeAndroid = line.Item.IncludeAndroid,
+                    IncludeIos = line.Item.IncludeIos
                 });
             }
 
