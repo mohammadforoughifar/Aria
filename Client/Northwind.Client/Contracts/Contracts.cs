@@ -69,7 +69,7 @@ public sealed record ProductListItemDto(
 
 public sealed record ProductDetailDto(
     string Id, string Slug, string Name, string Tagline, string Description,
-    ProductType Type, string Platform, string Version, decimal BasePriceToman,
+    ProductType Type, Audience Audience, string Platform, string Version, decimal BasePriceToman,
     decimal RatingAvg, int RatingCount, int Popularity, string AccentColor,
     string? HeroImage, bool IsActive,
     bool IsFeatured, int TrialDays, DateTime CreatedAt,

@@ -124,7 +124,27 @@ public sealed class StoreApiRouter : IStoreApi
 
     public async Task<CategoryDto> UpsertCategoryAsync(CategoryDto category)
     {
-        var input = new { name = category.Name, slug = category.Slug, description = category.Description, icon = category.Icon };
+        // قیمت‌هایِ امکاناتِ جانبی هم بخشی از دسته‌اند؛ اگر فرستاده نشوند سرور
+        // آن‌ها را صفر می‌گیرد و قیمتِ تنظیم‌شده در پنل از بین می‌رود.
+        var p = category.Pricing ?? Contracts.CategoryPricingDto.Free;
+
+        var input = new
+        {
+            name = category.Name,
+            slug = category.Slug,
+            description = category.Description,
+            icon = category.Icon,
+            pricePerUserToman = p.PricePerUserToman,
+            pricePerExtraCompanyToman = p.PricePerExtraCompanyToman,
+            priceAndroidToman = p.PriceAndroidToman,
+            priceIosToman = p.PriceIosToman,
+            usersIncluded = p.UsersIncluded,
+            companiesIncluded = p.CompaniesIncluded,
+            maxUsers = p.MaxUsers,
+            maxExtraCompanies = p.MaxExtraCompanies,
+            allowMultiCompany = p.AllowMultiCompany,
+            allowMobileAddons = p.AllowMobileAddons
+        };
 
         var saved = Guid.TryParse(category.Id, out var gid) && gid != Guid.Empty
             ? await _v1.SendAsync<V1Category>("PUT", $"api/v1/categories/{gid}", input)
@@ -850,6 +870,7 @@ public sealed class StoreApiRouter : IStoreApi
             systemRequirements = product.SystemRequirements,
             gallery = product.Gallery,
             demoVideoUrl = product.DemoVideoUrl,
+            audience = product.Audience.ToString(),
             categoryId = RequireGuid(product.CategoryId, "دسته")
         };
 
@@ -1045,7 +1066,7 @@ public sealed class StoreApiRouter : IStoreApi
         p.IsFeatured, p.IsActive, p.CreatedAt, p.CategoryName, p.CategorySlug, p.PlanCount);
 
     private static ProductDetailDto ToDetail(V1ProductDetail d) => new(
-        d.Id.ToString(), d.Slug, d.Name, d.Tagline, d.Description, d.Type, d.Platform, d.Version,
+        d.Id.ToString(), d.Slug, d.Name, d.Tagline, d.Description, d.Type, d.Audience, d.Platform, d.Version,
         d.BasePriceToman, d.RatingAvg, d.RatingCount, d.Popularity, d.AccentColor, d.HeroImage,
         d.IsActive, d.IsFeatured, d.TrialDays, d.CreatedAt,
         d.CategoryId.ToString(), d.CategoryName, d.CategorySlug,

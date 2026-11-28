@@ -105,7 +105,7 @@ public sealed class CategoryService : ICategoryService
             Slug = slug,
             Description = input.Description,
             Icon = input.Icon,
-            SortOrder = input.SortOrder
+            SortOrder = input.SortOrder ?? 0
         };
         ApplyPricing(category, input);
 
@@ -123,7 +123,7 @@ public sealed class CategoryService : ICategoryService
         category.Slug = await UniqueSlugAsync(input.Slug, input.Name, id, ct);
         category.Description = input.Description;
         category.Icon = input.Icon;
-        category.SortOrder = input.SortOrder;
+        if (input.SortOrder is { } order) category.SortOrder = order;
         ApplyPricing(category, input);
 
         await _db.SaveChangesAsync(ct);

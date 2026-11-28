@@ -392,7 +392,7 @@ public static class MockData
         };
 
         return new ProductDetailDto(
-            id, slug, name, tagline, description, type, platform, version, basePrice,
+            id, slug, name, tagline, description, type, Audience.Both, platform, version, basePrice,
             rating, ratingCount, popularity, accent, null, true, featured, trialDays, DaysAgo(createdDaysAgo),
             categoryId, categoryName, categorySlug,
             features, requirements,

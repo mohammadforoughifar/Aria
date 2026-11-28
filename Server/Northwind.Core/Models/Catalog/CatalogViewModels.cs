@@ -44,7 +44,11 @@ public sealed class CategoryInput
     [MaxLength(64)]
     public string Icon { get; set; } = "package";
 
-    public int SortOrder { get; set; }
+    /// <summary>
+    /// ترتیبِ نمایش. <c>null</c> یعنی «دست نزن» — کلاینتی که این فیلد را
+    /// نمی‌فرستد نباید ترتیبِ دسته را صفر کند.
+    /// </summary>
+    public int? SortOrder { get; set; }
 
     /* ---------------- قیمت‌گذاریِ امکاناتِ جانبی (پنلِ مدیر) ---------------- */
 

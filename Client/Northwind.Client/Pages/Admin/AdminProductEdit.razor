@@ -128,6 +128,17 @@ else
                         <span class="field__hint">@TypeLabel(typeValue) — @TypeHint(typeValue)</span>
                     </div>
 
+                    <!-- مخاطب: در فیلترهایِ فروشگاه استفاده می‌شود -->
+                    <div class="field">
+                        <span class="field__label">مخاطب</span>
+                        <select class="select" @bind="draft.Audience">
+                            <option value="@Audience.B2B">سازمانی (B2B)</option>
+                            <option value="@Audience.B2C">شخصی (B2C)</option>
+                            <option value="@Audience.Both">هر دو</option>
+                        </select>
+                        <span class="field__hint">اگر خالی بماند، سرور «هر دو» را می‌گذارد.</span>
+                    </div>
+
                     @if (showTypeHelp)
                     {
                         <div class="card" style="grid-column:1/-1;padding:var(--sp-3);box-shadow:none;background:var(--surface-sunk)">
@@ -516,6 +527,7 @@ else
         public string? DemoVideoUrl { get; set; }
         public string? HeroImage { get; set; }
         public int TrialDays { get; set; } = 30;
+        public Audience Audience { get; set; } = Audience.Both;
         public bool IsFeatured { get; set; }
         public bool IsActive { get; set; } = true;
     }
@@ -574,7 +586,7 @@ else
         {
             draft = new ProductEdit { CategoryId = categories.FirstOrDefault()?.Id ?? "" };
             product = new ProductDetailDto(Guid.NewGuid().ToString(), "", "", "", "",
-                ProductType.Module, "ویندوز ۱۰/۱۱", "1.0.0", 0, 0, 0, 0, "#4f46e5", null, true,
+                ProductType.Module, Audience.Both, "ویندوز ۱۰/۱۱", "1.0.0", 0, 0, 0, 0, "#4f46e5", null, true,
                 false, 30, DateTime.UtcNow, categories.FirstOrDefault()?.Id ?? "", "", "",
                 Array.Empty<string>(), Array.Empty<string>(), Array.Empty<string>(), null,
                 Array.Empty<PlanDto>(), Array.Empty<ProductVersionDto>(), Array.Empty<ReviewDto>());
@@ -598,6 +610,7 @@ else
                 TrialDays = product.TrialDays,
                 IsFeatured = product.IsFeatured,
                 IsActive = product.IsActive,
+                Audience = product.Audience,
                 DemoVideoUrl = product.DemoVideoUrl,
                 HeroImage = product.HeroImage,
             };
@@ -733,6 +746,7 @@ else
                 IsFeatured = draft.IsFeatured,
                 IsActive = draft.IsActive,
                 Type = Enum.Parse<ProductType>(typeValue),
+                Audience = draft.Audience,
                 BasePriceToman = RialToToman(basePriceRial),
                 Features = features.ToList(),
                 SystemRequirements = requirements.ToList(),
