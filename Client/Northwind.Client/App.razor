@@ -2,6 +2,11 @@
 @inject Services.CartState Cart
 @inject Services.CompareState Compare
 
+@* هر استثنایِ پیش‌بینی‌نشده در خودِ رابط هم به کاربر پیامِ روشن می‌دهد،
+   نه صفحهٔ سفید یا پیامِ انگلیسیِ چارچوب. خطاهایِ API جایِ دیگری (بنرِ خطا)
+   نمایش داده می‌شوند؛ این‌جا نوبتِ خطاهایِ خودِ مؤلفه‌هاست. *@
+<ErrorBoundary @ref="boundary">
+    <ChildContent>
 <Router AppAssembly="@typeof(App).Assembly">
     <Found Context="routeData">
         <RouteView RouteData="@routeData" DefaultLayout="@typeof(Components.Layout.StoreLayout)" />
@@ -22,8 +27,28 @@
         </LayoutView>
     </NotFound>
 </Router>
+    </ChildContent>
+    <ErrorContent Context="ex">
+        <div class="wrap" style="padding:96px 0">
+            <EmptyState Icon="alert" Title="خطایی رخ داد"
+                        Text="نمایشِ این بخش با خطا روبه‌رو شد. می‌توانید دوباره تلاش کنید؛ اگر تکرار شد صفحه را تازه کنید.">
+                <div class="row-2">
+                    <button class="btn btn--primary btn--sm" @onclick="Recover">تلاشِ دوباره</button>
+                    <a class="btn btn--secondary btn--sm" href="/">بازگشت به خانه</a>
+                </div>
+                <p class="small muted num--lat" style="margin-top:var(--sp-3);direction:ltr;text-align:left">
+                    @ex.GetType().Name
+                </p>
+            </EmptyState>
+        </div>
+    </ErrorContent>
+</ErrorBoundary>
 
 @code {
+    private ErrorBoundary? boundary;
+
+    private void Recover() => boundary?.Recover();
+
     protected override async Task OnInitializedAsync()
     {
         // این سه فراخوانی به API وابسته‌اند؛ اگر سرور در دسترس نباشد

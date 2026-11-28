@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Northwind.Core;
 using Northwind.Core.Models.Common;
+using Northwind.Core.Services.Common;
 using Northwind.Core.Services.Security;
 
 namespace Northwind.Api;
@@ -60,28 +61,63 @@ public static class DependencyInjection
         // اعتبارسنجیِ ورودی هم با همان شکلِ خطایِ یکسان برگردد.
         services.Configure<ApiBehaviorOptions>(options =>
         {
+            // پیش‌فرضِ چارچوب، پاسخ‌هایِ ۴۰۰/۴۰۴/۴۱۵ و مانندِ آن را به
+            // ProblemDetails انگلیسی تبدیل می‌کند؛ خاموشش می‌کنیم تا همهٔ
+            // خطاها از یک مسیر (میان‌افزارِ خطا) با پیامِ فارسی بیرون بروند.
+            options.SuppressMapClientErrors = true;
+
             options.InvalidModelStateResponseFactory = context =>
             {
-                var errors = context.ModelState
-                    .Where(kv => kv.Value?.Errors.Count > 0)
-                    .ToDictionary(
-                        kv => JsonNamingPolicy.CamelCase.ConvertName(kv.Key),
-                        kv => kv.Value!.Errors.Select(e =>
-                            string.IsNullOrWhiteSpace(e.ErrorMessage) ? "مقدارِ نامعتبر." : e.ErrorMessage).ToArray());
+                // کلیدهایِ «$» و «input» از خودِ JSON‌خوان می‌آیند و پیامشان
+                // انگلیسی و فنی است؛ کاربر چیزی از آن‌ها نمی‌فهمد، پس جدا می‌شوند
+                // و یک پیامِ فارسیِ روشن جایش می‌نشیند.
+                var parserFailed = context.ModelState.Any(kv =>
+                    kv.Key is "$" or "input" || kv.Key.Contains("$.", StringComparison.Ordinal));
 
-                var payload = new ApiErrorViewModel
+                var errors = context.ModelState
+                    .Where(kv => kv.Value?.Errors.Count > 0 && kv.Key is not ("$" or "input"))
+                    .ToDictionary(
+                        // کلیدهایِ JSON‌خوان به‌شکلِ «$.type» می‌آیند؛ همان نامِ
+                        // فیلد برایِ کلاینت گویاتر است.
+                        kv => JsonNamingPolicy.CamelCase.ConvertName(CleanKey(kv.Key)),
+                        kv => kv.Value!.Errors
+                            .Select(e => ErrorText.Persian(e.ErrorMessage))
+                            .Where(m => m.Length > 0)
+                            .Distinct()
+                            .ToArray())
+                    .Where(kv => kv.Value.Length > 0)
+                    .ToDictionary(kv => kv.Key, kv => kv.Value);
+
+                if (parserFailed && errors.Count == 0)
+                {
+                    return new BadRequestObjectResult(new ApiErrorViewModel
+                    {
+                        Code = "invalid_json",
+                        Message = "بدنهٔ درخواست JSON معتبر نیست.",
+                        Status = StatusCodes.Status400BadRequest,
+                        TraceId = context.HttpContext.TraceIdentifier
+                    });
+                }
+
+                return new BadRequestObjectResult(new ApiErrorViewModel
                 {
                     Code = "validation_failed",
                     Message = "برخی از فیلدها معتبر نیستند.",
                     Status = StatusCodes.Status400BadRequest,
                     Errors = errors,
                     TraceId = context.HttpContext.TraceIdentifier
-                };
-
-                return new BadRequestObjectResult(payload);
+                });
             };
         });
 
         return services;
+    }
+
+    /// <summary>«$.type» ← «type» و «$» ← «input».</summary>
+    private static string CleanKey(string key)
+    {
+        if (key is "$" or "" ) return "input";
+        var cleaned = key.StartsWith("$.", StringComparison.Ordinal) ? key[2..] : key;
+        return cleaned.Contains('.') ? cleaned[(cleaned.LastIndexOf('.') + 1)..] : cleaned;
     }
 }

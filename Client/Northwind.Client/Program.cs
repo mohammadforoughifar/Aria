@@ -34,6 +34,8 @@ builder.Services.AddScoped(sp =>
        builder.Services.AddSingleton(_ => MockData.Build());
        builder.Services.AddScoped<IStoreApi, MockStoreApi>();                    */
 builder.Services.AddSingleton<ApiHealth>();
+// آخرین خطایِ سرور؛ بنرِ سراسری (ApiErrorBanner) آن را به کاربر نشان می‌دهد.
+builder.Services.AddSingleton<ApiErrorState>();
 // داده‌هایِ کم‌تغییر (تنظیمات، دسته‌بندی، نظرات، پرسش‌ها) یک‌بار گرفته می‌شوند
 builder.Services.AddSingleton<ApiCache>();
 // کلاینتِ نسخهٔ ۱ + پیاده‌سازیِ IStoreApi:

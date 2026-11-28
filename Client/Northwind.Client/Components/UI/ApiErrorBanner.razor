@@ -1,0 +1,87 @@
+@* پیامِ خطایِ سرور، همان‌جور که سرور فرستاده است.
+
+   چرا؟ پیش‌تر خطاهایِ API یا در کنسول گم می‌شدند یا صفحه فقط «هیچ داده‌ای
+   نیست» نشان می‌داد و کاربر نمی‌فهمید تقصیرِ چه بود. حالا هر خطایِ سرور —
+   اعتبارسنجی، دسترسی، تناقض، خطایِ سرور — با متنِ فارسیِ خودِ سرور و کدِ
+   پیگیری (traceId) بالای صفحه دیده می‌شود تا هم کاربر بداند چه شد، هم اگر
+   لازم شد همان کد را به پشتیبانی بگوید. *@
+
+@inject Services.ApiErrorState Errors
+@implements IDisposable
+
+@if (error is not null)
+{
+    <div class="api-error" role="alert">
+        <Icon Name="alert" Size="18" />
+        <div class="api-error__body">
+            <b>@Title</b>
+            <span>@error.Message</span>
+            <span class="api-error__meta">
+                @if (!string.IsNullOrWhiteSpace(error.Code))
+                {
+                    <span class="api-error__chip">@error.Code</span>
+                }
+                @if (error.Status > 0)
+                {
+                    <span class="api-error__chip">HTTP @error.Status</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(error.TraceId))
+                {
+                    <span class="api-error__chip num--lat" title="این کد را به پشتیبانی بگویید">@error.TraceId</span>
+                }
+            </span>
+        </div>
+        <div class="row-2" style="flex:none">
+            @if (error.Status == 401)
+            {
+                <a class="btn btn--primary btn--sm" href="/login">ورود به حساب</a>
+            }
+            <button class="icon-btn" style="width:30px;height:30px" @onclick="Dismiss" aria-label="بستن">
+                <Icon Name="x" Size="15" />
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private ApiError? error;
+
+    protected override void OnInitialized() => Errors.OnChange += Refresh;
+
+    private void Refresh()
+    {
+        error = Errors.Current;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void Dismiss() => Errors.Clear();
+
+    /// <summary>عنوان بر پایهٔ کدِ سرور است و تنها اگر کد نبود، بر پایهٔ وضعیت.</summary>
+    private string Title => error?.Code switch
+    {
+        "invalid_credentials" => "ورود ناموفق",
+        "validation_failed" => "اطلاعاتِ ناقص یا نامعتبر",
+        "invalid_json" or "invalid_request" => "درخواستِ نامعتبر",
+        "unauthorized" => "نیاز به ورود",
+        "forbidden" => "دسترسیِ مجاز نیست",
+        "not_found" => "پیدا نشد",
+        "conflict" or "concurrency_conflict" => "تناقض در داده",
+        "business_rule" or "unprocessable" => "امکان‌پذیر نیست",
+        "offline" => "ارتباط برقرار نشد",
+        "server_error" => "خطایِ سرور",
+        null or "" => error?.Status switch
+        {
+            401 => "نیاز به ورود",
+            403 => "دسترسیِ مجاز نیست",
+            404 => "پیدا نشد",
+            409 => "تناقض در داده",
+            422 => "امکان‌پذیر نیست",
+            >= 500 => "خطایِ سرور",
+            0 => "ارتباط برقرار نشد",
+            _ => "درخواست انجام نشد"
+        },
+        _ => error!.Status >= 500 ? "خطایِ سرور" : "درخواست انجام نشد"
+    };
+
+    public void Dispose() => Errors.OnChange -= Refresh;
+}

@@ -95,7 +95,9 @@ builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = Comp
 builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Optimal);
 
 builder.Services.AddCors(o => o.AddPolicy("client", p =>
-    p.AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowed(_ => true)));
+    p.AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowed(_ => true)
+     // کلاینت برایِ نمایشِ «کدِ پیگیری» به این هدر نیاز دارد.
+     .WithExposedHeaders("X-Trace-Id")));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o =>
@@ -181,6 +183,26 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+/* نقطهٔ پایانیِ تشخیصی — فقط در محیطِ توسعه. برایِ آزمودنِ مسیرِ خطایِ
+   پیش‌بینی‌نشده (۵۰۰) و اطمینان از این‌که هیچ استک‌تریسی به بیرون نمی‌رود. */
+if (app.Environment.IsDevelopment())
+{
+    app.MapGet("/api/v1/_diag/boom", () => { throw new InvalidOperationException("خطایِ عمدیِ تشخیصی"); });
+}
+
+/* نشانیِ ناشناخته زیرِ /api باید ۴۰۴ با بدنهٔ JSON بدهد، نه صفحهٔ HTMLِ سایت.
+   پیش‌تر «/api/v1/nope» صفحهٔ اصلی را با کدِ ۲۰۰ برمی‌گرداند و کلاینت فکر
+   می‌کرد پاسخِ درستی گرفته است. */
+app.MapFallback("/api/{**slug}", (HttpContext ctx) =>
+    Results.Json(new Northwind.Core.Models.Common.ApiErrorViewModel
+    {
+        Code = "not_found",
+        Message = "این نشانی در API وجود ندارد یا شناسهٔ آن معتبر نیست.",
+        Status = StatusCodes.Status404NotFound,
+        TraceId = ctx.TraceIdentifier
+    }, statusCode: StatusCodes.Status404NotFound));
+
 app.MapFallbackToFile("index.html");
 
 app.Run();

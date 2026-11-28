@@ -64,13 +64,15 @@ public sealed class V1Api : IV1Api
 {
     private readonly HttpClient _http;
     private readonly ApiHealth _health;
+    private readonly ApiErrorState _errors;
 
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(15);
 
-    public V1Api(HttpClient http, ApiHealth health)
+    public V1Api(HttpClient http, ApiHealth health, ApiErrorState errors)
     {
         _http = http;
         _health = health;
+        _errors = errors;
     }
 
     public string SessionKey { get; set; } = "demo";
@@ -119,7 +121,15 @@ public sealed class V1Api : IV1Api
 
             if (!res.IsSuccessStatusCode)
             {
-                _health.ReportFailure($"سرور پاسخِ {(int)res.StatusCode} داد.");
+                // پیامِ سرور را همان‌جور که هست به کاربر می‌رسانیم (بنرِ خطا).
+                var error = await ReadErrorAsync(res, ct);
+                ReportHttp(res, error, path);
+
+                if ((int)res.StatusCode is >= 500 or 0 or 502 or 503)
+                    _health.ReportFailure(error?.Message ?? $"سرور پاسخِ {(int)res.StatusCode} داد.");
+                else
+                    _health.ReportSuccess();
+
                 return default;
             }
 
@@ -135,6 +145,8 @@ public sealed class V1Api : IV1Api
         catch (Exception ex)
         {
             _health.ReportFailure("ارتباط با سرور برقرار نشد.");
+            _errors.Report("ارتباط با سرور برقرار نشد. اینترنت و اجرایِ سرور را بررسی کنید.",
+                "offline", 0, null, path);
             Console.WriteLine($"[v1] GET {path}: {ex.Message}");
             return default;
         }
@@ -165,11 +177,12 @@ public sealed class V1Api : IV1Api
     {
         if (res.IsSuccessStatusCode) return;
 
-        V1Error? error = null;
-        try { error = await res.Content.ReadFromJsonAsync<V1Error>(ApiJson.Options, ct); }
-        catch { /* بدنهٔ خطا همیشه JSON نیست (مثلاً صفحهٔ HTMLِ وب‌سرور) */ }
-
+        var error = await ReadErrorAsync(res, ct);
         var status = (int)res.StatusCode;
+
+        // همان خطا در بنرِ سراسری هم ثبت می‌شود؛ صفحه‌ای که آن را در Toast
+        // نشان می‌دهد، باز هم پیامِ یکسانِ سرور را می‌گوید (نه متنِ ساختگی).
+        ReportHttp(res, error, path);
 
         // سرور برایِ خطاهایِ اعتبارسنجی پیامِ هر فیلد را جدا می‌فرستد؛ اگر فقط
         // «برخی از فیلدها معتبر نیستند» نشان دهیم، کاربر نمی‌فهمد کدام فیلد.
@@ -192,6 +205,39 @@ public sealed class V1Api : IV1Api
         if (details is not null) message = $"{message} — {details}";
         throw new V1ApiException(message, error?.Code, status);
     }
+
+    /// <summary>
+    /// خطایِ پاسخ را برایِ نمایش ثبت می‌کند — با یک استثنا: اگر هیچ توکنی
+    /// نفرستاده‌ایم، «۴۰۱» یعنی «هنوز وارد نشده‌اید»، نه خطا؛ دروازهٔ ورود
+    /// خودش کاربر را به صفحهٔ ورود می‌برد و بنر زدن رویِ همان صفحه شلوغی است.
+    /// </summary>
+    private void ReportHttp(HttpResponseMessage res, V1Error? error, string path)
+    {
+        var status = (int)res.StatusCode;
+        if (status == 401 && string.IsNullOrWhiteSpace(AccessToken)) return;
+
+        _errors.ReportHttp(status, error?.Code, error?.Message,
+            error?.TraceId ?? TraceIdHeader(res), path);
+    }
+
+    /// <summary>بدنهٔ خطای سرور را می‌خواند؛ اگر JSON نبود، <c>null</c>.</summary>
+    private static async Task<V1Error?> ReadErrorAsync(HttpResponseMessage res, CancellationToken ct)
+    {
+        try
+        {
+            if (res.Content.Headers.ContentLength == 0) return null;
+            return await res.Content.ReadFromJsonAsync<V1Error>(ApiJson.Options, ct);
+        }
+        catch
+        {
+            // بدنهٔ خطا همیشه JSON نیست (مثلاً صفحهٔ HTMLِ وب‌سرور)
+            return null;
+        }
+    }
+
+    /// <summary>شناسهٔ پیگیری از هدرِ پاسخ (سرور همیشه آن را می‌فرستد).</summary>
+    private static string? TraceIdHeader(HttpResponseMessage res)
+        => res.Headers.TryGetValues("X-Trace-Id", out var values) ? values.FirstOrDefault() : null;
 
     /* ------------------------------ زیرساخت ----------------------------- */
 
